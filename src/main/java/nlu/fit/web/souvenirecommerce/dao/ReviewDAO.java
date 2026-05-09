@@ -1,13 +1,11 @@
 package nlu.fit.web.souvenirecommerce.dao;
 
-import nlu.fit.web.souvenirecommerce.model.Review;
-import nlu.fit.web.souvenirecommerce.model.ReviewSummary;
-import nlu.fit.web.souvenirecommerce.util.DBContext;
+import nlu.fit.web.souvenirecommerce.dto.ReviewSummary;
+import nlu.fit.web.souvenirecommerce.model.entity.Review;
+import nlu.fit.web.souvenirecommerce.util.HibernateUtil;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,173 +19,143 @@ public class ReviewDAO {
             int offset,
             int limit
     ) {
-        List<Review> list = new ArrayList<>();
 
-        StringBuilder sql = new StringBuilder(""" 
-            SELECT r.id,
-                   r.product_id,
-                   r.user_id,
-                   u.full_name AS user_name,
-                   r.rating,
-                   r.comment,
-                   r.created_at
-            FROM reviews r
-            JOIN users u ON r.user_id = u.id
-            WHERE r.product_id = ?
-        """);
+        try (Session session =
+                     HibernateUtil.getSessionFactory().openSession()) {
 
-        if (rating != null) {
-            sql.append(" AND r.rating = ? ");
-        }
-
-        if ("oldest".equalsIgnoreCase(sort)) {
-            sql.append(" ORDER BY r.created_at ASC ");
-        } else {
-            sql.append(" ORDER BY r.created_at DESC ");
-        }
-
-        sql.append(" LIMIT ? OFFSET ? ");
-
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-
-            int idx = 1;
-            ps.setInt(idx++, productId);
+            StringBuilder hql = new StringBuilder("""
+                SELECT r
+                FROM Review r
+                JOIN FETCH r.user
+                WHERE r.product.id = :productId
+            """);
 
             if (rating != null) {
-                ps.setInt(idx++, rating);
+                hql.append(" AND r.rating = :rating ");
             }
 
-            ps.setInt(idx++, limit);
-            ps.setInt(idx, offset);
-
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                list.add(mapReview(rs));
+            if ("oldest".equalsIgnoreCase(sort)) {
+                hql.append(" ORDER BY r.createdAt ASC ");
+            } else {
+                hql.append(" ORDER BY r.createdAt DESC ");
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+
+            var query = session.createQuery(hql.toString(), Review.class);
+
+            query.setParameter("productId", productId);
+
+            if (rating != null) {
+                query.setParameter("rating", rating);
+            }
+
+            query.setFirstResult(offset);
+            query.setMaxResults(limit);
+
+            return query.list();
         }
-
-        return list;
     }
 
     public ReviewSummary getReviewSummaryByProductId(int productId) {
-        String sql = """
-        SELECT COUNT(*) AS total_reviews,
-               AVG(rating) AS avg_rating
-        FROM reviews
-        WHERE product_id = ?
-    """;
 
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Session session =
+                     HibernateUtil.getSessionFactory().openSession()) {
 
-            ps.setInt(1, productId);
-            ResultSet rs = ps.executeQuery();
+            Object[] result = session.createQuery("""
+                SELECT COUNT(r), AVG(r.rating)
+                FROM Review r
+                WHERE r.product.id = :productId
+            """, Object[].class)
+                    .setParameter("productId", productId)
+                    .uniqueResult();
 
-            if (rs.next()) {
-                int total = rs.getInt("total_reviews");
-                double avg = rs.getDouble("avg_rating");
+            Long total = (Long) result[0];
 
-                if (rs.wasNull()) {
-                    avg = 0.0;
-                }
+            Double avg = result[1] != null
+                    ? ((Double) result[1])
+                    : 0.0;
 
-                return new ReviewSummary(
-                        total,
-                        Math.round(avg * 10.0) / 10.0
-                );
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+            return new ReviewSummary(
+                    total.intValue(),
+                    Math.round(avg * 10.0) / 10.0
+            );
         }
-
-        return new ReviewSummary(0, 0.0);
     }
+
     public boolean hasPurchased(int userId, int productId) {
-        String sql = """
-        SELECT 1
-        FROM orders o
-        JOIN order_items oi ON o.id = oi.order_id
-        WHERE o.user_id = ?
-          AND oi.product_id = ?
-        LIMIT 1
-    """;
 
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Session session =
+                     HibernateUtil.getSessionFactory().openSession()) {
 
-            ps.setInt(1, userId);
-            ps.setInt(2, productId);
+            Long count = session.createQuery("""
+                SELECT COUNT(oi)
+                FROM OrderItem oi
+                WHERE oi.order.user.id = :userId
+                  AND oi.product.id = :productId
+            """, Long.class)
+                    .setParameter("userId", userId)
+                    .setParameter("productId", productId)
+                    .uniqueResult();
 
-            ResultSet rs = ps.executeQuery();
-            return rs.next();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+            return count != null && count > 0;
         }
     }
 
-    public Map<Integer, Integer> countReviewsByRating(int productId) {
-        Map<Integer, Integer> map = new HashMap<>();
-        for (int i = 1; i <= 5; i++) map.put(i, 0);
+    public Map<Integer, Long> countReviewsByRating(int productId) {
 
-        String sql = """
-            SELECT rating, COUNT(*) AS cnt
-            FROM reviews
-            WHERE product_id = ?
-            GROUP BY rating
-        """;
+        Map<Integer, Long> map = new HashMap<>();
 
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        for (int i = 1; i <= 5; i++) {
+            map.put(i, 0L);
+        }
 
-            ps.setInt(1, productId);
-            ResultSet rs = ps.executeQuery();
+        try (Session session =
+                     HibernateUtil.getSessionFactory().openSession()) {
 
-            while (rs.next()) {
-                map.put(rs.getInt("rating"), rs.getInt("cnt"));
+            List<Object[]> results = session.createQuery("""
+                SELECT r.rating, COUNT(r)
+                FROM Review r
+                WHERE r.product.id = :productId
+                GROUP BY r.rating
+            """, Object[].class)
+                    .setParameter("productId", productId)
+                    .list();
+
+            for (Object[] row : results) {
+
+                Integer reviewRating = (Integer) row[0];
+                Long count = (Long) row[1];
+
+                map.put(reviewRating, count);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
         return map;
     }
 
-    public boolean addReview(Review r) {
-        String sql = """
-            INSERT INTO reviews (product_id, user_id, rating, comment, created_at)
-            VALUES (?, ?, ?, ?, NOW())
-        """;
+    public boolean addReview(Review review) {
 
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        Transaction tx = null;
 
-            ps.setInt(1, r.getProductId());
-            ps.setInt(2, r.getUserId());
-            ps.setInt(3, r.getRating());
-            ps.setString(4, r.getComment());
+        try (Session session =
+                     HibernateUtil.getSessionFactory().openSession()) {
 
-            return ps.executeUpdate() > 0;
+            tx = session.beginTransaction();
+
+            session.persist(review);
+
+            tx.commit();
+
+            return true;
+
         } catch (Exception e) {
+
+            if (tx != null) {
+                tx.rollback();
+            }
+
             e.printStackTrace();
+
             return false;
         }
-    }
-
-    // Mapping ResultSet → Review
-    private Review mapReview(ResultSet rs) throws Exception {
-        Review r = new Review();
-        r.setId(rs.getInt("id"));
-        r.setProductId(rs.getInt("product_id"));
-        r.setUserId(rs.getInt("user_id"));
-        r.setUserName(rs.getString("user_name"));
-        r.setRating(rs.getInt("rating"));
-        r.setComment(rs.getString("comment"));
-        r.setCreatedAt(rs.getTimestamp("created_at"));
-        return r;
     }
 }
