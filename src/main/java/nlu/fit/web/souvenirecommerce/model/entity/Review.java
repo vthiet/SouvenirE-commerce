@@ -5,13 +5,13 @@ import lombok.*;
 
 import java.sql.Timestamp;
 
-@Entity
-@Table(name = "reviews")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Entity
+@Table(name = "reviews")
 public class Review {
 
     @Id
@@ -34,4 +34,9 @@ public class Review {
 
     @Column(name = "created_at")
     private Timestamp createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = new Timestamp(System.currentTimeMillis());
+    }
 }
