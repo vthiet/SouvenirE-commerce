@@ -449,17 +449,6 @@
     color: var(--text-secondary);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .admin-sidebar {
-        transform: translateX(-100%);
-    }
-
-    .admin-main {
-        margin-left: 0;
-    }
-}
-
 .admin-shell {
     display: flex;
     min-height: 100vh;
