@@ -384,6 +384,10 @@
   padding: 1.25rem;
 }
 
+.modal.show {
+  display: flex;
+}
+
 .modal-content {
   width: 100%;
   max-width: 640px;
