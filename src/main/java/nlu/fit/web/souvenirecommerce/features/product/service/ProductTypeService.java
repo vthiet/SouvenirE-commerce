@@ -50,6 +50,60 @@ public class ProductTypeService {
         dto.setRating(rating);
         dto.setSort(sort);
         dto.setSortParam(sort != null ? sort.name().toLowerCase() : "popular");
+        dto.setListingAction("/category");
+
+        return dto;
+    }
+
+    public ProductTypeDTO getSearchProductType(String keyword, Integer minPrice, Integer maxPrice, Integer rating, ProductSort sort, int page) {
+        String safeKeyword = keyword == null ? "" : keyword.trim();
+
+        if (safeKeyword.isEmpty()) {
+            return null;
+        }
+
+        int safePage = Math.max(page, 1);
+        int offset = (safePage - 1) * PAGE_SIZE;
+
+        List<Product> products = productDAO.searchProductsWithFilter(
+                safeKeyword,
+                minPrice,
+                maxPrice,
+                rating,
+                sort,
+                offset,
+                PAGE_SIZE
+        );
+
+        int totalProducts = productDAO.countSearchProductsWithFilter(
+                safeKeyword,
+                minPrice,
+                maxPrice,
+                rating
+        );
+
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalProducts / PAGE_SIZE));
+
+        Category temporaryCategory = Category.builder()
+                .id(0L)
+                .categoryName("Kết quả tìm kiếm: " + safeKeyword)
+                .image("")
+                .build();
+
+        ProductTypeDTO dto = new ProductTypeDTO();
+        dto.setCategory(temporaryCategory);
+        dto.setProducts(mapToProductCardDTOs(products));
+        dto.setCurrentPage(safePage);
+        dto.setTotalPages(totalPages);
+        dto.setTotalProducts(totalProducts);
+        dto.setMinPrice(minPrice);
+        dto.setMaxPrice(maxPrice);
+        dto.setRating(rating);
+        dto.setSort(sort);
+        dto.setSortParam(sort != null ? sort.name().toLowerCase() : "popular");
+        dto.setSearchMode(true);
+        dto.setSearchKeyword(safeKeyword);
+        dto.setListingAction("/search");
 
         return dto;
     }

@@ -26,4 +26,7 @@ public class ProductTypeDTO {
     private Integer rating;
     private ProductSort sort;
     private String sortParam;
+    private boolean searchMode;
+    private String searchKeyword;
+    private String listingAction;
 }
