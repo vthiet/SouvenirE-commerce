@@ -10,8 +10,15 @@
             <aside class="filter-sidebar">
                 <h3>Bộ lọc</h3>
 
-                <form method="get" action="${pageContext.request.contextPath}/category">
-                    <input type="hidden" name="id" value="${data.category.id}"/>
+                <form method="get" action="${pageContext.request.contextPath}${data.listingAction}">
+                    <c:choose>
+                        <c:when test="${data.searchMode}">
+                            <input type="hidden" name="keyword" value="${data.searchKeyword}"/>
+                        </c:when>
+                        <c:otherwise>
+                            <input type="hidden" name="id" value="${data.category.id}"/>
+                        </c:otherwise>
+                    </c:choose>
                     <input type="hidden" name="page" value="1"/>
 
                     <div class="filter-group">
@@ -52,10 +59,12 @@
 
             <main class="product-type-content">
 
+                <c:if test="${not data.searchMode}">
                 <div class="category-banner">
                     <img src="${pageContext.request.contextPath}/assets/images/home_banner/${data.category.image}"
                          alt="${data.category.categoryName}">
                 </div>
+                </c:if>
 
                 <div class="category-header">
                     <h2>${data.category.categoryName}</h2>
@@ -79,7 +88,22 @@
 
                 <div class="pagination">
                     <c:forEach begin="1" end="${data.totalPages}" var="i">
-                        <a href="${pageContext.request.contextPath}/category?id=${data.category.id}&page=${i}&minPrice=${data.minPrice}&maxPrice=${data.maxPrice}&rating=${data.rating}&sort=${data.sortParam}"
+                        <c:url var="pageUrl" value="${data.listingAction}">
+                            <c:choose>
+                                <c:when test="${data.searchMode}">
+                                    <c:param name="keyword" value="${data.searchKeyword}"/>
+                                </c:when>
+                                <c:otherwise>
+                                    <c:param name="id" value="${data.category.id}"/>
+                                </c:otherwise>
+                            </c:choose>
+                            <c:param name="page" value="${i}"/>
+                            <c:param name="minPrice" value="${data.minPrice}"/>
+                            <c:param name="maxPrice" value="${data.maxPrice}"/>
+                            <c:param name="rating" value="${data.rating}"/>
+                            <c:param name="sort" value="${data.sortParam}"/>
+                        </c:url>
+                        <a href="${pageUrl}"
                            class="${i == data.currentPage ? 'active' : ''}">
                                 ${i}
                         </a>

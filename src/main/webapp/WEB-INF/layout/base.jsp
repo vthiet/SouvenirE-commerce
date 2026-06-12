@@ -36,7 +36,7 @@
 
     <!-- Header -->
     <link rel="stylesheet"
-          href="${pageContext.request.contextPath}/assets/css/layout/header.css?v=8">
+          href="${pageContext.request.contextPath}/assets/css/layout/header.css?v=10">
 
     <!-- Footer -->
     <link rel="stylesheet"
@@ -97,7 +97,7 @@
 
 <script src="${pageContext.request.contextPath}/assets/js/common.js"></script>
 
-<script src="${pageContext.request.contextPath}/assets/js/header.js?v=8"></script>
+<script src="${pageContext.request.contextPath}/assets/js/header.js?v=10"></script>
 
 <c:if test="${requestScope.enableSelect2}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>

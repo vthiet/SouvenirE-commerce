@@ -249,19 +249,52 @@
 
         <form
                 class="header-search"
+                id="headerSearchForm"
                 action="${pageContext.request.contextPath}/search"
                 method="get">
 
             <input
+                    id="headerSearchInput"
                     type="search"
                     name="keyword"
+                    value="${param.keyword}"
+                    autocomplete="off"
                     placeholder="Tìm đặc sản, quà tặng, thủ công...">
 
-            <button type="submit">
+            <button class="header-search-clear"
+                    id="headerSearchClear"
+                    type="button"
+                    aria-label="Xóa tìm kiếm"
+                    hidden>
+
+                <i class="fa-solid fa-circle-xmark"></i>
+
+            </button>
+
+            <button class="header-search-submit"
+                    type="submit">
 
                 <i class="fa-solid fa-magnifying-glass"></i>
 
             </button>
+
+            <div class="header-search-dropdown"
+                 id="headerSearchDropdown"
+                 hidden
+                 aria-hidden="true">
+
+                <div class="header-search-dropdown-head">
+                    <strong>Recent searches</strong>
+                    <button type="button"
+                            id="headerSearchClearAll">
+                        Clear all
+                    </button>
+                </div>
+
+                <div class="header-search-list"
+                     id="headerSearchList"></div>
+
+            </div>
 
         </form>
 
@@ -425,6 +458,17 @@
                         Trang chủ
 
                     </a>
+
+                    <c:if test="${not empty breadcrumbLabel}">
+
+                        <span>/</span>
+
+                        <span class="current">
+
+                                ${breadcrumbLabel}
+                        </span>
+
+                    </c:if>
 
 
                     <c:if test="${not empty breadcrumbCategory}">
