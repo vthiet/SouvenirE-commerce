@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.payment;
+package nlu.fit.web.souvenirecommerce.features.payment.util;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;

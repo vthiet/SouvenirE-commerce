@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.payment;
+package nlu.fit.web.souvenirecommerce.features.payment.controller;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -6,8 +6,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
+import nlu.fit.web.souvenirecommerce.features.cart.service.NewCartService;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
+import nlu.fit.web.souvenirecommerce.features.payment.service.PaymentProcessingService;
+import nlu.fit.web.souvenirecommerce.features.payment.util.VnPayUtil;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
@@ -15,7 +17,7 @@ import java.io.IOException;
 @WebServlet("/payment/vnpay-create")
 public class VnPayCreatePaymentServlet extends HttpServlet {
     private final PaymentProcessingService paymentService = new PaymentProcessingService();
-    private final CartService cartService = new CartService();
+    private final NewCartService cartService = new NewCartService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)

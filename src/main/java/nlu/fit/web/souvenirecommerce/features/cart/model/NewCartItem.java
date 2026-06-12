@@ -31,6 +31,9 @@ public class NewCartItem implements Serializable {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
+    @Column(name = "price", nullable = false)
+    private double price;
+
     public void increaseQuantity() {
         this.quantity++;
     }
@@ -56,9 +59,6 @@ public class NewCartItem implements Serializable {
     }
 
     public double getUnitPrice() {
-        if (product.getSalePrice() != null && product.getSalePrice() > 0) {
-            return product.getSalePrice();
-        }
-        return product.getOriginalPrice();
+        return price;
     }
 }

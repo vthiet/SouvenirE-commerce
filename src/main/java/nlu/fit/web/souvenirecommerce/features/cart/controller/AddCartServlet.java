@@ -7,93 +7,58 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.common.utils.GsonUtil;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPriceService;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartSummaryService;
-import nlu.fit.web.souvenirecommerce.legacy.dao.ProductDAO;
-import nlu.fit.web.souvenirecommerce.model.entity.Product;
-import nlu.fit.web.souvenirecommerce.model.entity.User;
+import nlu.fit.web.souvenirecommerce.features.cart.model.NewCart;
+import nlu.fit.web.souvenirecommerce.features.cart.service.NewCartService;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 
 @WebServlet(name = "AddCart", value = "/cart/add")
 public class AddCartServlet extends HttpServlet {
-    private final CartPersistenceService cartPersistenceService = new CartPersistenceService();
-    private final CartSummaryService cartSummaryService = new CartSummaryService();
-    private final CartPriceService cartPriceService = new CartPriceService();
+    private final NewCartService cartService = new NewCartService();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession(true);
+        boolean isAjax = "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
 
-        HttpSession session = request.getSession();
-        User user = (User) session.getAttribute("userInSession");
-
-        if (user == null) {
-            if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
-                response.setContentType("application/json");
-                response.setCharacterEncoding("UTF-8");
-                response.getWriter().print("""
-                        {
-                          "success": false,
-                          "requireLogin": true,
-                          "message": "Vui lòng đăng nhập"
-                        }
-                        """);
+        try {
+            Long productId = Long.parseLong(request.getParameter("productId"));
+            int quantity = Integer.parseInt(request.getParameter("quantity"));
+            if (!cartService.addItem(session, productId, quantity)) {
+                writeFailure(request, response, isAjax, "Sản phẩm không đủ tồn kho");
                 return;
             }
 
-            session.setAttribute("redirectAfterLogin", request.getHeader("Referer"));
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
+            NewCart cart = cartService.getCart(session);
+            if ("true".equals(request.getParameter("buyNow"))) {
+                response.sendRedirect(request.getContextPath() + "/checkout");
+            } else if (isAjax) {
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.getWriter().print(GsonUtil.getGson().toJson(
+                        cartService.buildSummary(cart, request.getContextPath())));
+            } else {
+                response.sendRedirect(request.getHeader("Referer"));
+            }
+        } catch (NumberFormatException e) {
+            writeFailure(request, response, isAjax, "Dữ liệu sản phẩm không hợp lệ");
         }
+    }
 
-        Long productId;
-        int quantity;
-
-        try {
-            productId = Long.parseLong(request.getParameter("productId"));
-            quantity = Integer.parseInt(request.getParameter("quantity"));
-        } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/home");
-            return;
-        }
-
-        Product product = new ProductDAO().getProductById(productId);
-        if (product == null || quantity <= 0 || quantity > product.getStockQuantity()) {
-            response.sendRedirect(request.getContextPath() + "/home");
-            return;
-        }
-
-        Cart cart = (Cart) session.getAttribute("cart");
-        if (cart == null) cart = new Cart();
-
-        cart.addItem(product, quantity, cartPriceService.getCurrentPrice(product));
-        session.setAttribute("cart", cart);
-        session.setAttribute("cartItemCount", cart.totalQuantity());
-        cartPersistenceService.saveCart(user, cart);
-
-        if ("true".equals(request.getParameter("buyNow"))) {
-            response.sendRedirect(request.getContextPath() + "/checkout");
-            return;
-        }
-
-        if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+    private void writeFailure(HttpServletRequest request, HttpServletResponse response,
+                              boolean isAjax, String message) throws IOException {
+        if (isAjax) {
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
-            PrintWriter out = response.getWriter();
-            out.print(GsonUtil.getGson().toJson(cartSummaryService.buildSummary(cart, request.getContextPath())));
-            return;
+            response.getWriter().print("{\"success\":false,\"message\":\"" + message + "\"}");
+        } else {
+            response.sendRedirect(request.getContextPath() + "/home");
         }
- 
-        response.sendRedirect(request.getHeader("Referer"));
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.sendRedirect(request.getContextPath() + "/home");
     }
 }

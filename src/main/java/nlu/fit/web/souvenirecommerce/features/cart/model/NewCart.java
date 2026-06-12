@@ -7,6 +7,7 @@ import nlu.fit.web.souvenirecommerce.model.entity.User;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Getter
 @Setter
@@ -41,11 +42,21 @@ public class NewCart implements Serializable {
     }
 
     public void clearItems() {
+        items.forEach(item -> item.setCart(null));
         items.clear();
     }
 
     public void mergeItems(List<NewCartItem> newItems) {
-        items.addAll(newItems);
+        newItems.forEach(this::addItem);
+    }
+
+    public Optional<NewCartItem> findItem(Long productId) {
+        if (productId == null) {
+            return Optional.empty();
+        }
+        return items.stream()
+                .filter(item -> item.getProduct() != null && productId.equals(item.getProduct().getId()))
+                .findFirst();
     }
 
     public int totalQuantity() {

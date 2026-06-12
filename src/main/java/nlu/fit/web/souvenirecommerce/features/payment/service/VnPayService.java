@@ -1,6 +1,7 @@
-package nlu.fit.web.souvenirecommerce.features.payment;
+package nlu.fit.web.souvenirecommerce.features.payment.service;
 
 import nlu.fit.web.souvenirecommerce.common.utils.ApplicationLoader;
+import nlu.fit.web.souvenirecommerce.features.payment.util.VnPayUtil;
 
 import java.net.URI;
 import java.time.LocalDateTime;

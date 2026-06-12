@@ -1,8 +1,9 @@
-package nlu.fit.web.souvenirecommerce.features.payment;
+package nlu.fit.web.souvenirecommerce.features.payment.service;
 
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderStatusRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository;
+import nlu.fit.web.souvenirecommerce.features.payment.model.PaymentCallbackResult;
 import nlu.fit.web.souvenirecommerce.model.entity.OrderStatus;
 import nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction;
 import nlu.fit.web.souvenirecommerce.model.enums.OrderStatusCode;

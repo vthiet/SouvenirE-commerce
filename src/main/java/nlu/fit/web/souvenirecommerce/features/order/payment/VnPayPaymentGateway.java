@@ -3,7 +3,7 @@ package nlu.fit.web.souvenirecommerce.features.order.payment;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentContext;
 import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentPreparation;
-import nlu.fit.web.souvenirecommerce.features.payment.VnPayService;
+import nlu.fit.web.souvenirecommerce.features.payment.service.VnPayService;
 import nlu.fit.web.souvenirecommerce.model.entity.Order;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentProvider;

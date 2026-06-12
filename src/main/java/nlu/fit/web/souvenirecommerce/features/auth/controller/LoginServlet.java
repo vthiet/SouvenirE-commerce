@@ -9,8 +9,8 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import nlu.fit.web.souvenirecommerce.features.auth.Constants;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
+import nlu.fit.web.souvenirecommerce.features.cart.model.NewCart;
+import nlu.fit.web.souvenirecommerce.features.cart.service.NewCartService;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -20,12 +20,12 @@ import java.nio.charset.StandardCharsets;
 @WebServlet(name = "LoginServlet", value = "/login")
 public class LoginServlet extends HttpServlet {
     private AuthService authService;
-    private CartPersistenceService cartPersistenceService;
+    private NewCartService cartService;
 
     @Override
     public void init() throws ServletException {
         authService = new AuthService();
-        cartPersistenceService = new CartPersistenceService();
+        cartService = new NewCartService();
     }
 
     @Override
@@ -72,10 +72,12 @@ public class LoginServlet extends HttpServlet {
 
             HttpSession session = req.getSession(false);
             Object redirectAfterLogin = session == null ? null : session.getAttribute("redirectAfterLogin");
+            NewCart guestCart = session == null ? null : cartService.getCart(session);
             if (session != null) {
                 session.invalidate();
             }
             session = req.getSession(true);
+            cartService.mergeGuestCart(user, guestCart);
             setAuthenticatedUser(session, user);
             log.info("Đăng nhập thành công: userId={}, loginDetail={}", user.getId(), loginDetail);
 
@@ -96,15 +98,14 @@ public class LoginServlet extends HttpServlet {
     }
 
     private void setAuthenticatedUser(HttpSession session, User user) {
-        Cart cart = cartPersistenceService.loadCart(user);
+        NewCart cart = cartService.refreshCart(user);
 
         session.setAttribute("currentUser", user);
         session.setAttribute("userInSession", user);
         session.setAttribute("user", user);
         session.setAttribute("authUser", user);
         session.setAttribute("userDto", user);
-        session.setAttribute("cart", cart);
-        session.setAttribute("cartItemCount", cart.totalQuantity());
+        cartService.storeInSession(session, cart);
     }
 
     private String buildGoogleAuthUrl() {

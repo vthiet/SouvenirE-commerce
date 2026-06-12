@@ -2,6 +2,7 @@ package nlu.fit.web.souvenirecommerce.features.cart.repository;
 
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseRepository;
 import nlu.fit.web.souvenirecommerce.features.cart.model.NewCart;
+import nlu.fit.web.souvenirecommerce.model.entity.Product;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.util.Optional;
@@ -47,5 +48,18 @@ public class NewCartRepository extends AbsBaseRepository<Long, NewCart> {
                 .build();
         save(cart);
         return cart;
+    }
+
+    public Optional<Product> findAvailableProductById(Long productId) {
+        if (productId == null) {
+            return Optional.empty();
+        }
+        return getSession().createQuery("""
+                select p
+                from Product p
+                where p.id = :productId
+                """, Product.class)
+                .setParameter("productId", productId)
+                .uniqueResultOptional();
     }
 }

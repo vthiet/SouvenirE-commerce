@@ -6,16 +6,15 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPriceService;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
+import nlu.fit.web.souvenirecommerce.features.cart.model.NewCart;
+import nlu.fit.web.souvenirecommerce.features.cart.model.NewCartItem;
+import nlu.fit.web.souvenirecommerce.features.cart.service.NewCartService;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutRequest;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutResult;
 import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentContext;
 import nlu.fit.web.souvenirecommerce.features.order.service.CheckoutService;
-import nlu.fit.web.souvenirecommerce.features.payment.VnPayUtil;
+import nlu.fit.web.souvenirecommerce.features.payment.util.VnPayUtil;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
 
@@ -26,8 +25,7 @@ import java.util.Set;
 @WebServlet("/checkout")
 public class CheckoutController extends HttpServlet {
     private final CheckoutService checkoutService = new CheckoutService();
-    private final CartPersistenceService cartPersistenceService = new CartPersistenceService();
-    private final CartPriceService cartPriceService = new CartPriceService();
+    private final NewCartService cartService = new NewCartService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -42,8 +40,8 @@ public class CheckoutController extends HttpServlet {
             return;
         }
 
-        Cart cart = getCart(session);
-        Cart checkoutCart = buildCheckoutCart(cart, parseSelectedProductIds(request));
+        NewCart cart = cartService.refreshCart(user);
+        NewCart checkoutCart = buildCheckoutCart(cart, parseSelectedProductIds(request));
         if (checkoutCart.totalQuantity() == 0) {
             response.sendRedirect(request.getContextPath() + "/cart");
             return;
@@ -69,13 +67,13 @@ public class CheckoutController extends HttpServlet {
             return;
         }
 
-        Cart cart = getCart(session);
+        NewCart cart = cartService.getCart(user);
         Set<Long> selectedProductIds = parseSelectedProductIds(request);
         if (selectedProductIds.isEmpty()) {
             selectedProductIds = getRememberedSelectedProductIds(session);
         }
 
-        Cart checkoutCart = buildCheckoutCart(cart, selectedProductIds);
+        NewCart checkoutCart = buildCheckoutCart(cart, selectedProductIds);
         if (checkoutCart.totalQuantity() == 0) {
             response.sendRedirect(request.getContextPath() + "/cart");
             return;
@@ -89,9 +87,7 @@ public class CheckoutController extends HttpServlet {
                     buildCheckoutRequest(request),
                     buildPaymentContext(request));
             removeSelectedItems(cart, checkoutCart);
-            session.setAttribute("cart", cart);
-            session.setAttribute("cartItemCount", cart.totalQuantity());
-            cartPersistenceService.saveCart(user, cart);
+            cartService.storeInSession(session, cart);
             session.removeAttribute("checkoutSelectedProductIds");
             session.setAttribute("lastOrderCode", result.getOrderCode());
             session.setAttribute("lastOrderId", result.getOrder().getId());
@@ -119,7 +115,7 @@ public class CheckoutController extends HttpServlet {
         request.setAttribute("contentPage", "/checkout.jsp");
     }
 
-    private void prepareCheckoutPage(HttpServletRequest request, User user, Cart checkoutCart) {
+    private void prepareCheckoutPage(HttpServletRequest request, User user, NewCart checkoutCart) {
         request.setAttribute("currentUser", user);
         request.setAttribute("authUser", user);
         request.setAttribute("cart", checkoutCart);
@@ -190,24 +186,21 @@ public class CheckoutController extends HttpServlet {
         }
     }
 
-    private Cart getCart(HttpSession session) {
-        if (session == null) {
-            return null;
-        }
-        Object cart = session.getAttribute("cart");
-        return cart instanceof Cart ? (Cart) cart : null;
-    }
-
-    private Cart buildCheckoutCart(Cart sourceCart, Set<Long> selectedProductIds) {
-        Cart checkoutCart = new Cart();
-        if (sourceCart == null || selectedProductIds == null || selectedProductIds.isEmpty()) {
+    private NewCart buildCheckoutCart(NewCart sourceCart, Set<Long> selectedProductIds) {
+        NewCart checkoutCart = new NewCart();
+        if (sourceCart == null) {
             return checkoutCart;
         }
 
-        for (Long productId : selectedProductIds) {
-            CartItem item = sourceCart.getItem(productId);
-            if (item != null && item.getProduct() != null && item.getQuantity() > 0) {
-                checkoutCart.addItem(item.getProduct(), item.getQuantity(), item.getPrice());
+        for (NewCartItem item : sourceCart.getItems()) {
+            if (item.getProduct() != null && item.getQuantity() > 0
+                    && (selectedProductIds == null || selectedProductIds.isEmpty()
+                    || selectedProductIds.contains(item.getProduct().getId()))) {
+                checkoutCart.addItem(NewCartItem.builder()
+                        .product(item.getProduct())
+                        .quantity(item.getQuantity())
+                        .price(item.getPrice())
+                        .build());
             }
         }
 
@@ -257,19 +250,19 @@ public class CheckoutController extends HttpServlet {
         return productIds;
     }
 
-    private void rememberSelectedProductIds(HttpSession session, Cart checkoutCart) {
+    private void rememberSelectedProductIds(HttpSession session, NewCart checkoutCart) {
         if (session != null) {
             session.setAttribute("checkoutSelectedProductIds", productIdsOf(checkoutCart));
         }
     }
 
-    private Set<Long> productIdsOf(Cart cart) {
+    private Set<Long> productIdsOf(NewCart cart) {
         Set<Long> productIds = new LinkedHashSet<>();
         if (cart == null) {
             return productIds;
         }
 
-        for (CartItem item : cart.getItems()) {
+        for (NewCartItem item : cart.getItems()) {
             if (item.getProduct() != null && item.getProduct().getId() != null) {
                 productIds.add(item.getProduct().getId());
             }
@@ -277,9 +270,9 @@ public class CheckoutController extends HttpServlet {
         return productIds;
     }
 
-    private void removeSelectedItems(Cart cart, Cart checkoutCart) {
+    private void removeSelectedItems(NewCart cart, NewCart checkoutCart) {
         for (Long productId : productIdsOf(checkoutCart)) {
-            cart.removeItem(productId);
+            cart.findItem(productId).ifPresent(cart::removeItem);
         }
     }
 
@@ -303,9 +296,9 @@ public class CheckoutController extends HttpServlet {
         return user instanceof User ? (User) user : null;
     }
 
-    private void refreshCartPrices(Cart cart) {
-        for (CartItem item : cart.getItems()) {
-            item.setPrice(cartPriceService.getCurrentPrice(item.getProduct()));
+    private void refreshCartPrices(NewCart cart) {
+        for (NewCartItem item : cart.getItems()) {
+            item.setPrice(cartService.getCurrentPrice(item.getProduct()));
         }
     }
 }

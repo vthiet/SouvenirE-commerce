@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.payment;
+package nlu.fit.web.souvenirecommerce.features.payment.model;
 
 import lombok.Builder;
 import lombok.Getter;
