@@ -179,7 +179,6 @@
         </div>
         </main>
 
-        <jsp:include page="common/admin-footer.jsp"/>
     </div>
 </div>
 
