@@ -1,0 +1,212 @@
+.error-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-left: 40px;
+    padding-right: 40px;
+    width: 100%;
+}
+
+.error-page .home-hero {
+    margin-bottom: 0;
+}
+
+.error-page__hero .slideshow-container {
+    position: relative;
+    min-height: 440px;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+}
+
+.error-page__stage {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: clamp(24px, 4vw, 40px);
+}
+
+.error-page__content {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 920px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: var(--text-default);
+}
+
+.error-page__eyebrow {
+    margin-bottom: 10px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--accent-primary);
+}
+
+.error-page__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.error-page__status-code {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: var(--surface-default);
+    color: var(--text-default);
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
+.error-page__status-note {
+    color: var(--text-default);
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.error-page__content h1 {
+    margin: 0;
+    max-width: 100%;
+    font-size: clamp(2.5rem, 4.2vw, 4.8rem);
+    line-height: 0.96;
+    letter-spacing: -0.04em;
+}
+
+.error-page__lead {
+    margin: 18px 0 12px;
+    max-width: 38rem;
+    font-size: 1.08rem;
+    line-height: 1.7;
+    color: var(--text-default);
+}
+
+.error-page__body {
+    margin: 0;
+    max-width: 38rem;
+    line-height: 1.7;
+    color: var(--text-default);
+}
+
+.error-page__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 28px;
+}
+
+.error-page__button {
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default);
+    background: var(--surface-default);
+    cursor: pointer;
+}
+
+.error-page__button--text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 22px;
+    border-radius: 999px;
+    background: var(--surface-default);
+    color: var(--text-default);
+    font-weight: 700;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.error-page__button--text:hover {
+    transform: translateY(-1px);
+    background: var(--surface-muted);
+}
+
+.error-page__meta {
+    display: grid;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.error-page__meta-item {
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: var(--surface-default);
+    border: 1px solid var(--border-default);
+}
+
+.error-page__meta-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-default);
+}
+
+.error-page__meta-value {
+    word-break: break-word;
+    color: var(--text-default);
+}
+
+.error-page__help {
+    margin-top: 24px;
+}
+
+.error-page__cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.error-page__mini-card {
+    padding: 24px 22px;
+    border-radius: 24px;
+    background: var(--surface-default);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-soft);
+}
+
+.error-page__mini-card strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.error-page__mini-card span {
+    color: var(--text-muted);
+    line-height: 1.65;
+}
+
+@media (max-width: 992px) {
+    .error-page__hero .slideshow-container {
+        min-height: 380px;
+    }
+
+    .error-page__cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .error-page__hero .slideshow-container {
+        min-height: 360px;
+        border-radius: var(--radius-md);
+    }
+
+    .error-page__actions {
+        flex-direction: column;
+    }
+
+    .error-page__button,
+    .error-page__button--text {
+        width: 100%;
+    }
+}
