@@ -63,7 +63,15 @@
                                 </p>
                                 <div class="action-buttons banner-actions">
                                     <c:if test="${canUpdateBanner}">
-                                        <button class="btn-icon btn-edit" onclick="openEditModal(${banner.id}, '${banner.title}', ${banner.position}, ${banner.status}, '${pageContext.request.contextPath}/${banner.imageUrl}')" title="Sửa">
+                                        <button
+                                                type="button"
+                                                class="btn-icon btn-edit"
+                                                title="Sửa"
+                                                data-banner-id="${banner.id}"
+                                                data-banner-title="<c:out value='${banner.title}' />"
+                                                data-banner-position="${banner.position}"
+                                                data-banner-status="${banner.status}"
+                                                data-banner-image="<c:out value='${pageContext.request.contextPath}/${banner.imageUrl}' />">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <form action="${pageContext.request.contextPath}/admin/banner" method="post" class="banner-form-inline">
@@ -117,42 +125,88 @@
 </div>
 
 <!-- Modal Add/Edit -->
-<div id="bannerModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="modalTitle">Thêm banner mới</h3>
-            <button class="close-btn" onclick="closeModal()">&times;</button>
+<div id="bannerModal" class="modal banner-modal">
+    <div class="modal-content admin-modal-content">
+        <div class="modal-header admin-modal-header">
+            <div class="admin-modal-heading">
+                <span id="modalModeBadge" class="admin-modal-badge">Thêm mới</span>
+                <div>
+                    <h3 id="modalTitle">Thêm banner mới</h3>
+                    <p id="modalSubtitle" class="admin-modal-subtitle">Tạo banner nổi bật cho trang chủ hoặc khu vực quảng bá.</p>
+                </div>
+            </div>
+            <button type="button" class="close-btn" onclick="closeModal()" aria-label="Đóng">&times;</button>
         </div>
-        <div class="modal-body">
-            <form action="${pageContext.request.contextPath}/admin/banner" method="post" enctype="multipart/form-data">
+        <div class="modal-body admin-modal-body">
+            <form action="${pageContext.request.contextPath}/admin/banner" method="post" enctype="multipart/form-data" class="admin-modal-form">
                 <input type="hidden" name="action" id="formAction" value="add">
                 <input type="hidden" name="id" id="bannerId">
 
-                <div class="form-group">
-                    <label>Tiêu đề *</label>
-                    <input type="text" name="title" id="bannerTitle" class="form-control" required>
+                <div class="admin-modal-layout">
+                    <section class="admin-modal-panel">
+                        <div class="section-title">
+                            <i class="fas fa-images"></i>
+                            Thông tin banner
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tiêu đề *</label>
+                            <input type="text" name="title" id="bannerTitle" class="form-control" required placeholder="Nhập tiêu đề banner">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Hình ảnh</label>
+                            <input type="file" name="imageFile" id="bannerFile" class="form-control" accept="image/*">
+                            <small id="fileHint" class="banner-file-hint">* Chỉ chọn ảnh mới nếu bạn muốn thay đổi.</small>
+                        </div>
+
+                        <div class="admin-grid-two">
+                            <div class="form-group">
+                                <label>Thứ tự hiển thị</label>
+                                <input type="number" name="position" id="bannerPosition" class="form-control" value="1" min="1">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Trạng thái</label>
+                                <select name="status" id="bannerStatus" class="form-control">
+                                    <option value="true">Hiển thị ngay</option>
+                                    <option value="false">Tạm ẩn</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="admin-modal-panel admin-modal-panel-accent">
+                        <div class="section-title">
+                            <i class="fas fa-photo-film"></i>
+                            Xem trước banner
+                        </div>
+
+                        <div class="admin-preview-card">
+                            <div class="admin-preview-image-wrap">
+                                <img id="bannerPreviewImage" src="https://placehold.co/640x420?text=Banner" alt="Xem trước banner" class="admin-preview-image">
+                            </div>
+                            <div class="admin-preview-copy">
+                                <strong id="bannerPreviewTitle">Banner mới</strong>
+                                <span id="bannerPreviewMeta">Thứ tự hiển thị và trạng thái sẽ được hiển thị ở đây.</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Trạng thái xem trước</label>
+                            <input type="text" id="bannerPreviewStatus" class="form-control product-readonly" value="Đang hiển thị" readonly>
+                            <small class="product-help">Bạn có thể đổi trạng thái ngay trong modal này.</small>
+                        </div>
+                    </section>
                 </div>
 
-                <div class="form-group">
-                    <label>Hình ảnh</label>
-                    <input type="file" name="imageFile" id="bannerFile" class="form-control" accept="image/*">
-                    <small id="fileHint" class="banner-file-hint">* Chỉ chọn ảnh mới nếu bạn muốn thay đổi.</small>
+                <div class="admin-modal-footer">
+                    <p class="admin-modal-note">
+                        <i class="fas fa-circle-info"></i>
+                        Nếu không tải ảnh mới khi cập nhật, banner hiện tại sẽ được giữ nguyên.
+                    </p>
+                    <button type="submit" class="btn-submit">Lưu banner</button>
                 </div>
-
-                <div class="form-group">
-                    <label>Thứ tự hiển thị</label>
-                    <input type="number" name="position" id="bannerPosition" class="form-control" value="1" min="1">
-                </div>
-
-                <div class="form-group">
-                    <label>Trạng thái</label>
-                    <select name="status" id="bannerStatus" class="form-control">
-                        <option value="true">Hiển thị ngay</option>
-                        <option value="false">Tạm ẩn</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn-submit">Lưu banner</button>
             </form>
         </div>
     </div>
@@ -163,6 +217,8 @@
 
     function openAddModal() {
         document.getElementById('modalTitle').innerText = 'Thêm banner mới';
+        document.getElementById('modalModeBadge').innerText = 'Thêm mới';
+        document.getElementById('modalSubtitle').innerText = 'Tạo banner nổi bật cho trang chủ hoặc khu vực quảng bá.';
         document.getElementById('formAction').value = 'add';
         document.getElementById('bannerId').value = '';
         document.getElementById('bannerTitle').value = '';
@@ -172,10 +228,13 @@
         document.getElementById('bannerFile').required = true;
         document.getElementById('fileHint').classList.add('is-hidden');
         modal.classList.add('show');
+        refreshBannerPreview();
     }
 
     function openEditModal(id, title, position, status, imageUrl) {
         document.getElementById('modalTitle').innerText = 'Cập nhật banner';
+        document.getElementById('modalModeBadge').innerText = 'Cập nhật';
+        document.getElementById('modalSubtitle').innerText = 'Chỉnh sửa tiêu đề, thứ tự hiển thị và ảnh banner.';
         document.getElementById('formAction').value = 'update';
         document.getElementById('bannerId').value = id;
         document.getElementById('bannerTitle').value = title;
@@ -185,15 +244,67 @@
         document.getElementById('bannerFile').required = false;
         document.getElementById('fileHint').classList.remove('is-hidden');
         modal.classList.add('show');
+        refreshBannerPreview(imageUrl);
     }
 
     function closeModal() {
         modal.classList.remove('show');
     }
 
+    function refreshBannerPreview(fallbackImage) {
+        const title = document.getElementById('bannerTitle').value.trim();
+        const position = document.getElementById('bannerPosition').value.trim();
+        const status = document.getElementById('bannerStatus').value === 'true' ? 'Đang hiển thị' : 'Đã ẩn';
+        const fileInput = document.getElementById('bannerFile');
+        const previewTitle = document.getElementById('bannerPreviewTitle');
+        const previewMeta = document.getElementById('bannerPreviewMeta');
+        const previewStatus = document.getElementById('bannerPreviewStatus');
+        const previewImage = document.getElementById('bannerPreviewImage');
+
+        previewTitle.innerText = title || 'Banner mới';
+        previewMeta.innerText = 'Thứ tự: #' + (position || '1') + ' • Trạng thái: ' + status;
+        previewStatus.value = status;
+
+        if (fileInput.files && fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                previewImage.src = event.target.result;
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+            return;
+        }
+
+        previewImage.src = fallbackImage || 'https://placehold.co/640x420?text=Banner';
+    }
+
     window.onclick = function(event) {
         if (event.target == modal) closeModal();
     }
+
+    document.getElementById('bannerTitle').addEventListener('input', function () {
+        refreshBannerPreview(document.getElementById('bannerPreviewImage').src);
+    });
+    document.getElementById('bannerPosition').addEventListener('input', function () {
+        refreshBannerPreview(document.getElementById('bannerPreviewImage').src);
+    });
+    document.getElementById('bannerStatus').addEventListener('change', function () {
+        refreshBannerPreview(document.getElementById('bannerPreviewImage').src);
+    });
+    document.getElementById('bannerFile').addEventListener('change', function () {
+        refreshBannerPreview(document.getElementById('bannerPreviewImage').src);
+    });
+
+    document.querySelectorAll('.btn-edit').forEach(function (button) {
+        button.addEventListener('click', function () {
+            openEditModal(
+                button.dataset.bannerId,
+                button.dataset.bannerTitle,
+                button.dataset.bannerPosition,
+                button.dataset.bannerStatus,
+                button.dataset.bannerImage
+            );
+        });
+    });
 </script>
 <script src="${pageContext.request.contextPath}/assets/js/bootstrap.bundle.min.js"></script>
 <script src="${pageContext.request.contextPath}/assets/js/admin-main.js"></script>
