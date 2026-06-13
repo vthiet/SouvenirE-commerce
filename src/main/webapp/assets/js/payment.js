@@ -45,9 +45,17 @@
             if (value) url.searchParams.set(key, value);
         });
         const response = await fetch(url);
-        if (!response.ok) throw new Error('GHN location failed');
         const json = await response.json();
+        if (!response.ok) {
+            throw new Error(json.message || json.error || 'GHN location failed');
+        }
         return json.data || [];
+    }
+
+    function showLocationError(prefix, error) {
+        if (!wardStatus) return;
+        wardStatus.textContent = error?.message ? `${prefix}: ${error.message}` : prefix;
+        wardStatus.classList.add('is-error');
     }
 
     function selectedText(select) {
@@ -130,10 +138,7 @@
             const provinces = await fetchLocation('province');
             setOptions(provinceSelect, 'Chọn Tỉnh/Thành phố', provinces, 'ProvinceID', 'ProvinceName');
         } catch (error) {
-            if (wardStatus) {
-                wardStatus.textContent = 'Không thể tải danh sách tỉnh/thành phố.';
-                wardStatus.classList.add('is-error');
-            }
+            showLocationError('Không thể tải danh sách tỉnh/thành phố', error);
         }
     }
 
@@ -152,10 +157,7 @@
             setOptions(districtSelect, 'Chọn Quận/Huyện', districts, 'DistrictID', 'DistrictName');
             setSelectDisabled(districtSelect, false);
         } catch (error) {
-            if (wardStatus) {
-                wardStatus.textContent = 'Không thể tải danh sách quận/huyện.';
-                wardStatus.classList.add('is-error');
-            }
+            showLocationError('Không thể tải danh sách quận/huyện', error);
         }
     }
 
@@ -176,10 +178,7 @@
                 wardStatus.classList.remove('is-error');
             }
         } catch (error) {
-            if (wardStatus) {
-                wardStatus.textContent = 'Không thể tải danh sách phường/xã.';
-                wardStatus.classList.add('is-error');
-            }
+            showLocationError('Không thể tải danh sách phường/xã', error);
         }
     }
 

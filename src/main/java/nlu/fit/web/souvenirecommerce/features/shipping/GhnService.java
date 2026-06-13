@@ -59,6 +59,7 @@ public class GhnService {
         if (simulation) {
             return calculateSimulationFee(toDistrictId);
         }
+        requireLiveShop();
         if (toDistrictId == null || toWardCode == null || toWardCode.isBlank()) {
             throw new IOException("Địa chỉ nhận hàng chưa có mã GHN.");
         }
@@ -93,6 +94,7 @@ public class GhnService {
                     LocalDateTime.now()
             );
         }
+        requireLiveShop();
 
         Address address = order.getAddress();
         if (address == null || address.getGhnDistrictId() == null || address.getGhnWardCode() == null
@@ -161,6 +163,7 @@ public class GhnService {
             LocalDateTime finishDate = "delivered".equals(nextStatus) ? LocalDateTime.now() : null;
             return new GhnOrderResult(orderCode, nextStatus, LocalDateTime.now().plusDays(3), finishDate, LocalDateTime.now());
         }
+        requireLiveShop();
 
         JsonObject body = new JsonObject();
         body.addProperty("order_code", orderCode);
@@ -202,6 +205,15 @@ public class GhnService {
         return services.get(0).getAsJsonObject().get("service_id").getAsInt();
     }
 
+    private void requireLiveShop() throws IOException {
+        if (token.isBlank()) {
+            throw new IOException("Thiếu GHN token trong cấu hình.");
+        }
+        if (shopId.isBlank()) {
+            throw new IOException("Thiếu GHN shop_id trong cấu hình.");
+        }
+    }
+
     private JsonObject post(String path, JsonObject body) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path))
@@ -223,6 +235,7 @@ public class GhnService {
                 .uri(URI.create(url))
                 .header("Content-Type", "application/json")
                 .header("Token", token)
+                .header("ShopId", shopId)
                 .GET()
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());

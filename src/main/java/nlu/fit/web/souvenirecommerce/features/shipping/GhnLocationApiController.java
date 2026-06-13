@@ -49,7 +49,8 @@ public class GhnLocationApiController extends HttpServlet {
             response.getWriter().write("{\"error\":\"GHN_INTERRUPTED\"}");
         } catch (IOException e) {
             response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
-            response.getWriter().write("{\"error\":\"GHN_REQUEST_FAILED\"}");
+            response.getWriter().write("{\"error\":\"GHN_REQUEST_FAILED\",\"message\":\""
+                    + escapeJson(e.getMessage()) + "\"}");
         }
     }
 
@@ -67,5 +68,16 @@ public class GhnLocationApiController extends HttpServlet {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private String escapeJson(String value) {
+        if (value == null || value.isBlank()) {
+            return "Không thể kết nối GHN.";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "")
+                .replace("\n", " ");
     }
 }
