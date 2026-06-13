@@ -9,9 +9,11 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
+import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
 import nlu.fit.web.souvenirecommerce.features.product.service.ICategoryService;
 import nlu.fit.web.souvenirecommerce.features.product.service.impl.CategoryServiceImpl;
 import nlu.fit.web.souvenirecommerce.legacy.dao.SettingsDAO;
+import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -20,11 +22,13 @@ public class HeaderFilter implements Filter {
 
     private ICategoryService categoryService;
     private SettingsDAO settingsDAO;
+    private CartPersistenceService cartPersistenceService;
 
     @Override
     public void init(FilterConfig filterConfig) {
         this.categoryService = new CategoryServiceImpl();
         this.settingsDAO = new SettingsDAO();
+        this.cartPersistenceService = new CartPersistenceService();
     }
 
     @Override
@@ -102,7 +106,29 @@ public class HeaderFilter implements Filter {
             return;
         }
 
+        User user = getCurrentUser(session);
+
+        if (user != null) {
+            cart = cartPersistenceService.loadCart(user);
+            session.setAttribute("cart", cart);
+            session.setAttribute("cartItemCount", cart.totalQuantity());
+            request.setAttribute("cartItemCount", cart.totalQuantity());
+            return;
+        }
+
         request.setAttribute("cartItemCount", 0);
+    }
+
+    private User getCurrentUser(HttpSession session) {
+        Object user = session.getAttribute("userInSession");
+
+        if (user instanceof User currentUser) {
+            return currentUser;
+        }
+
+        user = session.getAttribute("authUser");
+
+        return user instanceof User currentUser ? currentUser : null;
     }
 
     private void setSiteSettings(ServletRequest request) {

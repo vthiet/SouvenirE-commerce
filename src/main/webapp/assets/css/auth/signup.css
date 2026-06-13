@@ -26,7 +26,7 @@ body.auth-page {
     min-height: 100vh;
     background:
         linear-gradient(rgba(244, 246, 241, 0.94), rgba(244, 246, 241, 0.94)),
-        url("../../images/Banner/lang-nghe-thu-cong.png") center/cover fixed;
+        url("../../images/home_banner/lang-nghe-thu-cong.png") center/cover fixed;
     color: var(--auth-text);
     font-family: Arial, "Helvetica Neue", sans-serif;
 }

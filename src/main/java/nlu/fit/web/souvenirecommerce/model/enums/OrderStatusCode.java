@@ -1,8 +1,12 @@
-package nlu.fit.web.souvenirecommerce.common.enums;
+package nlu.fit.web.souvenirecommerce.model.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum OrderStatusCode {
     PENDING("Đang xử lý"),
-    AWAITING_PAYMENT("Chờ thanh toán"),
+    PENDING_PAYMENT("Chờ thanh toán"),
+    PAYMENT_FAILED("Thanh toán thất bại"),
     PAID("Đã thanh toán"),
     CANCELLED("Đã hủy"),
     COMPLETED("Hoàn thành");
@@ -11,9 +15,5 @@ public enum OrderStatusCode {
 
     OrderStatusCode(String description) {
         this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
     }
 }

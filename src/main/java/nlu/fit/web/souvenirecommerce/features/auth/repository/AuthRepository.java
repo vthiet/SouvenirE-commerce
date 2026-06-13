@@ -2,8 +2,8 @@ package nlu.fit.web.souvenirecommerce.features.auth.repository;
 
 import jakarta.persistence.LockModeType;
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseRepository;
-import nlu.fit.web.souvenirecommerce.common.enums.Gender;
-import nlu.fit.web.souvenirecommerce.common.enums.VerificationCodePurpose;
+import nlu.fit.web.souvenirecommerce.model.enums.Gender;
+import nlu.fit.web.souvenirecommerce.model.enums.VerificationCodePurpose;
 import nlu.fit.web.souvenirecommerce.common.utils.PasswordUtil;
 import nlu.fit.web.souvenirecommerce.model.entity.OAuthAccount;
 import nlu.fit.web.souvenirecommerce.model.entity.Role;

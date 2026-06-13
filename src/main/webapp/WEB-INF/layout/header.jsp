@@ -1,6 +1,96 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
+<c:if test="${headerMode == 'CHECKOUT_FLOW'}">
+    <header class="checkout-flow-header">
+        <div class="checkout-flow-shell">
+            <a class="checkout-flow-logo"
+               href="${pageContext.request.contextPath}/home"
+               aria-label="Về trang chủ">
+                <img src="${pageContext.request.contextPath}/assets/images/logo.png" alt="INOLA">
+            </a>
+
+            <nav class="checkout-flow-steps" aria-label="Tiến trình đặt hàng">
+                <span class="checkout-flow-step ${checkoutStep == 'CART' ? 'active' : ''}">Giỏ hàng</span>
+                <i class="fa-solid fa-chevron-right"></i>
+                <span class="checkout-flow-step ${checkoutStep == 'CHECKOUT' ? 'active' : ''}">Thanh toán</span>
+                <i class="fa-solid fa-chevron-right"></i>
+                <span class="checkout-flow-step ${checkoutStep == 'DONE' ? 'active' : ''}">Hoàn thành</span>
+            </nav>
+
+            <div class="checkout-flow-user header-account">
+
+                <c:choose>
+
+                    <c:when test="${not empty authUser}">
+
+                        <div class="user-box"
+                             id="userToggle">
+
+                            <i class="fa-solid fa-circle-user"></i>
+
+                <span class="user-name">
+                    Xin chào, ${authUser.fullName}
+                </span>
+
+                            <i class="fa fa-caret-down"></i>
+
+                        </div>
+
+                        <div class="user-dropdown"
+                             id="userDropdown">
+
+                            <a href="${pageContext.request.contextPath}/user/profile">
+
+                                <i class="fa fa-user"></i>
+
+                                Tài khoản
+
+                            </a>
+
+                            <a href="${pageContext.request.contextPath}/user/orders">
+
+                                <i class="fa fa-receipt"></i>
+
+                                Đơn hàng
+
+                            </a>
+
+                            <a href="${pageContext.request.contextPath}/logout">
+
+                                <i class="fa fa-sign-out-alt"></i>
+
+                                Đăng xuất
+
+                            </a>
+
+                        </div>
+
+                    </c:when>
+
+                    <c:otherwise>
+
+                        <a href="${pageContext.request.contextPath}/login">
+                            Đăng nhập
+                        </a>
+
+                        <span>|</span>
+
+                        <a href="${pageContext.request.contextPath}/signup">
+                            Đăng ký
+                        </a>
+
+                    </c:otherwise>
+
+                </c:choose>
+
+            </div>
+        </div>
+    </header>
+</c:if>
+
+<c:if test="${headerMode != 'CHECKOUT_FLOW'}">
 <header class="site-header">
 
     <div class="header-top">
@@ -159,19 +249,52 @@
 
         <form
                 class="header-search"
+                id="headerSearchForm"
                 action="${pageContext.request.contextPath}/search"
                 method="get">
 
             <input
+                    id="headerSearchInput"
                     type="search"
                     name="keyword"
+                    value="${param.keyword}"
+                    autocomplete="off"
                     placeholder="Tìm đặc sản, quà tặng, thủ công...">
 
-            <button type="submit">
+            <button class="header-search-clear"
+                    id="headerSearchClear"
+                    type="button"
+                    aria-label="Xóa tìm kiếm"
+                    hidden>
+
+                <i class="fa-solid fa-circle-xmark"></i>
+
+            </button>
+
+            <button class="header-search-submit"
+                    type="submit">
 
                 <i class="fa-solid fa-magnifying-glass"></i>
 
             </button>
+
+            <div class="header-search-dropdown"
+                 id="headerSearchDropdown"
+                 hidden
+                 aria-hidden="true">
+
+                <div class="header-search-dropdown-head">
+                    <strong>Recent searches</strong>
+                    <button type="button"
+                            id="headerSearchClearAll">
+                        Clear all
+                    </button>
+                </div>
+
+                <div class="header-search-list"
+                     id="headerSearchList"></div>
+
+            </div>
 
         </form>
 
@@ -201,18 +324,97 @@
             </a>
 
 
-            <a class="header-cart"
-               href="${pageContext.request.contextPath}/cart">
+            <div class="header-cart-wrap">
+                <button class="header-cart"
+                        type="button"
+                        data-cart-toggle="true"
+                        aria-expanded="false"
+                        aria-label="Mở giỏ hàng">
 
-                <i class="fa-solid fa-cart-shopping"></i>
+                    <i class="fa-solid fa-cart-shopping"></i>
 
-                <span id="header-cart-count">
+                    <span id="header-cart-count">
 
-                    ${cartItemCount}
+                        ${cartItemCount}
 
-                </span>
+                    </span>
 
-            </a>
+                </button>
+
+                <c:if test="${empty authUser}">
+                    <div class="cart-login-popover"
+                         id="cartLoginPopover"
+                         hidden
+                         aria-hidden="true">
+
+                        <div class="cart-login-message">
+                            <p>Vui lòng đăng nhập để truy cập giỏ hàng</p>
+                        </div>
+
+                    </div>
+                </c:if>
+
+                <c:if test="${not empty authUser}">
+                    <div class="cart-login-popover"
+                         id="cartLoginPopover"
+                         hidden
+                         aria-hidden="true">
+
+                        <div class="cart-preview-content"
+                             id="cartPreviewContent">
+
+                            <c:choose>
+                                <c:when test="${empty sessionScope.cart or sessionScope.cart.totalQuantity() == 0}">
+                                    <div class="cart-preview-empty">
+                                        <div class="cart-preview-empty-art">
+                                            <i class="fa-solid fa-cart-shopping"></i>
+                                            <i class="fa-solid fa-star"></i>
+                                        </div>
+
+                                        <p>Giỏ hàng trống</p>
+                                    </div>
+                                </c:when>
+
+                                <c:otherwise>
+                                    <h3>Sản phẩm mới thêm</h3>
+
+                                    <div class="cart-preview-list">
+                                        <c:forEach items="${sessionScope.cart.items}" var="item" varStatus="status">
+                                            <c:if test="${status.index < 3}">
+                                                <c:url var="cartPreviewImage" value="${item.product.imageUrl}"/>
+                                                <div class="cart-preview-item">
+                                                    <img src="${cartPreviewImage}"
+                                                         alt="${item.product.name}">
+
+                                                    <div class="cart-preview-info">
+                                                        <p class="cart-preview-name">${item.product.name}</p>
+                                                        <p class="cart-preview-price">
+                                                            ${item.quantity} x
+                                                            <fmt:formatNumber value="${item.price}" groupingUsed="true"/> đ
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </c:if>
+                                        </c:forEach>
+                                    </div>
+
+                                    <div class="cart-preview-footer">
+                                        <span>
+                                            ${sessionScope.cart.totalQuantity()} Sản phẩm trong giỏ hàng
+                                        </span>
+
+                                        <a href="${pageContext.request.contextPath}/cart">
+                                            Xem giỏ hàng
+                                        </a>
+                                    </div>
+                                </c:otherwise>
+                            </c:choose>
+
+                        </div>
+
+                    </div>
+                </c:if>
+            </div>
 
         </div>
 
@@ -257,6 +459,17 @@
 
                     </a>
 
+                    <c:if test="${not empty breadcrumbLabel}">
+
+                        <span>/</span>
+
+                        <span class="current">
+
+                                ${breadcrumbLabel}
+                        </span>
+
+                    </c:if>
+
 
                     <c:if test="${not empty breadcrumbCategory}">
 
@@ -296,3 +509,4 @@
 <div id="headerOverlay"
      class="header-overlay">
 </div>
+</c:if>

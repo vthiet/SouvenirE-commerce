@@ -3,7 +3,7 @@ package nlu.fit.web.souvenirecommerce.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseEntity;
-import nlu.fit.web.souvenirecommerce.common.enums.VerificationCodePurpose;
+import nlu.fit.web.souvenirecommerce.model.enums.VerificationCodePurpose;
 
 import java.time.LocalDateTime;
 

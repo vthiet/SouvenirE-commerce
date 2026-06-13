@@ -1,7 +1,7 @@
 package nlu.fit.web.souvenirecommerce.core.filters;
 
 import jakarta.servlet.*;
-import nlu.fit.web.souvenirecommerce.core.config.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.slf4j.Logger;

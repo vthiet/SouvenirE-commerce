@@ -1,7 +1,7 @@
 package nlu.fit.web.souvenirecommerce.features.product.dto;
 
 import lombok.*;
-import nlu.fit.web.souvenirecommerce.common.enums.ProductSort;
+import nlu.fit.web.souvenirecommerce.model.enums.ProductSort;
 import nlu.fit.web.souvenirecommerce.model.entity.Category;
 
 import java.util.List;
@@ -26,4 +26,7 @@ public class ProductTypeDTO {
     private Integer rating;
     private ProductSort sort;
     private String sortParam;
+    private boolean searchMode;
+    private String searchKeyword;
+    private String listingAction;
 }

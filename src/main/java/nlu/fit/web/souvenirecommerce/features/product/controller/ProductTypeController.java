@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import nlu.fit.web.souvenirecommerce.features.product.dto.ProductTypeDTO;
-import nlu.fit.web.souvenirecommerce.common.enums.ProductSort;
+import nlu.fit.web.souvenirecommerce.model.enums.ProductSort;
 import nlu.fit.web.souvenirecommerce.features.product.service.ProductTypeService;
 
 import java.io.IOException;

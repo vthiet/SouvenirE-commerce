@@ -24,6 +24,82 @@ $(document).ready(function () {
         alert(message);
     }
 
+    function updateCartPreview(data) {
+        if (window.renderCartPreviewFromSummary) {
+            window.renderCartPreviewFromSummary(data, true);
+        }
+    }
+
+    function showCartAddedToast() {
+        const productName = $('.product-title').text().trim() || 'Sản phẩm';
+        let $toast = $('#cartAddedToast');
+
+        if (!$toast.length) {
+            $toast = $(`
+                <div class="cart-action-toast" id="cartAddedToast" hidden>
+                    <strong>Thông báo</strong>
+                    <span></span>
+                    <button type="button" aria-label="Đóng thông báo">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `);
+
+            $('body').append($toast);
+
+            $toast.find('button').on('click', function () {
+                $toast.prop('hidden', true);
+                clearTimeout($toast.data('timer'));
+            });
+        }
+
+        $toast.find('span').text(`${productName} đã được thêm vào giỏ hàng của bạn`);
+        $toast.prop('hidden', false);
+
+        clearTimeout($toast.data('timer'));
+        const timer = setTimeout(() => {
+            $toast.prop('hidden', true);
+        }, 3500);
+        $toast.data('timer', timer);
+    }
+
+    $('.buy-form').on('submit', function (event) {
+        const submitter = event.originalEvent?.submitter;
+
+        if (submitter && submitter.name === 'buyNow') {
+            return;
+        }
+
+        event.preventDefault();
+
+        $.ajax({
+            url: contextPath + '/cart/add',
+            method: 'POST',
+            data: $(this).serialize(),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function (data) {
+                if (data.success) {
+                    updateCartPreview(data);
+                    showCartAddedToast();
+                    return;
+                }
+
+                if (data.requireLogin) {
+                    $('.header-cart').attr('aria-expanded', 'true');
+                    $('#cartLoginPopover').prop('hidden', false).addClass('open').attr('aria-hidden', 'false');
+                    return;
+                }
+
+                showMessage(data.message || 'Không thể thêm vào giỏ hàng');
+            },
+            error: function () {
+                showMessage('Có lỗi xảy ra khi thêm vào giỏ hàng');
+            }
+        });
+    });
+
     /* Image zoom modal */
     $(document).on('click', '.btn-zoom', function () {
         const imgSrc = $('.product-gallery img').attr('src');

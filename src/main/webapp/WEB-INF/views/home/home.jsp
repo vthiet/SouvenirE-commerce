@@ -11,7 +11,7 @@
                 <div class="slide">
                     <a href="${pageContext.request.contextPath}/category?id=${item.category.id}">
                         <img
-                                src="${pageContext.request.contextPath}/assets/images/Banner/${item.category.image}"
+                                src="${pageContext.request.contextPath}/assets/images/home_banner/${item.category.image}"
                                 alt="${item.category.categoryName}"
                                 loading="${status.first ? 'eager' : 'lazy'}"
                                 decoding="async">
@@ -58,7 +58,7 @@
 
                 <c:forEach var="p" items="${section.productCards}">
                     <c:set var="p" value="${p}" scope="request"/>
-                    <jsp:include page="product-card.jsp"/>
+                    <jsp:include page="/WEB-INF/views/product/product-card.jsp"/>
                 </c:forEach>
 
                 <c:if test="${empty section.productCards}">
@@ -105,7 +105,7 @@
                         <article class="category-card">
                             <a href="${pageContext.request.contextPath}/category?id=${section.category.id}">
                                 <img
-                                        src="${pageContext.request.contextPath}/assets/images/Banner/${section.category.image}"
+                                        src="${pageContext.request.contextPath}/assets/images/home_banner/${section.category.image}"
                                         alt="${section.category.categoryName}"
                                         loading="lazy"
                                         decoding="async">
@@ -138,7 +138,7 @@
         <div class="related-grid product-list">
             <c:forEach var="p" items="${data.topRatedProductCards}">
                 <c:set var="p" value="${p}" scope="request"/>
-                <jsp:include page="product-card.jsp"/>
+                <jsp:include page="/WEB-INF/views/product/product-card.jsp"/>
             </c:forEach>
         </div>
 
@@ -156,7 +156,7 @@
         <div class="related-grid product-list">
             <c:forEach var="p" items="${data.newestProductCards}">
                 <c:set var="p" value="${p}" scope="request"/>
-                <jsp:include page="product-card.jsp"/>
+                <jsp:include page="/WEB-INF/views/product/product-card.jsp"/>
             </c:forEach>
         </div>
 

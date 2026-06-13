@@ -22,12 +22,18 @@ public class Cart implements Serializable {
 
 
     public void addItem(Product product , int quantity) {
+        addItem(product, quantity, product.getOriginalPrice());
+    }
+
+    public void addItem(Product product, int quantity, double price) {
 
         if (quantity <= 0) {quantity = 1;}
-        if (data.get(product.getId()) != null)
+        if (data.get(product.getId()) != null) {
+            data.get(product.getId()).setPrice(price);
             data.get(product.getId()).upQuantity(quantity);
+        }
         else
-            data.put(product.getId(), new CartItem(product, product.getOriginalPrice(), quantity));
+            data.put(product.getId(), new CartItem(product, price, quantity));
 
         }
 

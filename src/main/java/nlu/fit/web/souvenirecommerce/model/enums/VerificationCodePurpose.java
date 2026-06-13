@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.common.enums;
+package nlu.fit.web.souvenirecommerce.model.enums;
 
 public enum VerificationCodePurpose {
     SIGNUP
