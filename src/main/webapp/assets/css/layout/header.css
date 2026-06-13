@@ -129,8 +129,7 @@
 }
 
 .site-header {
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 5100;
     background: var(--bg-white);
     border-bottom: 1px solid var(--border-normal);
@@ -820,6 +819,24 @@
     background: var(--bg-white);
 
     border-top: 1px solid var(--border-light);
+}
+
+.header-menu-bar.is-stuck,
+.header-breadcrumb.is-stuck {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 5100;
+    box-shadow: 0 4px 16px rgba(17, 24, 39, .12);
+}
+
+.header-sticky-spacer {
+    display: none;
+}
+
+.header-sticky-spacer.is-active {
+    display: block;
 }
 
 .header-menu-bar__inner {
