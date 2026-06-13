@@ -7,11 +7,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
+import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
+import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
 
 @WebServlet("/cart/remove")
 public class RemoveCartController extends HttpServlet {
+    private final CartPersistenceService cartPersistenceService = new CartPersistenceService();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -35,6 +38,8 @@ public class RemoveCartController extends HttpServlet {
             Long productId = Long.parseLong(request.getParameter("productId"));
             CartItem removedItem = cart.removeItem(productId);
             session.setAttribute("cart", cart);
+            session.setAttribute("cartItemCount", cart.totalQuantity());
+            cartPersistenceService.saveCart(getCurrentUser(session), cart);
 
             if (removedItem != null) {
                 handleResponse(
@@ -83,5 +88,17 @@ public class RemoveCartController extends HttpServlet {
         } else {
             response.sendRedirect("/cart");
         }
+    }
+
+    private User getCurrentUser(HttpSession session) {
+        Object user = session.getAttribute("userInSession");
+
+        if (user instanceof User currentUser) {
+            return currentUser;
+        }
+
+        user = session.getAttribute("authUser");
+
+        return user instanceof User currentUser ? currentUser : null;
     }
 }

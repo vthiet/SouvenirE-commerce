@@ -17,9 +17,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseEntity;
-import nlu.fit.web.souvenirecommerce.common.enums.PaymentMethod;
-import nlu.fit.web.souvenirecommerce.common.enums.PaymentProvider;
-import nlu.fit.web.souvenirecommerce.common.enums.PaymentStatus;
+import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
+import nlu.fit.web.souvenirecommerce.model.enums.PaymentProvider;
+import nlu.fit.web.souvenirecommerce.model.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -66,4 +66,10 @@ public class PaymentTransaction extends AbsBaseEntity {
 
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
+
+    @Column(name = "response_code", length = 20)
+    private String responseCode;
+
+    @Column(name = "bank_code", length = 30)
+    private String bankCode;
 }

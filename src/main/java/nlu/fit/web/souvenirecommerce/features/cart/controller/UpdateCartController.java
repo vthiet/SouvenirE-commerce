@@ -1,16 +1,21 @@
 package nlu.fit.web.souvenirecommerce.features.cart.controller;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
+import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
+import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
 
+@WebServlet("/cart/update")
 public class UpdateCartController extends HttpServlet {
+    private final CartPersistenceService cartPersistenceService = new CartPersistenceService();
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -38,6 +43,8 @@ public class UpdateCartController extends HttpServlet {
             }
             
             session.setAttribute("cart", cart);
+            session.setAttribute("cartItemCount", cart.totalQuantity());
+            cartPersistenceService.saveCart(getCurrentUser(session), cart);
 
             CartItem item = cart.getItem(productId);
             double itemSubtotal = (item != null) ? item.getSubTotal() : 0;
@@ -66,5 +73,17 @@ public class UpdateCartController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         doPost(request, response);
+    }
+
+    private User getCurrentUser(HttpSession session) {
+        Object user = session.getAttribute("userInSession");
+
+        if (user instanceof User currentUser) {
+            return currentUser;
+        }
+
+        user = session.getAttribute("authUser");
+
+        return user instanceof User currentUser ? currentUser : null;
     }
 }

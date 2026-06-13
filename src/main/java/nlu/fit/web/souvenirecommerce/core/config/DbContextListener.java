@@ -4,6 +4,7 @@ import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import lombok.extern.slf4j.Slf4j;
 import com.mysql.cj.jdbc.AbandonedConnectionCleanupThread;
+import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import nlu.fit.web.souvenirecommerce.legacy.utils.DBContext;
 import org.hibernate.Session;
 

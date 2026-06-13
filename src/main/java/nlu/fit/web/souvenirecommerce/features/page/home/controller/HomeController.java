@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.product.controller;
+package nlu.fit.web.souvenirecommerce.features.page.home.controller;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -30,7 +30,7 @@ public class HomeController extends HttpServlet {
         request.setAttribute("pageTitle", "Trang chủ");
         request.setAttribute("pageCss", "HomePageMain.css");
         request.setAttribute("pageJs", "HomePage.js");
-        request.setAttribute("contentPage", "/home.jsp");
+        request.setAttribute("contentPage", "/WEB-INF/views/home/home.jsp");
 
         request.getRequestDispatcher("WEB-INF/layout/base.jsp").forward(request, response);
     }

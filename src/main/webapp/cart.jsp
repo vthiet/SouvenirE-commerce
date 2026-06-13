@@ -2,122 +2,143 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Giỏ hàng của bạn - INOLA</title>
-
-    <meta name="context-path" content="${pageContext.request.contextPath}">
-
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/ShoppingCart.css"/>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/HomePageFooter.css"/>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/layout/footer.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cart.css"/>
-</head>
-<body>
-
-<div class="page-wrapper">
-    <div class="cart-layout">
-        <div class="cart-items-section">
-
-            <div class="continue-shopping">
-                <a href="${pageContext.request.contextPath}/home">
-                    <i class="fa-solid fa-arrow-left"></i> Tiếp tục mua sắm
-                </a>
-            </div>
-
-            <div class="section-header">
-                <h2>Giỏ hàng của bạn</h2>
-                <span id="cart-total-qty">Tổng cộng: ${cart.totalQuantity()} sản phẩm</span>
-            </div>
-
-            <c:if test="${cart.totalQuantity() == 0}">
-                <div class="empty-cart" style="text-align: center; padding: 40px 0;">
-                    <p style="margin-bottom: 20px; font-size: 16px; color: #666;">Giỏ hàng của bạn đang trống.</p>
-                    <a class="checkout-btn" href="${pageContext.request.contextPath}/home" style="width: auto; display: inline-block !important; padding: 10px 30px;">
-                        Mua sắm ngay
-                    </a>
-                </div>
-            </c:if>
-
-            <c:forEach items="${cart.items}" var="item">
-                <div class="cart-item-card" data-product-id="${item.product.id}">
-
-                    <div class="item-image">
-                        <img src="${item.product.imageUrl}"
-                             alt="${item.product.name}">
-                    </div>
-
-                    <div class="item-details">
-                        <h3>${item.product.name}</h3>
-                        <p>
-                            Đơn giá:
-                            <fmt:formatNumber value="${item.price}" groupingUsed="true"/>₫
-                        </p>
-                    </div>
-
-                    <div class="item-price-quantity">
-                        <span class="item-price">
-                            <fmt:formatNumber value="${item.subTotal}" groupingUsed="true"/>₫
-                        </span>
-
-                        <div class="quantity-selector">
-                            <button type="button" class="qty-btn minus-btn">-</button>
-
-                            <input type="number"
-                                   class="qty-input"
-                                   value="${item.quantity}"
-                                   min="1">
-
-                            <button type="button" class="qty-btn plus-btn">+</button>
-                        </div>
-                    </div>
-
-                    <button type="button"
-                            class="remove-item-btn"
-                            data-product-id="${item.product.id}">
-                        <i class="fa-solid fa-trash-can"></i> Xóa
-                    </button>
-
-                </div>
-            </c:forEach>
-
-        </div>
-
-        <div class="order-summary-section">
-            <div class="summary-card">
-                <h2 class="summary-card-title">Tóm tắt đơn hàng</h2>
-
-                <div class="summary-row">
-                    <span>Tạm tính</span>
-                    <span id="cart-subtotal"><fmt:formatNumber value="${cart.total()}" groupingUsed="true"/>₫</span>
-                </div>
-
-                <div class="summary-total-row" style="border-top: none; margin-top: 0; padding-top: 5px; color: #666; font-size: 14px;">
-                    <span>Phí vận chuyển</span>
-                    <span>Liên hệ sau</span>
-                </div>
-
-                <div class="summary-total-row">
-                    <span>Tổng thanh toán</span>
-                    <span id="cart-total-pay" class="final-total"><fmt:formatNumber value="${cart.total()}" groupingUsed="true"/>₫</span>
-                </div>
-
-                <a class="checkout-btn"
-                   href="${pageContext.request.contextPath}/checkout"
-                   onclick="return confirm('Xác nhận thanh toán?')">
-                    XÁC NHẬN THANH TOÁN
-                </a>
-            </div>
-        </div>
-
+<div class="cart-page">
+    <div class="cart-toast" id="cartToast" hidden>
+        <strong>Thông báo</strong>
+        <span>Sản phẩm đã được xóa thành công.</span>
+        <button type="button" aria-label="Đóng thông báo">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
     </div>
 
-    <jsp:include page="/views/common/footer.jsp"/>
-</div>
+    <main class="cart-shell">
+        <section class="cart-products">
+            <div class="cart-table-head">
+                <label class="cart-check">
+                    <input type="checkbox" id="selectAllCartItems">
+                    <span></span>
+                </label>
+                <div class="cart-head-product">
+                    Sản phẩm (<span id="cart-total-qty">${cart.totalQuantity()}</span> Sản phẩm)
+                </div>
+                <div>Đơn giá</div>
+                <div>Số lượng</div>
+                <div>Tổng giá</div>
+                <button type="button"
+                        class="cart-head-remove"
+                        id="removeAllCartItems"
+                        aria-label="Xóa tất cả sản phẩm">
+                    <i class="fa-regular fa-trash-can"></i>
+                </button>
+            </div>
 
-<script src="${pageContext.request.contextPath}/assets/js/ShoppingCart.js"></script>
-</body>
-</html>
+            <c:choose>
+                <c:when test="${cart.totalQuantity() == 0}">
+                    <div class="cart-empty-state" id="cartEmptyState">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <p>Giỏ hàng của bạn đang trống.</p>
+                        <a href="${pageContext.request.contextPath}/home">Tiếp tục mua sắm</a>
+                    </div>
+                </c:when>
+
+                <c:otherwise>
+                    <div class="cart-shop-card" id="cartItemsContainer">
+                        <div class="cart-shop-head">
+                            <label class="cart-check">
+                                <input type="checkbox" class="shop-checkbox">
+                                <span></span>
+                            </label>
+
+                            <div>
+                                <strong>INOLA Souvenir</strong>
+                                <p>Đặc sản và quà tặng Việt Nam</p>
+                            </div>
+
+                            <button type="button" class="cart-shop-remove" aria-label="Xóa sản phẩm đã chọn">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </div>
+
+                        <c:forEach items="${cart.items}" var="item">
+                            <c:url var="cartItemImage" value="${item.product.imageUrl}"/>
+
+                            <article class="cart-item-card"
+                                     data-product-id="${item.product.id}"
+                                     data-unit-price="${item.price}">
+                                <label class="cart-check">
+                                    <input type="checkbox" class="item-checkbox">
+                                    <span></span>
+                                </label>
+
+                                <div class="cart-product-info">
+                                    <img src="${cartItemImage}" alt="${item.product.name}">
+
+                                    <div>
+                                        <h3>${item.product.name}</h3>
+                                        <p>Chọn thiết kế hộp: Mẫu mặc định</p>
+                                    </div>
+                                </div>
+
+                                <div class="cart-unit-price">
+                                    <fmt:formatNumber value="${item.price}" groupingUsed="true"/> đ
+                                </div>
+
+                                <div class="cart-quantity">
+                                    <button type="button" class="qty-btn minus-btn" aria-label="Giảm số lượng">−</button>
+                                    <input type="number"
+                                           class="qty-input"
+                                           value="${item.quantity}"
+                                           min="1">
+                                    <button type="button" class="qty-btn plus-btn" aria-label="Tăng số lượng">+</button>
+                                </div>
+
+                                <div class="item-price">
+                                    <fmt:formatNumber value="${item.subTotal}" groupingUsed="true"/> đ
+                                </div>
+
+                                <button type="button"
+                                        class="remove-item-btn"
+                                        data-product-id="${item.product.id}"
+                                        aria-label="Xóa ${item.product.name}">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </button>
+                            </article>
+                        </c:forEach>
+                    </div>
+                </c:otherwise>
+            </c:choose>
+        </section>
+
+        <aside class="cart-sidebar">
+            <section class="cart-summary-card">
+                <h2>
+                    <i class="fa-regular fa-rectangle-list"></i>
+                    Tóm tắt đơn hàng
+                </h2>
+
+                <div class="summary-line">
+                    <span>Tổng</span>
+                    <strong id="cart-total-pay">0 đ</strong>
+                </div>
+
+                <a class="checkout-btn checkout-btn--disabled"
+                   id="checkoutButton"
+                   href="${pageContext.request.contextPath}/checkout"
+                   aria-disabled="true">
+                    Thanh toán
+                </a>
+            </section>
+
+            <section class="cart-note-card">
+                <div class="cart-note-art">
+                    <i class="fa-regular fa-hand-peace"></i>
+                </div>
+
+                <p>
+                    Mỗi sản phẩm tại INOLA được chuẩn bị và gửi đi từ các nhà cung cấp ở nhiều địa điểm khác nhau.
+                    Phí giao hàng sẽ được áp dụng ở trang tiếp theo.
+                </p>
+            </section>
+        </aside>
+    </main>
+</div>

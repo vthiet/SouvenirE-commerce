@@ -1,6 +1,6 @@
 package nlu.fit.web.souvenirecommerce.legacy.dao;
 
-import nlu.fit.web.souvenirecommerce.common.enums.ProductSort;
+import nlu.fit.web.souvenirecommerce.model.enums.ProductSort;
 import nlu.fit.web.souvenirecommerce.features.dashboard.dto.CategorySalesDTO;
 import nlu.fit.web.souvenirecommerce.model.entity.Product;
 import nlu.fit.web.souvenirecommerce.model.entity.Category;
@@ -214,6 +214,114 @@ public class ProductDAO {
         return 0;
     }
 
+    public List<Product> searchProductsWithFilter(
+            String keyword,
+            Integer minPrice,
+            Integer maxPrice,
+            Integer rating,
+            ProductSort sort,
+            int offset,
+            int limit
+    ) {
+        List<Product> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("""
+            SELECT * FROM (
+                """ + BASE_SELECT + """
+            ) t
+            WHERE (
+                LOWER(t.name) LIKE LOWER(?)
+                OR LOWER(t.description) LIKE LOWER(?)
+            )
+        """);
+
+        if (minPrice != null) sql.append(" AND t.original_price >= ?");
+        if (maxPrice != null) sql.append(" AND t.original_price <= ?");
+        if (rating != null) sql.append(" AND t.avg_rating >= ?");
+
+        if (sort != null) {
+            switch (sort) {
+                case PRICE_ASC -> sql.append(" ORDER BY t.original_price ASC");
+                case PRICE_DESC -> sql.append(" ORDER BY t.original_price DESC");
+                case NEWEST -> sql.append(" ORDER BY t.id DESC");
+                default -> sql.append(" ORDER BY t.total_sold DESC, t.avg_rating DESC");
+            }
+        } else {
+            sql.append(" ORDER BY t.total_sold DESC, t.avg_rating DESC");
+        }
+
+        sql.append(" LIMIT ? OFFSET ?");
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            int idx = 1;
+            String searchPattern = "%" + keyword + "%";
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx++, searchPattern);
+            if (minPrice != null) ps.setInt(idx++, minPrice);
+            if (maxPrice != null) ps.setInt(idx++, maxPrice);
+            if (rating != null) ps.setInt(idx++, rating);
+            ps.setInt(idx++, limit);
+            ps.setInt(idx, offset);
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(mapProduct(rs));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    public int countSearchProductsWithFilter(
+            String keyword,
+            Integer minPrice,
+            Integer maxPrice,
+            Integer rating
+    ) {
+        StringBuilder sql = new StringBuilder("""
+            SELECT COUNT(*) FROM (
+                SELECT p.id
+                FROM products p
+                WHERE (
+                    LOWER(p.name) LIKE LOWER(?)
+                    OR LOWER(p.description) LIKE LOWER(?)
+                )
+        """);
+
+        if (minPrice != null) sql.append(" AND p.original_price >= ?");
+        if (maxPrice != null) sql.append(" AND p.original_price <= ?");
+
+        sql.append(" GROUP BY p.id, p.avg_rating ");
+
+        if (rating != null) sql.append(" HAVING COALESCE(MAX(p.avg_rating), 0) >= ? ");
+
+        sql.append(") t");
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            int idx = 1;
+            String searchPattern = "%" + keyword + "%";
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx++, searchPattern);
+            if (minPrice != null) ps.setInt(idx++, minPrice);
+            if (maxPrice != null) ps.setInt(idx++, maxPrice);
+            if (rating != null) ps.setInt(idx, rating);
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return rs.getInt(1);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
     public Product getProductById(Long id) {
         String sql = """
             SELECT * FROM (
@@ -290,9 +398,12 @@ public class ProductDAO {
 
     public List<Product> searchProductsByName(String keyword, int limit) {
         List<Product> list = new ArrayList<>();
-        String sql = BASE_SELECT + """
-            WHERE LOWER(name) LIKE LOWER(?)
-            ORDER BY total_sold DESC, avg_rating DESC
+        String sql = """
+            SELECT * FROM (
+                """ + BASE_SELECT + """
+            ) t
+            WHERE LOWER(t.name) LIKE LOWER(?)
+            ORDER BY t.total_sold DESC, t.avg_rating DESC
             LIMIT ?
         """;
         try (Connection conn = DBContext.getConnection();

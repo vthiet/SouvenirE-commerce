@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.common.utils.EmailUtil;
-import nlu.fit.web.souvenirecommerce.core.config.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import org.hibernate.Transaction;
 

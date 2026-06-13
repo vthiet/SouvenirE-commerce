@@ -1,8 +1,7 @@
 package nlu.fit.web.souvenirecommerce.legacy.dao;
 
 import nlu.fit.web.souvenirecommerce.model.entity.Category;
-import nlu.fit.web.souvenirecommerce.model.entity.Product;
-import nlu.fit.web.souvenirecommerce.core.config.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
