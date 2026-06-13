@@ -152,6 +152,13 @@ public class CheckoutController extends HttpServlet {
                 .addressDetail(request.getParameter("addressDetail"))
                 .provinceCode(parseInteger(request.getParameter("provinceCode")))
                 .wardCode(parseInteger(request.getParameter("wardCode")))
+                .ghnProvinceId(parseInteger(request.getParameter("ghnProvinceId")))
+                .ghnDistrictId(parseInteger(request.getParameter("ghnDistrictId")))
+                .ghnWardCode(request.getParameter("ghnWardCode"))
+                .provinceName(request.getParameter("provinceName"))
+                .districtName(request.getParameter("districtName"))
+                .wardName(request.getParameter("wardName"))
+                .shippingFee(parseDouble(request.getParameter("shippingFee")))
                 .note(request.getParameter("note"))
                 .paymentMethod(parsePaymentMethod(request.getParameter("paymentMethod")))
                 .build();
@@ -196,6 +203,17 @@ public class CheckoutController extends HttpServlet {
         }
         Object cart = session.getAttribute("cart");
         return cart instanceof Cart ? (Cart) cart : null;
+    }
+
+    private Double parseDouble(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Double.valueOf(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private Cart buildCheckoutCart(Cart sourceCart, Set<Long> selectedProductIds) {
