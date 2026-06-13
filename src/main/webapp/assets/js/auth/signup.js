@@ -1,6 +1,7 @@
 let currentStep = 1;
 const totalSteps = 3;
 const contextPath = window.appContextPath || '';
+const recaptchaEnabled = Boolean(window.recaptchaEnabled);
 let verifiedEmail = '';
 let resendTimer = null;
 let resendSeconds = 0;
@@ -115,10 +116,37 @@ function validateEmail(email) {
     return true;
 }
 
+function getRecaptchaToken() {
+    if (!recaptchaEnabled) {
+        return '';
+    }
+    if (!window.grecaptcha) {
+        showMessage('Captcha chưa tải xong. Vui lòng thử lại sau vài giây', 'error');
+        return null;
+    }
+    const token = grecaptcha.getResponse();
+    if (!token) {
+        showMessage('Vui lòng xác nhận bạn không phải robot.', 'error');
+        return null;
+    }
+    return token;
+}
+
+function resetRecaptcha() {
+    if (recaptchaEnabled && window.grecaptcha) {
+        grecaptcha.reset();
+    }
+}
+
 function sendVerificationCode(showSuccessMessage) {
     const email = getEmail();
 
     if (!validateEmail(email)) {
+        return;
+    }
+
+    const recaptchaToken = getRecaptchaToken();
+    if (recaptchaToken === null) {
         return;
     }
 
@@ -130,10 +158,14 @@ function sendVerificationCode(showSuccessMessage) {
     $.ajax({
         url: `${contextPath}/api/signup/send-code`,
         type: 'POST',
-        data: { email: email },
+        data: {
+            email: email,
+            'g-recaptcha-response': recaptchaToken
+        },
         dataType: 'json',
         timeout: 15000,
         success: function(response) {
+            resetRecaptcha();
             setLoading({
                 loading: '#codeLoading',
                 buttons: ['#verifyCodeBtn', '#backToEmailBtn']
@@ -151,6 +183,7 @@ function sendVerificationCode(showSuccessMessage) {
             }
         },
         error: function() {
+            resetRecaptcha();
             setLoading({
                 loading: '#codeLoading',
                 buttons: ['#sendCodeBtn', '#verifyCodeBtn', '#backToEmailBtn']

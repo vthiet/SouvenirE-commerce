@@ -70,6 +70,12 @@
                 <a href="${pageContext.request.contextPath}/forgot-password">Quên mật khẩu?</a>
             </div>
 
+            <c:if test="${recaptchaConfigured}">
+                <div class="captcha-field">
+                    <div class="g-recaptcha" data-sitekey="${recaptchaSiteKey}"></div>
+                </div>
+            </c:if>
+
             <button type="submit" class="primary-button">
                 <i class="fa fa-arrow-right-to-bracket"></i>
                 <span>Đăng nhập</span>
@@ -96,5 +102,8 @@
         </div>
     </aside>
 </main>
+<c:if test="${recaptchaConfigured}">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</c:if>
 </body>
 </html>

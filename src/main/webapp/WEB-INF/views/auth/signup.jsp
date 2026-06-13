@@ -73,6 +73,12 @@
                     <span>Đang kiểm tra email...</span>
                 </div>
 
+                <c:if test="${recaptchaConfigured}">
+                    <div class="captcha-field">
+                        <div class="g-recaptcha" data-sitekey="${recaptchaSiteKey}"></div>
+                    </div>
+                </c:if>
+
                 <button type="button" class="primary-button" id="continueBtn">
                     <span>Tiếp tục</span>
                     <i class="fa fa-arrow-right"></i>
@@ -212,7 +218,11 @@
 
 <script>
     window.appContextPath = '${pageContext.request.contextPath}';
+    window.recaptchaEnabled = ${recaptchaConfigured ? 'true' : 'false'};
 </script>
+<c:if test="${recaptchaConfigured}">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</c:if>
 <script src="${pageContext.request.contextPath}/assets/js/auth/signup.js"></script>
 </body>
 </html>

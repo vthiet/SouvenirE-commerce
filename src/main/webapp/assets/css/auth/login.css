@@ -158,6 +158,14 @@ body.auth-page {
     accent-color: var(--auth-primary);
 }
 
+.captcha-field {
+    max-width: 100%;
+    min-height: 78px;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+}
+
 .primary-button,
 .secondary-button {
     min-height: 50px;
