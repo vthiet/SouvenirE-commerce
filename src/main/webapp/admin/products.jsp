@@ -1,6 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<%@ include file="common/admin-access-guard.jspf" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -70,10 +72,25 @@
                         </thead>
                         <tbody>
                         <c:forEach items="${products}" var="p">
+                            <c:set var="resolvedImageUrl" value="${p.imageUrl}" />
+                            <c:choose>
+                                <c:when test="${empty p.imageUrl}">
+                                    <c:set var="resolvedImageUrl" value="https://placehold.co/50x50?text=No+Image" />
+                                </c:when>
+                                <c:when test="${fn:startsWith(p.imageUrl, 'http://') or fn:startsWith(p.imageUrl, 'https://') or fn:startsWith(p.imageUrl, 'data:')}">
+                                    <c:set var="resolvedImageUrl" value="${p.imageUrl}" />
+                                </c:when>
+                                <c:when test="${fn:startsWith(p.imageUrl, pageContext.request.contextPath)}">
+                                    <c:set var="resolvedImageUrl" value="${p.imageUrl}" />
+                                </c:when>
+                                <c:otherwise>
+                                    <c:set var="resolvedImageUrl" value="${pageContext.request.contextPath}/${p.imageUrl}" />
+                                </c:otherwise>
+                            </c:choose>
                             <tr>
                                 <td>${p.id}</td>
                                 <td>
-                                    <img src="${p.imageUrl}"
+                                    <img src="${resolvedImageUrl}"
                                          alt="${p.name}"
                                          class="product-thumb"
                                          onerror="this.src='https://placehold.co/50x50?text=No+Image'">
@@ -277,6 +294,26 @@
 
 <script>
     const modal = document.getElementById('productModal');
+    const contextPath = '${pageContext.request.contextPath}';
+
+    function normalizeImageUrl(imageUrl) {
+        const value = (imageUrl || '').trim();
+
+        if (!value) {
+            return 'https://placehold.co/640x420?text=Preview';
+        }
+
+        if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) {
+            return value;
+        }
+
+        if (value.startsWith(contextPath + '/')) {
+            return value;
+        }
+
+        const normalized = value.startsWith('/') ? value : '/' + value;
+        return contextPath + normalized;
+    }
 
     function calculateSalePrice() {
         const price = parseFloat(document.getElementById('productPrice').value) || 0;
@@ -380,7 +417,7 @@
         previewMeta.innerText = parts.length ? parts.join(' • ') : 'Chọn tên, giá và ảnh để xem nhanh bố cục hiển thị.';
 
         if (data.image) {
-            previewImage.src = data.image;
+            previewImage.src = normalizeImageUrl(data.image);
         } else {
             previewImage.src = 'https://placehold.co/640x420?text=Preview';
         }
