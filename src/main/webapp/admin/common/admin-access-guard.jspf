@@ -1,0 +1,13 @@
+<%@ page import="nlu.fit.web.souvenirecommerce.common.utils.AdminAccessHelper" %>
+<%
+    if (!AdminAccessHelper.hasAdminAccess(request)) {
+        response.setStatus(403);
+        request.setAttribute("accessDeniedTitle", "Không có quyền truy cập");
+        request.setAttribute(
+                "accessDeniedMessage",
+                "Bạn cần vai trò Sales, Admin hoặc Super Admin, hoặc quyền dashboard.read để mở trang quản trị này."
+        );
+        request.getRequestDispatcher("/admin/access-denied.jsp").forward(request, response);
+        return;
+    }
+%>
