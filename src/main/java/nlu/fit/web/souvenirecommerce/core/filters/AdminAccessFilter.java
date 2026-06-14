@@ -25,25 +25,19 @@ public class AdminAccessFilter implements Filter {
 
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
-        String servletPath = req.getServletPath();
-
-        if ("/admin/access-denied.jsp".equals(servletPath)) {
-            chain.doFilter(request, response);
-            return;
-        }
-
         res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         res.setHeader("Pragma", "no-cache");
         res.setDateHeader("Expires", 0);
 
         if (!AdminAccessHelper.hasAdminAccess(req)) {
             res.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            req.setAttribute("accessDeniedTitle", "Không có quyền truy cập");
+            req.setAttribute("jakarta.servlet.error.status_code", HttpServletResponse.SC_FORBIDDEN);
+            req.setAttribute("jakarta.servlet.error.request_uri", req.getRequestURI());
             req.setAttribute(
-                    "accessDeniedMessage",
+                    "jakarta.servlet.error.message",
                     "Bạn cần vai trò Sales, Admin hoặc Super Admin, hoặc quyền dashboard.read để mở trang quản trị này."
             );
-            req.getRequestDispatcher("/admin/access-denied.jsp").forward(req, res);
+            req.getRequestDispatcher("/error.jsp").forward(req, res);
             return;
         }
 
