@@ -1,0 +1,14 @@
+<%@ page import="nlu.fit.web.souvenirecommerce.common.utils.AdminAccessHelper" %>
+<%
+    if (!AdminAccessHelper.hasAdminAccess(request)) {
+        response.setStatus(403);
+        request.setAttribute("jakarta.servlet.error.status_code", 403);
+        request.setAttribute("jakarta.servlet.error.request_uri", request.getRequestURI());
+        request.setAttribute(
+                "jakarta.servlet.error.message",
+                "Bạn cần vai trò Sales, Admin hoặc Super Admin, hoặc quyền dashboard.read để mở trang quản trị này."
+        );
+        request.getRequestDispatcher("/error.jsp").forward(request, response);
+        return;
+    }
+%>

@@ -27,14 +27,14 @@
     padding: 12px 20px;
     border-radius: 14px;
     border: 1px solid rgba(148, 163, 184, 0.45);
-    background: #f8fafc;
+    background: var(--admin-page-surface-soft);
     color: #1e293b;
     text-decoration: none;
     transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btn-secondary:hover {
-    background: #e2e8f0;
+    background: var(--admin-page-neutral-soft);
     transform: translateY(-1px);
 }
 
@@ -58,7 +58,7 @@
     padding: 16px;
     border-radius: 20px;
     border: 1px solid rgba(148, 163, 184, 0.35);
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    background: var(--admin-page-surface-soft) 100%;
     box-shadow: 0 12px 25px rgba(15, 23, 42, 0.05);
     cursor: pointer;
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -73,18 +73,18 @@
     margin-top: 4px;
     width: 18px;
     height: 18px;
-    accent-color: #2563eb;
+    accent-color: var(--admin-page-primary);
     flex-shrink: 0;
 }
 
 .permission-pill strong {
     display: block;
-    color: #0f172a;
+    color: var(--admin-page-text);
 }
 
 .permission-pill span {
     display: block;
-    color: #475569;
+    color: var(--admin-page-muted);
     font-size: 13px;
     margin-top: 4px;
     line-height: 1.55;
@@ -109,8 +109,8 @@
 }
 
 .tag-muted {
-    background: #f1f5f9;
-    color: #475569;
+    background: var(--admin-page-border-soft);
+    color: var(--admin-page-muted);
 }
 
 .alert {
@@ -121,17 +121,17 @@
 }
 
 .alert-success {
-    background: #ecfdf5;
-    color: #166534;
+    background: var(--admin-page-success-soft);
+    color: var(--admin-page-success);
 }
 
 .alert-error {
-    background: #fff1f2;
-    color: #b91c1c;
+    background: var(--admin-page-surface)1f2;
+    color: var(--admin-page-danger);
 }
 
 .card {
-    background: #ffffff;
+    background: var(--admin-page-surface);
     border-radius: 24px;
     border: 1px solid rgba(148, 163, 184, 0.22);
     box-shadow: 0 20px 45px rgba(15, 23, 42, 0.05);
@@ -147,12 +147,12 @@
     font-size: 1.2rem;
     font-weight: 700;
     margin: 0;
-    color: #0f172a;
+    color: var(--admin-page-text);
 }
 
 .card-description {
     margin-top: 10px;
-    color: #64748b;
+    color: var(--admin-page-muted);
     font-size: 0.95rem;
     line-height: 1.7;
 }
@@ -165,23 +165,23 @@
     width: 100%;
     min-height: 48px;
     padding: 14px 16px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--admin-page-border);
     border-radius: 16px;
-    background: #f8fafc;
+    background: var(--admin-page-surface-soft);
     font-size: 14px;
-    color: #0f172a;
+    color: var(--admin-page-text);
 }
 
 .form-control:focus {
     outline: none;
-    border-color: #2563eb;
+    border-color: var(--admin-page-primary);
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
 .form-control[multiple] {
     min-height: 240px;
     padding: 14px;
-    background: #f8fafc;
+    background: var(--admin-page-surface-soft);
 }
 
 .inline-actions {
@@ -220,15 +220,15 @@
 }
 
 .data-table thead tr {
-    background: #f8fafc;
+    background: var(--admin-page-surface-soft);
 }
 
 .data-table th,
 .data-table td {
     padding: 16px 18px;
     text-align: left;
-    border-bottom: 1px solid #e2e8f0;
-    color: #334155;
+    border-bottom: 1px solid var(--admin-page-neutral-soft);
+    color: var(--admin-page-text);
 }
 
 .data-table th {
@@ -236,11 +236,11 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #475569;
+    color: var(--admin-page-muted);
 }
 
 .data-table tbody tr:hover {
-    background: #f8fafc;
+    background: var(--admin-page-surface-soft);
 }
 
 .data-table tbody tr:last-child td {
@@ -249,7 +249,7 @@
 
 .role-summary-row {
     padding: 18px 0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--admin-page-neutral-soft);
 }
 
 .role-summary-row:last-child {
@@ -259,7 +259,7 @@
 .role-summary-row strong {
     display: block;
     margin-bottom: 10px;
-    color: #0f172a;
+    color: var(--admin-page-text);
 }
 
 .role-summary-row .tag-list {
@@ -267,7 +267,7 @@
 }
 
 .user-role-text {
-    color: #64748b;
+    color: var(--admin-page-muted);
     font-size: 0.95rem;
 }
 
@@ -299,13 +299,13 @@
 
 .role-icon-edit {
     background: #3b82f6;
-    color: #fff;
+    color: var(--admin-page-surface);
     text-decoration: none;
 }
 
 .role-icon-delete {
     background: #ef4444;
-    color: #fff;
+    color: var(--admin-page-surface);
 }
 
 .role-helper {
@@ -330,3 +330,6 @@
 .role-tag-list {
     margin-top: 8px;
 }
+
+
+

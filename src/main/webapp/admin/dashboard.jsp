@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ include file="common/admin-access-guard.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 
 <!DOCTYPE html>
@@ -43,7 +44,7 @@
                             <button type="button" id="reportMenuButton" class="btn btn-outline-secondary btn-sm" onclick="toggleReportMenu(event)" aria-haspopup="true" aria-expanded="false" aria-controls="reportMenu">
                                 <i class="bi bi-download" aria-hidden="true"></i> Export report
                             </button>
-                            <div id="reportMenu" role="menu" class="dropdown-menu shadow-sm dashboard-report-menu">
+                            <div id="reportMenu" role="menu" class="dropdown-menu dashboard-report-menu">
                                 <a class="dropdown-item" href="${ctx}/admin/export-report?type=summary" role="menuitem">Summary report</a>
                                 <a class="dropdown-item" href="${ctx}/admin/export-report?type=products" role="menuitem">Product report</a>
                                 <a class="dropdown-item" href="${ctx}/admin/export-report?type=orders" role="menuitem">Order report</a>
@@ -282,7 +283,6 @@
             </div>
         </main>
 
-        <jsp:include page="common/admin-footer.jsp" />
     </div>
 </div>
 

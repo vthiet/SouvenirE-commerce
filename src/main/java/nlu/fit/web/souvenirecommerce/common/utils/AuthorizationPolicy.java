@@ -21,6 +21,10 @@ public final class AuthorizationPolicy {
             return new RequiredPermission("dashboard", "read", true);
         }
 
+        if ("/admin/logs".equals(servletPath)) {
+            return new RequiredPermission("log", "read", true);
+        }
+
         if ("/admin/products".equals(servletPath)) {
             return resolveCrudPermission(request, "product", "read");
         }

@@ -2,7 +2,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%
-    request.setAttribute("canViewDashboard", true);
+    request.setAttribute("canViewDashboard", PermissionHelper.hasPermission(request, "dashboard", "read"));
     request.setAttribute("canViewProducts", PermissionHelper.hasAnyPermission(request, "product"));
     request.setAttribute("canViewOrders", PermissionHelper.hasAnyPermission(request, "order"));
     request.setAttribute("canUpdateOrder", PermissionHelper.hasPermission(request, "order", "update"));
@@ -11,7 +11,7 @@
     request.setAttribute("canViewBanners", PermissionHelper.hasAnyPermission(request, "banner"));
     request.setAttribute("canViewSettings", PermissionHelper.hasAnyPermission(request, "settings"));
     request.setAttribute("canViewRoles", PermissionHelper.hasAnyPermission(request, "role"));
-    request.setAttribute("canViewLogs", true);
+    request.setAttribute("canViewLogs", PermissionHelper.hasPermission(request, "log", "read"));
 
     request.setAttribute("canCreateProduct", PermissionHelper.hasPermission(request, "product", "create"));
     request.setAttribute("canUpdateProduct", PermissionHelper.hasPermission(request, "product", "update"));

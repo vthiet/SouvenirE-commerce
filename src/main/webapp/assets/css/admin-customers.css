@@ -42,15 +42,18 @@
 .customer-pagination-current {
   padding: 0.5rem 0.75rem;
   background: #3b82f6;
-  color: #fff;
+  color: var(--admin-page-surface);
   border-radius: 6px;
   font-weight: 500;
 }
 
 .customer-pagination-page {
   padding: 0.5rem 0.75rem;
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--admin-page-surface-soft);
+  color: var(--admin-page-text);
   border-radius: 6px;
   text-decoration: none;
 }
+
+
+

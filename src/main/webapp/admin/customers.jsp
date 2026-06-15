@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ include file="common/admin-access-guard.jspf" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -78,7 +79,15 @@
                                 <td>
                                     <div class="action-buttons">
                                         <c:if test="${canUpdateCustomer}">
-                                            <button class="btn-icon btn-edit" onclick="openEditModal(${customer.id}, '${customer.fullName}', '${customer.email}', '${customer.phone}')" title="Sửa">
+                                            <button
+                                                    type="button"
+                                                    class="btn-icon btn-edit"
+                                                    title="Sửa"
+                                                    data-customer-id="${customer.id}"
+                                                    data-customer-name="<c:out value='${customer.fullName}' />"
+                                                    data-customer-email="<c:out value='${customer.email}' />"
+                                                    data-customer-phone="<c:out value='${customer.phone}' />"
+                                                    data-customer-status="${customer.status}">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <form action="${pageContext.request.contextPath}/admin/customers" method="post" class="customer-form-inline">
@@ -138,43 +147,88 @@
         </div>
         </main>
 
-        <jsp:include page="common/admin-footer.jsp"/>
     </div>
 </div>
 
 <!-- Modal Add/Edit -->
-<div id="customerModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="modalTitle">Thêm khách hàng mới</h3>
-            <button class="close-btn" onclick="closeModal()">&times;</button>
+<div id="customerModal" class="modal customer-modal">
+    <div class="modal-content admin-modal-content">
+        <div class="modal-header admin-modal-header">
+            <div class="admin-modal-heading">
+                <span id="modalModeBadge" class="admin-modal-badge">Thêm mới</span>
+                <div>
+                    <h3 id="modalTitle">Thêm khách hàng mới</h3>
+                    <p id="modalSubtitle" class="admin-modal-subtitle">Tạo tài khoản khách hàng và lưu thông tin liên hệ trong hệ thống.</p>
+                </div>
+            </div>
+            <button type="button" class="close-btn" onclick="closeModal()" aria-label="Đóng">&times;</button>
         </div>
-        <div class="modal-body">
-            <form action="${pageContext.request.contextPath}/admin/customers" method="post">
+        <div class="modal-body admin-modal-body">
+            <form action="${pageContext.request.contextPath}/admin/customers" method="post" class="admin-modal-form">
                 <input type="hidden" name="action" id="formAction" value="add">
                 <input type="hidden" name="id" id="customerId">
 
-                <div class="form-group">
-                    <label>Họ tên *</label>
-                    <input type="text" name="fullName" id="customerName" class="form-control" required>
+                <div class="admin-modal-layout">
+                    <section class="admin-modal-panel">
+                        <div class="section-title">
+                            <i class="fas fa-user"></i>
+                            Thông tin khách hàng
+                        </div>
+
+                        <div class="form-group">
+                            <label>Họ tên *</label>
+                            <input type="text" name="fullName" id="customerName" class="form-control" required placeholder="Nhập họ và tên">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" name="email" id="customerEmail" class="form-control" required placeholder="ten@example.com">
+                        </div>
+
+                        <div class="admin-grid-two">
+                            <div class="form-group">
+                                <label>Số điện thoại</label>
+                                <input type="tel" name="phone" id="customerPhone" class="form-control" placeholder="Số điện thoại liên hệ">
+                            </div>
+
+                            <div class="form-group" id="passwordGroup">
+                                <label>Mật khẩu *</label>
+                                <input type="password" name="password" id="customerPassword" class="form-control" placeholder="Tạo mật khẩu cho tài khoản">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="admin-modal-panel admin-modal-panel-accent">
+                        <div class="section-title">
+                            <i class="fas fa-id-card"></i>
+                            Xem nhanh
+                        </div>
+
+                        <div class="admin-preview-card">
+                            <div class="admin-preview-image-wrap" style="display:grid;place-items:center;">
+                                <div class="profile-avatar avatar-xl" style="background:#2563eb;color:#fff;" id="customerPreviewInitials">KH</div>
+                            </div>
+                            <div class="admin-preview-copy">
+                                <strong id="customerPreviewName">Khách hàng mới</strong>
+                                <span id="customerPreviewMeta">Email, số điện thoại và trạng thái sẽ được hiển thị ở đây.</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Trạng thái</label>
+                            <input type="text" id="customerPreviewStatus" class="form-control product-readonly" value="Hoạt động" readonly>
+                            <small class="product-help">Tài khoản mới được tạo sẽ ở trạng thái hoạt động.</small>
+                        </div>
+                    </section>
                 </div>
 
-                <div class="form-group">
-                    <label>Email *</label>
-                    <input type="email" name="email" id="customerEmail" class="form-control" required>
+                <div class="admin-modal-footer">
+                    <p class="admin-modal-note">
+                        <i class="fas fa-circle-info"></i>
+                        Mật khẩu chỉ bắt buộc khi tạo mới, không cần nhập khi chỉnh sửa.
+                    </p>
+                    <button type="submit" class="btn-submit">Lưu khách hàng</button>
                 </div>
-
-                <div class="form-group" id="passwordGroup">
-                    <label>Mật khẩu *</label>
-                    <input type="password" name="password" id="customerPassword" class="form-control">
-                </div>
-
-                <div class="form-group">
-                    <label>Số điện thoại</label>
-                    <input type="tel" name="phone" id="customerPhone" class="form-control">
-                </div>
-
-                <button type="submit" class="btn-submit">Lưu khách hàng</button>
             </form>
         </div>
     </div>
@@ -185,6 +239,8 @@
 
     function openAddModal() {
         document.getElementById('modalTitle').innerText = 'Thêm khách hàng mới';
+        document.getElementById('modalModeBadge').innerText = 'Thêm mới';
+        document.getElementById('modalSubtitle').innerText = 'Tạo tài khoản khách hàng và lưu thông tin liên hệ trong hệ thống.';
         document.getElementById('formAction').value = 'add';
         document.getElementById('customerId').value = '';
         document.getElementById('customerName').value = '';
@@ -194,10 +250,13 @@
         document.getElementById('customerPassword').required = true;
         document.getElementById('passwordGroup').style.display = 'block';
         modal.classList.add('show');
+        refreshCustomerPreview();
     }
 
     function openEditModal(id, name, email, phone) {
         document.getElementById('modalTitle').innerText = 'Cập nhật khách hàng';
+        document.getElementById('modalModeBadge').innerText = 'Cập nhật';
+        document.getElementById('modalSubtitle').innerText = 'Chỉnh sửa thông tin liên hệ của khách hàng trong hệ thống.';
         document.getElementById('formAction').value = 'edit';
         document.getElementById('customerId').value = id;
         document.getElementById('customerName').value = name;
@@ -206,15 +265,46 @@
         document.getElementById('customerPassword').required = false;
         document.getElementById('passwordGroup').style.display = 'none';
         modal.classList.add('show');
+        refreshCustomerPreview();
     }
 
     function closeModal() {
         modal.classList.remove('show');
     }
 
+    function refreshCustomerPreview() {
+        const name = document.getElementById('customerName').value.trim();
+        const email = document.getElementById('customerEmail').value.trim();
+        const phone = document.getElementById('customerPhone').value.trim();
+        const previewName = document.getElementById('customerPreviewName');
+        const previewMeta = document.getElementById('customerPreviewMeta');
+        const previewInitials = document.getElementById('customerPreviewInitials');
+
+        previewName.innerText = name || 'Khách hàng mới';
+        previewMeta.innerText = [email, phone].filter(Boolean).join(' • ') || 'Email, số điện thoại và trạng thái sẽ được hiển thị ở đây.';
+        previewInitials.innerText = name
+            ? name.split(' ').map(function (part) { return part.charAt(0); }).join('').slice(0, 2).toUpperCase()
+            : 'KH';
+    }
+
     window.onclick = function(event) {
         if (event.target == modal) closeModal();
     }
+
+    document.querySelectorAll('.btn-edit').forEach(function (button) {
+        button.addEventListener('click', function () {
+            openEditModal(
+                button.dataset.customerId,
+                button.dataset.customerName,
+                button.dataset.customerEmail,
+                button.dataset.customerPhone
+            );
+        });
+    });
+
+    document.getElementById('customerName').addEventListener('input', refreshCustomerPreview);
+    document.getElementById('customerEmail').addEventListener('input', refreshCustomerPreview);
+    document.getElementById('customerPhone').addEventListener('input', refreshCustomerPreview);
 </script>
 <script src="${pageContext.request.contextPath}/assets/js/bootstrap.bundle.min.js"></script>
 <script src="${pageContext.request.contextPath}/assets/js/admin-main.js"></script>
