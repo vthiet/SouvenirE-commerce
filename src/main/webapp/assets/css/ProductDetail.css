@@ -848,3 +848,52 @@
         gap: 16px;
     }
 }
+
+/* Restore product meta chips after merged stylesheet changes */
+.product-right .product-detail-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 2px 0 4px;
+}
+
+.product-right .product-detail-meta .product-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 11px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.product-right .product-detail-meta .product-meta-chip i {
+    font-size: 13px;
+}
+
+.product-right .product-detail-meta .product-meta-chip--rating {
+    color: #8a5a00;
+    background: #fff8e1;
+    border-color: #ffe3a3;
+}
+
+.product-right .product-detail-meta .product-meta-chip--sold {
+    color: #d9480f;
+    background: #fff1e8;
+    border-color: #ffd2bd;
+}
+
+.product-right .product-detail-meta .product-meta-chip--stock {
+    color: #087f5b;
+    background: #eafaf4;
+    border-color: #b9ebd7;
+}
+
+.product-right .product-detail-meta .product-meta-chip--out {
+    color: #b42318;
+    background: #fff0ed;
+    border-color: #ffc9c1;
+}
