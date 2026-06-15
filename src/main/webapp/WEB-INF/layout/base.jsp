@@ -54,7 +54,7 @@
 
     <c:if test="${not empty pageCss}">
         <link rel="stylesheet"
-              href="${pageContext.request.contextPath}/assets/css/${pageCss}?v=11">
+              href="${pageContext.request.contextPath}/assets/css/${pageCss}?v=12">
     </c:if>
 
     <c:if test="${not empty contentCss}">
@@ -106,7 +106,7 @@
 <!-- ================= PAGE JS ================= -->
 
 <c:if test="${not empty pageJs}">
-    <script src="${pageContext.request.contextPath}/assets/js/${pageJs}?v=11">
+    <script src="${pageContext.request.contextPath}/assets/js/${pageJs}?v=13">
     </script>
 </c:if>
 
