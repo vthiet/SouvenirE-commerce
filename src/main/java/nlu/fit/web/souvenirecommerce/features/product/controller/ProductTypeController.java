@@ -11,7 +11,7 @@ import nlu.fit.web.souvenirecommerce.features.product.service.ProductTypeService
 
 import java.io.IOException;
 
-@WebServlet("/category")
+@WebServlet(urlPatterns = {"/category", "/products"})
 public class ProductTypeController extends HttpServlet {
 
     private ProductTypeService productTypeService;
@@ -27,29 +27,41 @@ public class ProductTypeController extends HttpServlet {
             HttpServletResponse response
     ) throws ServletException, IOException {
 
-        Long categoryId;
-
-        try {
-            categoryId = Long.parseLong(request.getParameter("id"));
-        } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/home");
-            return;
-        }
-
         Integer minPrice = parseInteger(request.getParameter("minPrice"));
         Integer maxPrice = parseInteger(request.getParameter("maxPrice"));
         Integer rating = parseInteger(request.getParameter("rating"));
         ProductSort sort = parseSort(request.getParameter("sort"));
         int page = parseInteger(request.getParameter("page"), 1);
 
-        ProductTypeDTO dto = productTypeService.getProductType(
-                categoryId,
-                minPrice,
-                maxPrice,
-                rating,
-                sort,
-                page
-        );
+        ProductTypeDTO dto;
+        if ("/products".equals(request.getServletPath())) {
+            dto = productTypeService.getPanelProductType(
+                    request.getParameter("panel"),
+                    minPrice,
+                    maxPrice,
+                    rating,
+                    sort,
+                    page
+            );
+        } else {
+            Long categoryId;
+
+            try {
+                categoryId = Long.parseLong(request.getParameter("id"));
+            } catch (Exception e) {
+                response.sendRedirect(request.getContextPath() + "/home");
+                return;
+            }
+
+            dto = productTypeService.getProductType(
+                    categoryId,
+                    minPrice,
+                    maxPrice,
+                    rating,
+                    sort,
+                    page
+            );
+        }
 
         if (dto == null) {
             response.sendRedirect(request.getContextPath() + "/home");
@@ -57,7 +69,11 @@ public class ProductTypeController extends HttpServlet {
         }
 
         request.setAttribute("headerMode", "BREADCRUMB");
-        request.setAttribute("breadcrumbCategory", dto.getCategory());
+        if (dto.isPanelMode()) {
+            request.setAttribute("breadcrumbLabel", dto.getCategory().getCategoryName());
+        } else {
+            request.setAttribute("breadcrumbCategory", dto.getCategory());
+        }
 
         request.setAttribute("data", dto);
 

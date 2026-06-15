@@ -54,7 +54,7 @@
 
     <c:if test="${not empty pageCss}">
         <link rel="stylesheet"
-              href="${pageContext.request.contextPath}/assets/css/${pageCss}?v=7">
+              href="${pageContext.request.contextPath}/assets/css/${pageCss}?v=9">
     </c:if>
 
     <c:if test="${not empty contentCss}">
