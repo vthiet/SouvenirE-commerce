@@ -11,7 +11,7 @@ import nlu.fit.web.souvenirecommerce.features.product.service.ProductTypeService
 
 import java.io.IOException;
 
-@WebServlet("/category")
+@WebServlet(urlPatterns = {"/category", "/products"})
 public class ProductTypeController extends HttpServlet {
 
     private ProductTypeService productTypeService;
@@ -27,29 +27,42 @@ public class ProductTypeController extends HttpServlet {
             HttpServletResponse response
     ) throws ServletException, IOException {
 
-        Long categoryId;
-
-        try {
-            categoryId = Long.parseLong(request.getParameter("id"));
-        } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/home");
-            return;
-        }
-
-        Integer minPrice = parseInteger(request.getParameter("minPrice"));
-        Integer maxPrice = parseInteger(request.getParameter("maxPrice"));
+        PriceBounds priceBounds = resolvePriceBounds(request);
+        Integer minPrice = priceBounds.minPrice();
+        Integer maxPrice = priceBounds.maxPrice();
         Integer rating = parseInteger(request.getParameter("rating"));
         ProductSort sort = parseSort(request.getParameter("sort"));
         int page = parseInteger(request.getParameter("page"), 1);
 
-        ProductTypeDTO dto = productTypeService.getProductType(
-                categoryId,
-                minPrice,
-                maxPrice,
-                rating,
-                sort,
-                page
-        );
+        ProductTypeDTO dto;
+        if ("/products".equals(request.getServletPath())) {
+            dto = productTypeService.getPanelProductType(
+                    request.getParameter("panel"),
+                    minPrice,
+                    maxPrice,
+                    rating,
+                    sort,
+                    page
+            );
+        } else {
+            Long categoryId;
+
+            try {
+                categoryId = Long.parseLong(request.getParameter("id"));
+            } catch (Exception e) {
+                response.sendRedirect(request.getContextPath() + "/home");
+                return;
+            }
+
+            dto = productTypeService.getProductType(
+                    categoryId,
+                    minPrice,
+                    maxPrice,
+                    rating,
+                    sort,
+                    page
+            );
+        }
 
         if (dto == null) {
             response.sendRedirect(request.getContextPath() + "/home");
@@ -57,9 +70,20 @@ public class ProductTypeController extends HttpServlet {
         }
 
         request.setAttribute("headerMode", "BREADCRUMB");
-        request.setAttribute("breadcrumbCategory", dto.getCategory());
+        if (dto.isPanelMode()) {
+            request.setAttribute("breadcrumbLabel", dto.getCategory().getCategoryName());
+        } else {
+            request.setAttribute("breadcrumbCategory", dto.getCategory());
+        }
 
         request.setAttribute("data", dto);
+
+        if (isAjaxRequest(request)) {
+            response.setContentType("text/html;charset=UTF-8");
+            request.getRequestDispatcher("/WEB-INF/views/product/product-type-results.jsp")
+                    .forward(request, response);
+            return;
+        }
 
         request.setAttribute("pageTitle", dto.getCategory().getCategoryName());
         request.setAttribute("contentPage", "/productType.jsp");
@@ -104,5 +128,30 @@ public class ProductTypeController extends HttpServlet {
         } catch (IllegalArgumentException e) {
             return ProductSort.POPULAR;
         }
+    }
+
+    private PriceBounds resolvePriceBounds(HttpServletRequest request) {
+        Integer minPrice = parseInteger(request.getParameter("minPrice"));
+        Integer maxPrice = parseInteger(request.getParameter("maxPrice"));
+
+        if (minPrice != null || maxPrice != null) {
+            return new PriceBounds(minPrice, maxPrice);
+        }
+
+        return switch (String.valueOf(request.getParameter("priceRange"))) {
+            case "under-100" -> new PriceBounds(null, 100000);
+            case "100-300" -> new PriceBounds(100000, 300000);
+            case "300-500" -> new PriceBounds(300000, 500000);
+            case "over-500" -> new PriceBounds(500000, null);
+            default -> new PriceBounds(null, null);
+        };
+    }
+
+    private boolean isAjaxRequest(HttpServletRequest request) {
+        return "true".equalsIgnoreCase(request.getParameter("ajax"))
+                || "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
+    }
+
+    private record PriceBounds(Integer minPrice, Integer maxPrice) {
     }
 }

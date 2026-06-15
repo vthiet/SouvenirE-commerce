@@ -214,6 +214,116 @@ public class ProductDAO {
         return 0;
     }
 
+    public List<Product> getProductsByCategoryIdsWithFilter(
+            List<Long> categoryIds,
+            Integer minPrice,
+            Integer maxPrice,
+            Integer rating,
+            ProductSort sort,
+            int offset,
+            int limit
+    ) {
+        List<Product> list = new ArrayList<>();
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return list;
+        }
+
+        StringBuilder sql = new StringBuilder("""
+            SELECT * FROM (
+                """ + BASE_SELECT + """
+            ) t
+            WHERE t.category_id IN (
+        """);
+        appendPlaceholders(sql, categoryIds.size());
+        sql.append(")");
+
+        if (minPrice != null) sql.append(" AND t.original_price >= ?");
+        if (maxPrice != null) sql.append(" AND t.original_price <= ?");
+        if (rating != null)   sql.append(" AND t.avg_rating >= ?");
+
+        if (sort != null) {
+            switch (sort) {
+                case PRICE_ASC  -> sql.append(" ORDER BY t.original_price ASC");
+                case PRICE_DESC -> sql.append(" ORDER BY t.original_price DESC");
+                case NEWEST     -> sql.append(" ORDER BY t.id DESC");
+                default         -> sql.append(" ORDER BY t.total_sold DESC");
+            }
+        } else {
+            sql.append(" ORDER BY t.total_sold DESC");
+        }
+
+        sql.append(" LIMIT ? OFFSET ?");
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            int idx = 1;
+            idx = bindCategoryIds(ps, categoryIds, idx);
+            if (minPrice != null) ps.setInt(idx++, minPrice);
+            if (maxPrice != null) ps.setInt(idx++, maxPrice);
+            if (rating != null)   ps.setInt(idx++, rating);
+            ps.setInt(idx++, limit);
+            ps.setInt(idx, offset);
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(mapProduct(rs));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    public int countProductsByCategoryIdsWithFilter(
+            List<Long> categoryIds,
+            Integer minPrice,
+            Integer maxPrice,
+            Integer rating
+    ) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return 0;
+        }
+
+        StringBuilder sql = new StringBuilder("""
+            SELECT COUNT(*) FROM (
+                SELECT p.id
+                FROM products p
+                WHERE p.category_id IN (
+        """);
+        appendPlaceholders(sql, categoryIds.size());
+        sql.append(")");
+
+        if (minPrice != null) sql.append(" AND p.original_price >= ?");
+        if (maxPrice != null) sql.append(" AND p.original_price <= ?");
+
+        sql.append(" GROUP BY p.id ");
+
+        if (rating != null) sql.append(" HAVING COALESCE(MAX(p.avg_rating), 0) >= ? ");
+
+        sql.append(") t");
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            int idx = 1;
+            idx = bindCategoryIds(ps, categoryIds, idx);
+            if (minPrice != null) ps.setInt(idx++, minPrice);
+            if (maxPrice != null) ps.setInt(idx++, maxPrice);
+            if (rating != null)   ps.setInt(idx, rating);
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return rs.getInt(1);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
     public List<Product> searchProductsWithFilter(
             String keyword,
             Integer minPrice,
@@ -714,6 +824,23 @@ public class ProductDAO {
         }
 
         return list;
+    }
+
+    private void appendPlaceholders(StringBuilder sql, int count) {
+        for (int i = 0; i < count; i++) {
+            if (i > 0) {
+                sql.append(", ");
+            }
+            sql.append("?");
+        }
+    }
+
+    private int bindCategoryIds(PreparedStatement ps, List<Long> categoryIds, int startIndex) throws Exception {
+        int idx = startIndex;
+        for (Long categoryId : categoryIds) {
+            ps.setLong(idx++, categoryId);
+        }
+        return idx;
     }
 
 }

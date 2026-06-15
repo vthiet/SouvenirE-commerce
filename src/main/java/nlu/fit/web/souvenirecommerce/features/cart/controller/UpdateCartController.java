@@ -8,14 +8,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
-import nlu.fit.web.souvenirecommerce.model.entity.User;
+import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 
 import java.io.IOException;
 
 @WebServlet("/cart/update")
 public class UpdateCartController extends HttpServlet {
-    private final CartPersistenceService cartPersistenceService = new CartPersistenceService();
+    private final CartService cartService = new CartService();
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -29,22 +28,14 @@ public class UpdateCartController extends HttpServlet {
             int quantity  = Integer.parseInt(request.getParameter("quantity"));
 
             HttpSession session = request.getSession();
-            Cart cart = (Cart) session.getAttribute("cart");
-            
-            if (cart == null) {
+            boolean updated = cartService.updateItem(session, productId, quantity);
+            if (!updated) {
                 response.getWriter().write("{\"success\":false}");
                 return;
             }
 
-            if (quantity <= 0) {
-                cart.removeItem(productId);
-            } else {
-                cart.updateItem(productId, quantity);
-            }
-            
-            session.setAttribute("cart", cart);
-            session.setAttribute("cartItemCount", cart.totalQuantity());
-            cartPersistenceService.saveCart(getCurrentUser(session), cart);
+            Cart cart = cartService.getCartForDisplay(session);
+            cartService.storeCart(session, cart);
 
             CartItem item = cart.getItem(productId);
             double itemSubtotal = (item != null) ? item.getSubTotal() : 0;
@@ -73,17 +64,5 @@ public class UpdateCartController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         doPost(request, response);
-    }
-
-    private User getCurrentUser(HttpSession session) {
-        Object user = session.getAttribute("userInSession");
-
-        if (user instanceof User currentUser) {
-            return currentUser;
-        }
-
-        user = session.getAttribute("authUser");
-
-        return user instanceof User currentUser ? currentUser : null;
     }
 }

@@ -41,6 +41,40 @@
         </div>
     </section>
 
+    <section class="home-quick-panels" aria-label="Điều hướng nhanh">
+        <a class="home-quick-panel" href="${pageContext.request.contextPath}/products?panel=vi-que-binh-dinh">
+            <span class="home-quick-panel__icon">
+                <i class="fa-solid fa-basket-shopping"></i>
+            </span>
+            <span class="home-quick-panel__title">Vị Quê Bình Định</span>
+            <span class="home-quick-panel__subtitle">Nem, chả, bánh quê đậm vị</span>
+        </a>
+
+        <a class="home-quick-panel" href="${pageContext.request.contextPath}/products?panel=qua-tu-bien">
+            <span class="home-quick-panel__icon">
+                <i class="fa-solid fa-fish"></i>
+            </span>
+            <span class="home-quick-panel__title">Quà Từ Biển</span>
+            <span class="home-quick-panel__subtitle">Hải vị khô tiện mang về</span>
+        </a>
+
+        <a class="home-quick-panel" href="${pageContext.request.contextPath}/products?panel=huong-men-dat-vo">
+            <span class="home-quick-panel__icon">
+                <i class="fa-solid fa-wine-bottle"></i>
+            </span>
+            <span class="home-quick-panel__title">Hương Men Đất Võ</span>
+            <span class="home-quick-panel__subtitle">Quà biếu truyền thống</span>
+        </a>
+
+        <a class="home-quick-panel" href="${pageContext.request.contextPath}/products?panel=net-viet-lam-qua">
+            <span class="home-quick-panel__icon">
+                <i class="fa-solid fa-gift"></i>
+            </span>
+            <span class="home-quick-panel__title">Nét Việt Làm Quà</span>
+            <span class="home-quick-panel__subtitle">Thủ công và lưu niệm</span>
+        </a>
+    </section>
+
 
     <c:forEach var="section" items="${data.topCategorySections}">
 
