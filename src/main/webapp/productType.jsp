@@ -15,6 +15,9 @@
                         <c:when test="${data.searchMode}">
                             <input type="hidden" name="keyword" value="${data.searchKeyword}"/>
                         </c:when>
+                        <c:when test="${data.panelMode}">
+                            <input type="hidden" name="panel" value="${data.panelSlug}"/>
+                        </c:when>
                         <c:otherwise>
                             <input type="hidden" name="id" value="${data.category.id}"/>
                         </c:otherwise>
@@ -59,7 +62,7 @@
 
             <main class="product-type-content">
 
-                <c:if test="${not data.searchMode}">
+                <c:if test="${not data.searchMode and not data.panelMode}">
                 <div class="category-banner">
                     <img src="${pageContext.request.contextPath}/assets/images/home_banner/${data.category.image}"
                          alt="${data.category.categoryName}">
@@ -92,6 +95,9 @@
                             <c:choose>
                                 <c:when test="${data.searchMode}">
                                     <c:param name="keyword" value="${data.searchKeyword}"/>
+                                </c:when>
+                                <c:when test="${data.panelMode}">
+                                    <c:param name="panel" value="${data.panelSlug}"/>
                                 </c:when>
                                 <c:otherwise>
                                     <c:param name="id" value="${data.category.id}"/>

@@ -108,6 +108,58 @@ public class ProductTypeService {
         return dto;
     }
 
+    public ProductTypeDTO getPanelProductType(String panelSlug, Integer minPrice, Integer maxPrice, Integer rating, ProductSort sort, int page) {
+        PanelDefinition panel = PanelDefinition.from(panelSlug);
+        if (panel == null) {
+            return null;
+        }
+
+        int safePage = Math.max(page, 1);
+        int offset = (safePage - 1) * PAGE_SIZE;
+
+        List<Product> products = productDAO.getProductsByCategoryIdsWithFilter(
+                panel.categoryIds(),
+                minPrice,
+                maxPrice,
+                rating,
+                sort,
+                offset,
+                PAGE_SIZE
+        );
+
+        int totalProducts = productDAO.countProductsByCategoryIdsWithFilter(
+                panel.categoryIds(),
+                minPrice,
+                maxPrice,
+                rating
+        );
+
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalProducts / PAGE_SIZE));
+
+        Category temporaryCategory = Category.builder()
+                .id(0L)
+                .categoryName(panel.title())
+                .image("")
+                .build();
+
+        ProductTypeDTO dto = new ProductTypeDTO();
+        dto.setCategory(temporaryCategory);
+        dto.setProducts(mapToProductCardDTOs(products));
+        dto.setCurrentPage(safePage);
+        dto.setTotalPages(totalPages);
+        dto.setTotalProducts(totalProducts);
+        dto.setMinPrice(minPrice);
+        dto.setMaxPrice(maxPrice);
+        dto.setRating(rating);
+        dto.setSort(sort);
+        dto.setSortParam(sort != null ? sort.name().toLowerCase() : "popular");
+        dto.setPanelMode(true);
+        dto.setPanelSlug(panel.slug());
+        dto.setListingAction("/products");
+
+        return dto;
+    }
+
     private List<ProductCardDTO> mapToProductCardDTOs(List<Product> products) {
         List<ProductCardDTO> cards = new ArrayList<>();
 
@@ -124,5 +176,37 @@ public class ProductTypeService {
         }
 
         return cards;
+    }
+
+    private record PanelDefinition(String slug, String title, List<Long> categoryIds) {
+        private static PanelDefinition from(String slug) {
+            if (slug == null || slug.isBlank()) {
+                return null;
+            }
+
+            return switch (slug.trim()) {
+                case "vi-que-binh-dinh" -> new PanelDefinition(
+                        "vi-que-binh-dinh",
+                        "Vị Quê Bình Định",
+                        List.of(1L, 2L)
+                );
+                case "qua-tu-bien" -> new PanelDefinition(
+                        "qua-tu-bien",
+                        "Quà Từ Biển",
+                        List.of(4L)
+                );
+                case "huong-men-dat-vo" -> new PanelDefinition(
+                        "huong-men-dat-vo",
+                        "Hương Men Đất Võ",
+                        List.of(3L)
+                );
+                case "net-viet-lam-qua" -> new PanelDefinition(
+                        "net-viet-lam-qua",
+                        "Nét Việt Làm Quà",
+                        List.of(5L, 6L)
+                );
+                default -> null;
+            };
+        }
     }
 }
