@@ -7,12 +7,13 @@
     <meta charset="UTF-8">
     <title>Quản lý sản phẩm - Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/vendors/bootstrap-icons/bootstrap-icons.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/css/style.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendors/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-pages.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-products.css">
 </head>
 <body>
 <div class="admin-shell">
@@ -34,9 +35,9 @@
             </div>
 
             <c:if test="${not empty searchQuery}">
-                <div style="padding: 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; margin-bottom: 16px;">
+                <div class="product-filter-banner">
                     <span>Kết quả tìm kiếm cho: <strong>"${searchQuery}"</strong></span>
-                    <a href="${pageContext.request.contextPath}/admin/products" style="margin-left: 12px; color: #3b82f6; text-decoration: none;">
+                    <a href="${pageContext.request.contextPath}/admin/products" class="product-filter-link">
                         <i class="fas fa-times"></i> Xóa bộ lọc
                     </a>
                 </div>
@@ -57,14 +58,14 @@
                     <table class="data-table">
                         <thead>
                         <tr>
-                            <th style="width: 60px;">ID</th>
-                            <th style="width: 80px;">Hình ảnh</th>
+                            <th class="product-col-id">ID</th>
+                            <th class="product-col-image">Hình ảnh</th>
                             <th>Tên sản phẩm</th>
-                            <th style="width: 120px;">Giá</th>
-                            <th style="width: 100px;">Tồn kho</th>
-                            <th style="width: 100px;">Đã bán</th>
-                            <th style="width: 100px;">Đánh giá</th>
-                            <th style="width: 150px;">Thao tác</th>
+                            <th class="product-col-price">Giá</th>
+                            <th class="product-col-stock">Tồn kho</th>
+                            <th class="product-col-sold">Đã bán</th>
+                            <th class="product-col-rating">Đánh giá</th>
+                            <th class="product-col-actions">Thao tác</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -74,17 +75,17 @@
                                 <td>
                                     <img src="${p.imageUrl}"
                                          alt="${p.name}"
-                                         style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"
+                                         class="product-thumb"
                                          onerror="this.src='https://placehold.co/50x50?text=No+Image'">
                                 </td>
-                                <td style="font-weight: 500;">${p.name}</td>
+                                <td class="product-name">${p.name}</td>
                                 <td>
                                     <c:choose>
                                         <c:when test="${p.discountPercent > 0 and p.salePrice != null}">
-                                            <div style="display: flex; flex-direction: column; gap: 2px;">
-                                                <span style="color: #EE4D2D; font-weight: 600;"><fmt:formatNumber value="${p.salePrice}" pattern="#,###"/>đ</span>
-                                                <span style="text-decoration: line-through; color: #9ca3af; font-size: 12px;"><fmt:formatNumber value="${p.originalPrice}" pattern="#,###"/>đ</span>
-                                                <span style="background: #FEF6F5; color: #EE4D2D; padding: 2px 6px; border-radius: 4px; font-size: 11px; width: fit-content;">-${p.discountPercent}%</span>
+                                            <div class="product-price-stack">
+                                                <span class="product-price-sale"><fmt:formatNumber value="${p.salePrice}" pattern="#,###"/>đ</span>
+                                                <span class="product-price-original"><fmt:formatNumber value="${p.originalPrice}" pattern="#,###"/>đ</span>
+                                                <span class="product-discount-badge">-${p.discountPercent}%</span>
                                             </div>
                                         </c:when>
                                         <c:otherwise>
@@ -92,10 +93,10 @@
                                         </c:otherwise>
                                     </c:choose>
                                 </td>
-                                <td style="text-align: center;">${p.stockQuantity}</td>
-                                <td style="text-align: center;">${p.totalSold}</td>
-                                <td style="text-align: center;">
-                                    <i class="fas fa-star" style="color: #fbbf24;"></i> ${p.avgRating}
+                                <td class="product-center">${p.stockQuantity}</td>
+                                <td class="product-center">${p.totalSold}</td>
+                                <td class="product-center">
+                                    <i class="fas fa-star product-rating-icon"></i> ${p.avgRating}
                                 </td>
                                 <td>
                                     <div class="action-buttons">
@@ -105,7 +106,7 @@
                                             </button>
                                         </c:if>
                                         <c:if test="${canDeleteProduct}">
-                                            <form action="${pageContext.request.contextPath}/admin/products" method="post" style="display: inline;" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">
+                                            <form action="${pageContext.request.contextPath}/admin/products" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="id" value="${p.id}">
                                                 <button class="btn-icon btn-delete" title="Xóa">
@@ -123,9 +124,9 @@
 
                 <!-- Pagination -->
                 <c:if test="${totalPages > 1}">
-                    <div style="padding: 20px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                    <div class="product-pagination">
                         <c:if test="${currentPage > 1}">
-                            <a href="?page=${currentPage - 1}" class="btn-icon" style="text-decoration: none;">
+                            <a href="?page=${currentPage - 1}" class="btn-icon product-pagination-link">
                                 <i class="fas fa-chevron-left"></i>
                             </a>
                         </c:if>
@@ -133,16 +134,16 @@
                         <c:forEach begin="1" end="${totalPages}" var="i">
                             <c:choose>
                                 <c:when test="${i == currentPage}">
-                                    <span style="padding: 8px 12px; background: #3b82f6; color: white; border-radius: 6px; font-weight: 500;">${i}</span>
+                                    <span class="product-pagination-current">${i}</span>
                                 </c:when>
                                 <c:otherwise>
-                                    <a href="?page=${i}" style="padding: 8px 12px; background: #f3f4f6; color: #374151; border-radius: 6px; text-decoration: none;">${i}</a>
+                                    <a href="?page=${i}" class="product-pagination-page">${i}</a>
                                 </c:otherwise>
                             </c:choose>
                         </c:forEach>
 
                         <c:if test="${currentPage < totalPages}">
-                            <a href="?page=${currentPage + 1}" class="btn-icon" style="text-decoration: none;">
+                            <a href="?page=${currentPage + 1}" class="btn-icon product-pagination-link">
                                 <i class="fas fa-chevron-right"></i>
                             </a>
                         </c:if>
@@ -196,13 +197,13 @@
                 <div class="form-group">
                     <label>Giảm giá (%)</label>
                     <input type="number" name="discountPercent" id="discountPercent" class="form-control" min="0" max="100" value="0" onchange="calculateSalePrice()">
-                    <small style="color: #6b7280;">Nhập 0 nếu không có giảm giá</small>
+                    <small class="product-help">Nhập 0 nếu không có giảm giá</small>
                 </div>
 
                 <div class="form-group">
                     <label>Giá sau giảm (VNĐ)</label>
-                    <input type="number" name="salePrice" id="salePrice" class="form-control" min="0" readonly style="background: #f3f4f6;">
-                    <small style="color: #6b7280;">Tự động tính khi nhập % giảm giá</small>
+                    <input type="number" name="salePrice" id="salePrice" class="form-control product-readonly" min="0" readonly>
+                    <small class="product-help">Tự động tính khi nhập % giảm giá</small>
                 </div>
 
                 <div class="form-group">
@@ -248,7 +249,7 @@
         document.getElementById('salePrice').value = '';
         document.getElementById('productStock').value = '';
         document.getElementById('productImage').value = '';
-        modal.style.display = 'block';
+        modal.classList.add('show');
     }
 
     function openEditModal(id, name, desc, catId, price, image, stock, discount, salePrice) {
@@ -263,11 +264,11 @@
         document.getElementById('salePrice').value = salePrice || '';
         document.getElementById('productStock').value = stock;
         document.getElementById('productImage').value = image;
-        modal.style.display = 'block';
+        modal.classList.add('show');
     }
 
     function closeModal() {
-        modal.style.display = 'none';
+        modal.classList.remove('show');
     }
 
     window.onclick = function(event) {
@@ -287,7 +288,7 @@
         }
     });
 </script>
-<script src="${pageContext.request.contextPath}/admin/template/assets/js/bootstrap.bundle.min.js"></script>
-<script src="${pageContext.request.contextPath}/admin/template/assets/js/main.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/admin-main.js"></script>
 </body>
 </html>

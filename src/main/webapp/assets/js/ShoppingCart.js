@@ -1,136 +1,247 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
+    const contextPath = document.querySelector('meta[name="context-path"]')?.content || "";
+    const selectAll = document.getElementById("selectAllCartItems");
+    const shopCheckbox = document.querySelector(".shop-checkbox");
+    const checkoutButton = document.getElementById("checkoutButton");
+    const totalPayEl = document.getElementById("cart-total-pay");
+    const totalQtyEl = document.getElementById("cart-total-qty");
+    const toast = document.getElementById("cartToast");
+    const toastClose = toast?.querySelector("button");
+    const removeAllButton = document.getElementById("removeAllCartItems");
 
-    /* ================== CONFIG ================== */
+    let toastTimer = null;
 
-    const contextPath =
-        document.querySelector('meta[name="context-path"]')?.content || '';
+    const formatVND = (value) => `${Number(value || 0).toLocaleString("vi-VN")} đ`;
 
-    /* ================== HELPERS ================== */
+    function getCards() {
+        return Array.from(document.querySelectorAll(".cart-item-card"));
+    }
 
-    const formatVND = (value) =>
-        value.toLocaleString('vi-VN') + '₫';
+    function getSelectedCards() {
+        return getCards().filter((card) => card.querySelector(".item-checkbox")?.checked);
+    }
 
-    /* ===== UPDATE SUMMARY (HEADER + RIGHT) ===== */
+    function getCardQuantity(card) {
+        return parseInt(card.querySelector(".qty-input")?.value, 10) || 0;
+    }
 
-    const updateSummary = (total, totalQty) => {
-        const qtyEl       = document.getElementById('cart-total-qty');
-        const subtotalEl  = document.getElementById('cart-subtotal');
-        const totalEl     = document.getElementById('cart-total');
-        const payTotalEl  = document.getElementById('cart-total-pay');
+    function getCardUnitPrice(card) {
+        return Number(card.dataset.unitPrice) || 0;
+    }
 
-        if (qtyEl)      qtyEl.textContent = `Tổng cộng: ${totalQty} sản phẩm`;
-        if (subtotalEl) subtotalEl.textContent = formatVND(total);
-        if (totalEl)    totalEl.textContent = formatVND(total);
-        if (payTotalEl) payTotalEl.textContent = formatVND(total);
-    };
+    function updateHeaderCounts() {
+        const totalQty = getCards().reduce((sum, card) => sum + getCardQuantity(card), 0);
 
-    /* ===== CLIENT-SIDE CALC (SOURCE OF TRUTH UI) ===== */
+        if (totalQtyEl) {
+            totalQtyEl.textContent = String(totalQty);
+        }
 
-    const calcClientSummary = () => {
-        let totalQty = 0;
-        let totalPrice = 0;
+        const allChecked = getCards().length > 0 && getCards().every((card) => card.querySelector(".item-checkbox")?.checked);
+        const someChecked = getCards().some((card) => card.querySelector(".item-checkbox")?.checked);
 
-        document.querySelectorAll('.cart-item-card').forEach(card => {
-            const qtyInput = card.querySelector('.qty-input');
-            if (!qtyInput) return;
+        if (selectAll) {
+            selectAll.checked = allChecked;
+            selectAll.indeterminate = someChecked && !allChecked;
+        }
 
-            const qty = parseInt(qtyInput.value, 10) || 0;
+        if (shopCheckbox) {
+            shopCheckbox.checked = allChecked;
+            shopCheckbox.indeterminate = someChecked && !allChecked;
+        }
+    }
 
-            const unitPriceText =
-                card.querySelector('.item-details p')
-                    ?.innerText.replace(/[^\d]/g, '') || '0';
+    function updateSelectedSummary() {
+        const selectedCards = getSelectedCards();
+        const selectedTotal = selectedCards.reduce((sum, card) => {
+            return sum + getCardUnitPrice(card) * getCardQuantity(card);
+        }, 0);
 
-            const unitPrice = parseInt(unitPriceText, 10) || 0;
+        if (totalPayEl) {
+            totalPayEl.textContent = formatVND(selectedTotal);
+        }
 
-            totalQty += qty;
-            totalPrice += qty * unitPrice;
+        const hasSelection = selectedCards.length > 0;
+        checkoutButton?.classList.toggle("checkout-btn--active", hasSelection);
+        checkoutButton?.classList.toggle("checkout-btn--disabled", !hasSelection);
+        checkoutButton?.setAttribute("aria-disabled", String(!hasSelection));
+
+        if (checkoutButton) {
+            const selectedIds = selectedCards
+                .map((card) => card.dataset.productId)
+                .filter(Boolean)
+                .join(",");
+            checkoutButton.href = hasSelection
+                ? `${contextPath}/checkout?items=${encodeURIComponent(selectedIds)}`
+                : `${contextPath}/checkout`;
+        }
+
+        updateHeaderCounts();
+    }
+
+    function updateItemSubtotal(card) {
+        const subtotalEl = card.querySelector(".item-price");
+
+        if (subtotalEl) {
+            subtotalEl.textContent = formatVND(getCardUnitPrice(card) * getCardQuantity(card));
+        }
+    }
+
+    function syncBackend(productId, quantity) {
+        return fetch(`${contextPath}/cart/update`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: `productId=${encodeURIComponent(productId)}&quantity=${encodeURIComponent(quantity)}`
         });
+    }
 
-        updateSummary(totalPrice, totalQty);
-    };
+    function showRemoveToast() {
+        if (!toast) {
+            return;
+        }
 
-    /* ================== MAIN ================== */
+        toast.hidden = false;
 
-    document.querySelectorAll('.cart-item-card').forEach(card => {
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            toast.hidden = true;
+        }, 3500);
+    }
 
+    function showEmptyStateIfNeeded() {
+        const currentContainer = document.getElementById("cartItemsContainer");
+
+        if (getCards().length > 0 || !currentContainer) {
+            return;
+        }
+
+        currentContainer.outerHTML = `
+            <div class="cart-empty-state" id="cartEmptyState">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <p>Giỏ hàng của bạn đang trống.</p>
+                <a href="${contextPath}/home">Tiếp tục mua sắm</a>
+            </div>
+        `;
+    }
+
+    function removeCard(card) {
         const productId = card.dataset.productId;
-        if (!productId) return;
 
-        const minusBtn  = card.querySelector('.minus-btn');
-        const plusBtn   = card.querySelector('.plus-btn');
-        const qtyInput  = card.querySelector('.qty-input');
-        const priceEl   = card.querySelector('.item-price');
-        const removeBtn = card.querySelector('.remove-item-btn');
+        return syncBackend(productId, 0)
+            .then((response) => response.ok ? response.json() : null)
+            .then((data) => {
+                if (data && data.success === false) {
+                    alert("Không thể xóa sản phẩm. Vui lòng thử lại.");
+                    return;
+                }
 
-        /* ===== UNIT PRICE ===== */
-
-        const unitPriceText =
-            card.querySelector('.item-details p')
-                ?.innerText.replace(/[^\d]/g, '') || '0';
-
-        const unitPrice = parseInt(unitPriceText, 10) || 0;
-
-        /* ===== OPTIMISTIC UI ===== */
-
-        const updateItemUI = (qty) => {
-            if (qty <= 0) {
                 card.remove();
-            } else {
-                qtyInput.value = qty;
-                priceEl.textContent = formatVND(unitPrice * qty);
-            }
-        };
-
-        /* ===== BACKEND SYNC (NO UI UPDATE) ===== */
-
-        const syncBackend = (qty) => {
-            fetch(`${contextPath}/cart/update`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: `productId=${productId}&quantity=${qty}`
-            }).catch(err => {
-                console.error(err);
-                alert('Lỗi kết nối server');
+                showEmptyStateIfNeeded();
+                showRemoveToast();
+                updateSelectedSummary();
+            })
+            .catch(() => {
+                alert("Lỗi kết nối server");
             });
-        };
+    }
 
-        /* ================== EVENTS ================== */
+    function setAllChecked(checked) {
+        getCards().forEach((card) => {
+            const checkbox = card.querySelector(".item-checkbox");
 
-        minusBtn?.addEventListener('click', () => {
-            const newQty = parseInt(qtyInput.value, 10) - 1;
-            if (newQty < 1) return;
-
-            updateItemUI(newQty);
-            calcClientSummary();
-            syncBackend(newQty);
+            if (checkbox) {
+                checkbox.checked = checked;
+            }
         });
 
-        plusBtn?.addEventListener('click', () => {
-            const newQty = parseInt(qtyInput.value, 10) + 1;
+        updateSelectedSummary();
+    }
 
-            updateItemUI(newQty);
-            calcClientSummary();
-            syncBackend(newQty);
-        });
+    selectAll?.addEventListener("change", () => {
+        setAllChecked(selectAll.checked);
+    });
 
-        qtyInput?.addEventListener('change', () => {
-            let newQty = parseInt(qtyInput.value, 10);
-            if (isNaN(newQty) || newQty < 1) newQty = 1;
+    shopCheckbox?.addEventListener("change", () => {
+        setAllChecked(shopCheckbox.checked);
+    });
 
-            updateItemUI(newQty);
-            calcClientSummary();
-            syncBackend(newQty);
-        });
+    document.querySelector(".cart-shop-remove")?.addEventListener("click", () => {
+        const selectedCards = getSelectedCards();
 
-        removeBtn?.addEventListener('click', () => {
-            if (!confirm('Xóa sản phẩm này?')) return;
+        if (selectedCards.length === 0) {
+            return;
+        }
 
-            updateItemUI(0);
-            calcClientSummary();
-            syncBackend(0);
+        selectedCards.forEach(removeCard);
+    });
+
+    removeAllButton?.addEventListener("click", () => {
+        const cards = getCards();
+
+        if (cards.length === 0) {
+            return;
+        }
+
+        if (!window.confirm("Bạn có muốn xóa tất cả sản phẩm trong giỏ hàng không?")) {
+            return;
+        }
+
+        Promise.all(cards.map(removeCard)).then(() => {
+            showRemoveToast();
+            updateSelectedSummary();
         });
     });
+
+    toastClose?.addEventListener("click", () => {
+        toast.hidden = true;
+        clearTimeout(toastTimer);
+    });
+
+    checkoutButton?.addEventListener("click", (event) => {
+        if (!checkoutButton.classList.contains("checkout-btn--active")) {
+            event.preventDefault();
+        }
+    });
+
+    getCards().forEach((card) => {
+        const productId = card.dataset.productId;
+        const minusBtn = card.querySelector(".minus-btn");
+        const plusBtn = card.querySelector(".plus-btn");
+        const qtyInput = card.querySelector(".qty-input");
+        const removeBtn = card.querySelector(".remove-item-btn");
+        const itemCheckbox = card.querySelector(".item-checkbox");
+
+        itemCheckbox?.addEventListener("change", updateSelectedSummary);
+
+        function commitQuantity(nextQty) {
+            const quantity = Math.max(1, Number(nextQty) || 1);
+
+            qtyInput.value = String(quantity);
+            updateItemSubtotal(card);
+            updateSelectedSummary();
+            syncBackend(productId, quantity).catch(() => {
+                alert("Lỗi kết nối server");
+            });
+        }
+
+        minusBtn?.addEventListener("click", () => {
+            commitQuantity((parseInt(qtyInput.value, 10) || 1) - 1);
+        });
+
+        plusBtn?.addEventListener("click", () => {
+            commitQuantity((parseInt(qtyInput.value, 10) || 1) + 1);
+        });
+
+        qtyInput?.addEventListener("change", () => {
+            commitQuantity(qtyInput.value);
+        });
+
+        removeBtn?.addEventListener("click", () => {
+            removeCard(card);
+        });
+    });
+
+    updateSelectedSummary();
 });

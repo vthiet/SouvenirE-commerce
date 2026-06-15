@@ -3,12 +3,11 @@ package nlu.fit.web.souvenirecommerce.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseEntity;
-import nlu.fit.web.souvenirecommerce.common.enums.Gender;
+import nlu.fit.web.souvenirecommerce.model.enums.Gender;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity

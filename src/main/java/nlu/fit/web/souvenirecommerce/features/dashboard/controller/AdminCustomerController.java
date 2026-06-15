@@ -6,12 +6,15 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 @WebServlet("/admin/customers")
 public class AdminCustomerController extends HttpServlet {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminCustomerController.class);
     private UserDAOImpl userDAOImpl;
 
     @Override
@@ -38,6 +41,7 @@ public class AdminCustomerController extends HttpServlet {
         int offset = (page - 1) * pageSize;
         int totalCustomers = userDAOImpl.getTotalCustomers();
         int totalPages = (int) Math.ceil((double) totalCustomers / pageSize);
+        log.info("Loaded admin customers page {} with {} total customers", page, totalCustomers);
 
         req.setAttribute("customers", userDAOImpl.getCustomersWithPagination(offset, pageSize));
         req.setAttribute("currentPage", page);
@@ -60,6 +64,7 @@ public class AdminCustomerController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
         String action = req.getParameter("action");
+        log.debug("Admin customers action received: {}", action);
 
         try {
             if ("add".equals(action)) {
@@ -69,9 +74,11 @@ public class AdminCustomerController extends HttpServlet {
                 String phone = req.getParameter("phone");
 
                 if (userDAOImpl.insertUser(fullName, email, password, phone)) {
+                    log.info("Admin customer created: email={}", email);
                     req.getSession().setAttribute("message", "Thêm khách hàng thành công!");
                     req.getSession().setAttribute("messageType", "success");
                 } else {
+                    log.warn("Admin customer creation failed: email={}", email);
                     req.getSession().setAttribute("message", "Thêm khách hàng thất bại!");
                     req.getSession().setAttribute("messageType", "error");
                 }
@@ -83,9 +90,11 @@ public class AdminCustomerController extends HttpServlet {
                 String phone = req.getParameter("phone");
 
                 if (userDAOImpl.updateUser(userId, fullName, email, phone)) {
+                    log.info("Admin customer updated: userId={}", userId);
                     req.getSession().setAttribute("message", "Cập nhật khách hàng thành công!");
                     req.getSession().setAttribute("messageType", "success");
                 } else {
+                    log.warn("Admin customer update failed: userId={}", userId);
                     req.getSession().setAttribute("message", "Cập nhật khách hàng thất bại!");
                     req.getSession().setAttribute("messageType", "error");
                 }
@@ -96,9 +105,11 @@ public class AdminCustomerController extends HttpServlet {
                 String newStatus = "Active".equals(currentStatus) ? "Banned" : "Active";
 
                 if (userDAOImpl.updateUserStatus(userId, newStatus)) {
+                    log.info("Admin customer status changed: userId={}, newStatus={}", userId, newStatus);
                     req.getSession().setAttribute("message", "Cập nhật trạng thái thành công!");
                     req.getSession().setAttribute("messageType", "success");
                 } else {
+                    log.warn("Admin customer status update failed: userId={}, newStatus={}", userId, newStatus);
                     req.getSession().setAttribute("message", "Cập nhật trạng thái thất bại!");
                     req.getSession().setAttribute("messageType", "error");
                 }
@@ -107,15 +118,17 @@ public class AdminCustomerController extends HttpServlet {
                 int userId = Integer.parseInt(req.getParameter("id"));
 
                 if (userDAOImpl.deleteUser(userId)) {
+                    log.info("Admin customer deleted: userId={}", userId);
                     req.getSession().setAttribute("message", "Xóa khách hàng thành công!");
                     req.getSession().setAttribute("messageType", "success");
                 } else {
+                    log.warn("Admin customer deletion failed: userId={}", userId);
                     req.getSession().setAttribute("message", "Xóa khách hàng thất bại!");
                     req.getSession().setAttribute("messageType", "error");
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Admin customer action failed: {}", action, e);
             req.getSession().setAttribute("message", "Có lỗi xảy ra: " + e.getMessage());
             req.getSession().setAttribute("messageType", "error");
         }

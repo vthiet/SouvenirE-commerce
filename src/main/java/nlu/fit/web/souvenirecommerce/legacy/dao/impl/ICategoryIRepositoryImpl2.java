@@ -3,7 +3,7 @@ package nlu.fit.web.souvenirecommerce.legacy.dao.impl;
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseRepository;
 import nlu.fit.web.souvenirecommerce.legacy.dao.ICategoryEntityIRepository;
 import nlu.fit.web.souvenirecommerce.model.entity.Category;
-import nlu.fit.web.souvenirecommerce.core.config.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import org.hibernate.Transaction;
 
 import java.util.Collections;

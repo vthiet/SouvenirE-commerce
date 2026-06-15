@@ -11,6 +11,8 @@ import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
 import nlu.fit.web.souvenirecommerce.legacy.model.Order;
 import nlu.fit.web.souvenirecommerce.model.entity.Product;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 
 @WebServlet("/admin/export-report")
 public class ExportReportController extends HttpServlet {
+    private static final Logger log = LoggerFactory.getLogger(ExportReportController.class);
     private final OrderDAO orderDAO = new OrderDAO();
     private final ProductDAO productDAO = new ProductDAO();
     private final UserDAOImpl userDAOImpl = new UserDAOImpl();
@@ -33,6 +36,8 @@ public class ExportReportController extends HttpServlet {
         if (type == null || type.isEmpty()) {
             type = "summary";
         }
+
+        log.info("Export report requested: type={}", type);
 
         switch (type) {
             case "summary":
@@ -98,6 +103,7 @@ public class ExportReportController extends HttpServlet {
         }
 
         writer.flush();
+        log.info("Exported summary report");
     }
 
     private void exportProductsReport(HttpServletResponse response) throws IOException {
@@ -130,6 +136,7 @@ public class ExportReportController extends HttpServlet {
         }
 
         writer.flush();
+        log.info("Exported products report");
     }
 
     private void exportOrdersReport(HttpServletResponse response) throws IOException {
@@ -161,6 +168,7 @@ public class ExportReportController extends HttpServlet {
         }
 
         writer.flush();
+        log.info("Exported orders report");
     }
 
     private void exportCustomersReport(HttpServletResponse response) throws IOException {
@@ -194,5 +202,6 @@ public class ExportReportController extends HttpServlet {
         }
 
         writer.flush();
+        log.info("Exported customers report");
     }
 }

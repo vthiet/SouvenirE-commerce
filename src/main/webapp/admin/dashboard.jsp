@@ -9,9 +9,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | INOLA Admin</title>
-    <link rel="stylesheet" href="${ctx}/admin/template/assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="${ctx}/admin/template/assets/vendors/bootstrap-icons/bootstrap-icons.css">
-    <link rel="stylesheet" href="${ctx}/admin/template/assets/css/style.css">
+    <link rel="stylesheet" href="${ctx}/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="${ctx}/assets/vendors/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="${ctx}/assets/css/admin-style.css">
     <link rel="stylesheet" href="${ctx}/assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="${ctx}/assets/css/admin-pages.css">
 </head>
@@ -39,11 +39,11 @@
                     </div>
 
                     <div class="heading-actions">
-                        <div style="position: relative;">
+                        <div class="dashboard-report-wrap">
                             <button type="button" id="reportMenuButton" class="btn btn-outline-secondary btn-sm" onclick="toggleReportMenu(event)" aria-haspopup="true" aria-expanded="false" aria-controls="reportMenu">
                                 <i class="bi bi-download" aria-hidden="true"></i> Export report
                             </button>
-                            <div id="reportMenu" role="menu" class="dropdown-menu shadow-sm" style="display:none; position:absolute; top:100%; right:0; margin-top:0.5rem; min-width:220px; z-index:1000;">
+                            <div id="reportMenu" role="menu" class="dropdown-menu shadow-sm dashboard-report-menu">
                                 <a class="dropdown-item" href="${ctx}/admin/export-report?type=summary" role="menuitem">Summary report</a>
                                 <a class="dropdown-item" href="${ctx}/admin/export-report?type=products" role="menuitem">Product report</a>
                                 <a class="dropdown-item" href="${ctx}/admin/export-report?type=orders" role="menuitem">Order report</a>
@@ -127,7 +127,7 @@
                                         </div>
                                     </div>
                                     <div class="panel-body">
-                                        <canvas id="revenueChart" style="height: 320px;"></canvas>
+                                        <canvas id="revenueChart" class="dashboard-revenue-chart"></canvas>
                                     </div>
                                 </div>
                             </div>
@@ -286,8 +286,8 @@
     </div>
 </div>
 
-<script src="${ctx}/admin/template/assets/js/bootstrap.bundle.min.js"></script>
-<script src="${ctx}/admin/template/assets/js/main.js"></script>
+<script src="${ctx}/assets/js/bootstrap.bundle.min.js"></script>
+<script src="${ctx}/assets/js/admin-main.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
     document.querySelectorAll('.tabs-trigger').forEach(function (trigger) {

@@ -1,7 +1,7 @@
 package nlu.fit.web.souvenirecommerce.features.auth.service.impl;
 
 import jakarta.mail.MessagingException;
-import nlu.fit.web.souvenirecommerce.common.enums.EmailType;
+import nlu.fit.web.souvenirecommerce.model.enums.EmailType;
 import nlu.fit.web.souvenirecommerce.features.auth.service.IEmailService;
 import nlu.fit.web.souvenirecommerce.common.utils.EmailUtil;
 

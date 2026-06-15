@@ -44,11 +44,13 @@ function getToastIcon(type) {
 
 // Add to cart with AJAX
 function addToCartAjax(productId, quantity, contextPath) {
-    fetch(`${contextPath}/add-cart?productId=${productId}&quantity=${quantity}`, {
-        method: 'GET',
+    fetch(`${contextPath}/cart/add`, {
+        method: 'POST',
         headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        body: `productId=${encodeURIComponent(productId)}&quantity=${encodeURIComponent(quantity)}`
     })
     .then(response => response.json())
     .then(data => {
@@ -65,7 +67,7 @@ function addToCartAjax(productId, quantity, contextPath) {
         } else if (data.requireLogin) {
             showToast(data.message, 'warning');
             setTimeout(() => {
-                window.location.href = `../../WEB-INF/views/auth/login.jsp`;
+                window.location.href = `${contextPath}/login`;
             }, 1500);
         } else {
             showToast(data.message, 'error');
@@ -85,14 +87,14 @@ window.addToCart = function(productId, quantity, contextPath) {
 // Handle form submissions
 document.addEventListener('DOMContentLoaded', function() {
     // Handle all add-to-cart forms
-    document.querySelectorAll('form[action*="add-cart"]').forEach(form => {
+    document.querySelectorAll('form[action*="cart/add"]').forEach(form => {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             
             const formData = new FormData(form);
             const productId = formData.get('productId');
             const quantity = formData.get('quantity') || 1;
-            const contextPath = form.action.split('/add-cart')[0];
+            const contextPath = form.action.split('/cart/add')[0];
             
             addToCartAjax(productId, quantity, contextPath);
         });

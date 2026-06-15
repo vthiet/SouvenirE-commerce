@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.legacy.dao.SettingsDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -17,6 +19,7 @@ import java.util.Map;
 @WebServlet("/admin/settings")
 public class AdminSettingsController extends HttpServlet {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminSettingsController.class);
     private UserDAOImpl userDAOImpl;
     private SettingsDAO settingsDAO;
 
@@ -29,6 +32,7 @@ public class AdminSettingsController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         // Get settings from database
+        log.info("Loaded admin settings page");
         Map<String, String> settings = settingsDAO.getAllSettings();
         req.setAttribute("settings", settings);
 
@@ -50,6 +54,7 @@ public class AdminSettingsController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
         String action = req.getParameter("action");
+        log.debug("Admin settings action received: {}", action);
         HttpSession session = req.getSession();
         User currentUser = (User) session.getAttribute("user");
         if (currentUser == null) {
@@ -57,6 +62,7 @@ public class AdminSettingsController extends HttpServlet {
         }
 
         if (currentUser == null) {
+            log.warn("Rejected admin settings action because no current user was found");
             resp.sendRedirect(req.getContextPath() + "/login");
             return;
         }
@@ -68,6 +74,7 @@ public class AdminSettingsController extends HttpServlet {
                 String phone = req.getParameter("phone");
 
                 if (currentUser.getId() != null && userDAOImpl.updateUser(currentUser.getId().intValue(), fullName, email, phone)) {
+                    log.info("Admin profile updated: userId={}", currentUser.getId());
                     // Update session user
                     String normalized = fullName == null ? "" : fullName.trim();
                     int split = normalized.lastIndexOf(' ');
@@ -86,6 +93,7 @@ public class AdminSettingsController extends HttpServlet {
                     session.setAttribute("message", "Cập nhật thông tin thành công!");
                     session.setAttribute("messageType", "success");
                 } else {
+                    log.warn("Admin profile update failed: userId={}", currentUser.getId());
                     session.setAttribute("message", "Cập nhật thông tin thất bại!");
                     session.setAttribute("messageType", "error");
                 }
@@ -96,15 +104,19 @@ public class AdminSettingsController extends HttpServlet {
                 String confirmPassword = req.getParameter("confirmPassword");
 
                 if (!newPassword.equals(confirmPassword)) {
+                    log.warn("Admin password change rejected because confirmation did not match: userId={}", currentUser.getId());
                     session.setAttribute("message", "Mật khẩu mới không khớp!");
                     session.setAttribute("messageType", "error");
                 } else if (currentUser.getId() == null || !userDAOImpl.checkPassword(currentUser.getId().intValue(), currentPassword)) {
+                    log.warn("Admin password change rejected because current password was invalid: userId={}", currentUser.getId());
                     session.setAttribute("message", "Mật khẩu hiện tại không đúng!");
                     session.setAttribute("messageType", "error");
                 } else if (userDAOImpl.updatePasswordByUserId(currentUser.getId().intValue(), newPassword)) {
+                    log.info("Admin password changed: userId={}", currentUser.getId());
                     session.setAttribute("message", "Đổi mật khẩu thành công!");
                     session.setAttribute("messageType", "success");
                 } else {
+                    log.warn("Admin password change failed: userId={}", currentUser.getId());
                     session.setAttribute("message", "Đổi mật khẩu thất bại!");
                     session.setAttribute("messageType", "error");
                 }
@@ -134,15 +146,17 @@ public class AdminSettingsController extends HttpServlet {
                 settings.put("social_instagram", req.getParameter("socialInstagram") != null ? req.getParameter("socialInstagram") : "");
 
                 if (settingsDAO.updateMultipleSettings(settings)) {
+                    log.info("Admin system settings updated: userId={}", currentUser.getId());
                     session.setAttribute("message", "Cập nhật cài đặt hệ thống thành công!");
                     session.setAttribute("messageType", "success");
                 } else {
+                    log.warn("Admin system settings update failed: userId={}", currentUser.getId());
                     session.setAttribute("message", "Cập nhật cài đặt hệ thống thất bại!");
                     session.setAttribute("messageType", "error");
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Admin settings action failed: {}", action, e);
             session.setAttribute("message", "Có lỗi xảy ra: " + e.getMessage());
             session.setAttribute("messageType", "error");
         }

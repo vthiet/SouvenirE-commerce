@@ -280,3 +280,53 @@
         min-width: unset;
     }
 }
+.role-action-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.role-card-spaced {
+    margin-top: 24px;
+}
+
+.role-description {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.role-icon-edit {
+    background: #3b82f6;
+    color: #fff;
+    text-decoration: none;
+}
+
+.role-icon-delete {
+    background: #ef4444;
+    color: #fff;
+}
+
+.role-helper {
+    color: #6b7280;
+    display: block;
+    margin-top: 8px;
+}
+
+.role-submit-full {
+    width: 100%;
+}
+
+.role-empty-note {
+    color: #6b7280;
+}
+
+.role-member-row {
+    padding: 12px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.role-tag-list {
+    margin-top: 8px;
+}

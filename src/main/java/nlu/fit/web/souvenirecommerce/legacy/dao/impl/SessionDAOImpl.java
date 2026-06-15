@@ -3,7 +3,7 @@ package nlu.fit.web.souvenirecommerce.legacy.dao.impl;
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseRepository;
 import nlu.fit.web.souvenirecommerce.legacy.dao.ISessionEntityIRepository;
 import nlu.fit.web.souvenirecommerce.model.entity.UserSession;
-import nlu.fit.web.souvenirecommerce.core.config.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,0 +1,106 @@
+.banner-meta {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0.5rem 0;
+}
+
+.banner-status-row {
+  margin: 0.5rem 0;
+}
+
+.banner-actions {
+  margin-top: 0.75rem;
+}
+
+.banner-toggle-active {
+  background: #f59e0b;
+}
+
+.banner-toggle-inactive {
+  background: #10b981;
+}
+
+.banner-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2.5rem;
+  color: #6b7280;
+}
+
+.banner-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+  color: #d1d5db;
+}
+
+.banner-guidelines-card {
+  margin-top: 1.25rem;
+}
+
+.banner-guidelines-body {
+  padding: 1.25rem;
+}
+
+.banner-guidelines-list {
+  line-height: 2;
+}
+
+.banner-file-hint {
+  display: none;
+  color: #6b7280;
+  margin-top: 0.3125rem;
+  font-size: 0.75rem;
+}
+.banner-form-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.banner-toggle-active {
+    background: #10b981;
+    color: #fff;
+}
+
+.banner-toggle-inactive {
+    background: #6b7280;
+    color: #fff;
+}
+
+.banner-empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.banner-empty-icon {
+    font-size: 36px;
+    opacity: 0.6;
+}
+
+.banner-actions {
+    margin-top: 12px;
+}
+
+.banner-guidelines-card {
+    margin-top: 24px;
+}
+
+.banner-guidelines-body {
+    padding: 24px;
+}
+
+.banner-guidelines-list {
+    margin: 0;
+    line-height: 1.8;
+}
+
+.banner-file-hint {
+    display: block;
+    margin-top: 8px;
+}
+
+.banner-file-hint.is-hidden {
+    display: none;
+}

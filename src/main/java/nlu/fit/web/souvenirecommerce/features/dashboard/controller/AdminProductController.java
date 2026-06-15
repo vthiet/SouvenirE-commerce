@@ -9,12 +9,15 @@ import nlu.fit.web.souvenirecommerce.legacy.dao.CategoryDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.ProductDAO;
 import nlu.fit.web.souvenirecommerce.model.entity.Product;
 import nlu.fit.web.souvenirecommerce.model.entity.Category;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 @WebServlet("/admin/products")
 public class AdminProductController extends HttpServlet {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminProductController.class);
     private ProductDAO productDAO;
     private CategoryDAO categoryDAO;
 
@@ -41,6 +44,7 @@ public class AdminProductController extends HttpServlet {
 
         int offset = (page - 1) * pageSize;
         int totalProducts;
+        log.info("Loaded admin products page {} search='{}'", page, searchQuery == null ? "" : searchQuery);
 
         // If search query exists, search products
         if (searchQuery != null && !searchQuery.trim().isEmpty()) {
@@ -77,6 +81,7 @@ public class AdminProductController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
         String action = req.getParameter("action");
+        log.debug("Admin products action received: {}", action);
 
         try {
             if ("add".equals(action)) {
@@ -103,9 +108,11 @@ public class AdminProductController extends HttpServlet {
                 }
 
                 if (productDAO.insertProduct(product)) {
+                    log.info("Admin product created: name={}", product.getName());
                     req.setAttribute("message", "Thêm sản phẩm thành công!");
                     req.setAttribute("messageType", "success");
                 } else {
+                    log.warn("Admin product creation failed: name={}", product.getName());
                     req.setAttribute("message", "Thêm sản phẩm thất bại!");
                     req.setAttribute("messageType", "error");
                 }
@@ -134,9 +141,11 @@ public class AdminProductController extends HttpServlet {
                 }
 
                 if (productDAO.updateProduct(product)) {
+                    log.info("Admin product updated: id={}", product.getId());
                     req.setAttribute("message", "Cập nhật sản phẩm thành công!");
                     req.setAttribute("messageType", "success");
                 } else {
+                    log.warn("Admin product update failed: id={}", product.getId());
                     req.setAttribute("message", "Cập nhật sản phẩm thất bại!");
                     req.setAttribute("messageType", "error");
                 }
@@ -145,15 +154,17 @@ public class AdminProductController extends HttpServlet {
                 Long id = Long.parseLong(req.getParameter("id"));
 
                 if (productDAO.deleteProduct(id)) {
+                    log.info("Admin product deleted: id={}", id);
                     req.setAttribute("message", "Xóa sản phẩm thành công!");
                     req.setAttribute("messageType", "success");
                 } else {
+                    log.warn("Admin product deletion failed: id={}", id);
                     req.setAttribute("message", "Xóa sản phẩm thất bại!");
                     req.setAttribute("messageType", "error");
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Admin product action failed: {}", action, e);
             req.setAttribute("message", "Có lỗi xảy ra: " + e.getMessage());
             req.setAttribute("messageType", "error");
         }

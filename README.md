@@ -530,3 +530,4 @@ SouvenirE-commerce/
 - Tài liệu nội bộ trong `docs/`, đặc biệt:
   - `docs/Architectural & Development Guidelines.md`
   - `docs/Modules Description.md`
+  - `docs/UI Design Guidelines IEEE.md`

@@ -197,20 +197,21 @@ Hệ thống áp dụng kiến trúc **Ném lỗi tập trung (Exception Propaga
 package nlu.fit.web.souvenirecommerce.core.filters;
 
 import jakarta.servlet.*;
-import nlu.fit.web.souvenirecommerce.core.config.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 
 public class TransactionFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(TransactionFilter.class);
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) 
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-        
+
         Session session = HibernateUtil.getSessionFactory().getCurrentSession();
         Transaction transaction = null;
 
@@ -222,12 +223,12 @@ public class TransactionFilter implements Filter {
             chain.doFilter(request, response);
 
             // Nếu không có bất kỳ ngoại lệ nào phát sinh, tiến hành commit dữ liệu xuống DB
-            if (transaction != null && transaction.isActive()){
+            if (transaction != null && transaction.isActive()) {
                 transaction.commit();
             }
-        } catch(Exception e){
+        } catch (Exception e) {
             // Nếu phát sinh bất kỳ lỗi nào từ bất kỳ tầng nào, thực hiện hủy bỏ toàn bộ giao dịch
-            if (transaction != null && transaction.isActive()){
+            if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
             }
             log.error("Transaction successfully rolled back due to error: ", e);

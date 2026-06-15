@@ -2,8 +2,8 @@ package nlu.fit.web.souvenirecommerce.features.order.dto;
 
 import lombok.Builder;
 import lombok.Getter;
-import nlu.fit.web.souvenirecommerce.common.enums.PaymentProvider;
-import nlu.fit.web.souvenirecommerce.common.enums.PaymentStatus;
+import nlu.fit.web.souvenirecommerce.model.enums.PaymentProvider;
+import nlu.fit.web.souvenirecommerce.model.enums.PaymentStatus;
 
 @Getter
 @Builder

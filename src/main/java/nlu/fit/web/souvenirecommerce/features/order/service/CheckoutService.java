@@ -1,18 +1,20 @@
 package nlu.fit.web.souvenirecommerce.features.order.service;
 
-import nlu.fit.web.souvenirecommerce.common.enums.OrderStatusCode;
-import nlu.fit.web.souvenirecommerce.common.enums.PaymentMethod;
+import nlu.fit.web.souvenirecommerce.model.enums.OrderStatusCode;
+import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
 import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutRequest;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutResult;
+import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentContext;
 import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentPreparation;
 import nlu.fit.web.souvenirecommerce.features.order.payment.PaymentGateway;
 import nlu.fit.web.souvenirecommerce.features.order.payment.PaymentGatewayRegistry;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderStatusRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.ProductRepository;
+import nlu.fit.web.souvenirecommerce.features.shipping.GhnService;
 import nlu.fit.web.souvenirecommerce.features.user.address.AddressService;
 import nlu.fit.web.souvenirecommerce.model.entity.Address;
 import nlu.fit.web.souvenirecommerce.model.entity.Order;
@@ -24,6 +26,7 @@ import nlu.fit.web.souvenirecommerce.model.entity.Province;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.math.BigDecimal;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,11 +36,17 @@ public class CheckoutService {
     private final ProductRepository productRepository = new ProductRepository();
     private final AddressService addressService = new AddressService();
     private final PaymentGatewayRegistry paymentGatewayRegistry = new PaymentGatewayRegistry();
-
+    private final GhnService ghnService = new GhnService();
     public CheckoutResult checkout(User user, Cart cart, CheckoutRequest request) {
+        return checkout(user, cart, request, null);
+    }
+    public CheckoutResult checkout(User user, Cart cart, CheckoutRequest request, PaymentContext paymentContext) {
         validateUser(user);
         validateCart(cart);
         PaymentMethod paymentMethod = request.getPaymentMethod() == null ? PaymentMethod.COD : request.getPaymentMethod();
+        if (!paymentGatewayRegistry.isAvailable(paymentMethod)) {
+            throw new CheckoutException("Phương thức thanh toán đã chọn hiện không khả dụng.");
+        }
 
         Address shippingAddress = resolveAddress(user, request);
         OrderStatus status = resolveInitialStatus(paymentMethod);
@@ -70,24 +79,28 @@ public class CheckoutService {
             product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
             product.setTotalSold(product.getTotalSold() + cartItem.getQuantity());
         }
-        order.setTotalAmount(totalAmount);
+        BigDecimal shippingFee = resolveShippingFee(shippingAddress, request);
+        order.setShippingFee(shippingFee);
+        order.setTotalAmount(totalAmount.add(shippingFee));
+
+        Order savedOrder = orderRepository.save(order)
+                .orElseThrow(() -> new CheckoutException("Không thể tạo đơn hàng"));
 
         PaymentGateway gateway = paymentGatewayRegistry.get(paymentMethod);
-        PaymentPreparation paymentPreparation = gateway.prepare(order);
+        PaymentPreparation paymentPreparation = gateway.prepare(savedOrder, paymentContext);
         PaymentTransaction paymentTransaction = PaymentTransaction.builder()
-                .order(order)
+                .order(savedOrder)
                 .method(paymentMethod)
                 .provider(paymentPreparation.getProvider())
                 .status(paymentPreparation.getStatus())
-                .amount(totalAmount)
+                .amount(savedOrder.getTotalAmount())
                 .providerTransactionRef(paymentPreparation.getProviderTransactionRef())
                 .paymentUrl(paymentPreparation.getPaymentUrl())
                 .qrPayload(paymentPreparation.getQrPayload())
                 .build();
-        order.setPaymentTransaction(paymentTransaction);
-
-        Order savedOrder = orderRepository.save(order)
-                .orElseThrow(() -> new CheckoutException("Không thể tạo đơn hàng"));
+        savedOrder.setPaymentTransaction(paymentTransaction);
+        attachGhnOrder(savedOrder);
+        orderRepository.update(savedOrder);
 
         return CheckoutResult.builder()
                 .order(savedOrder)
@@ -105,6 +118,10 @@ public class CheckoutService {
         return addressService.getProvinces();
     }
 
+    public boolean isPaymentMethodAvailable(PaymentMethod method) {
+        return paymentGatewayRegistry.isAvailable(method);
+    }
+
     private Address resolveAddress(User user, CheckoutRequest request) {
         if (request.getSavedAddressId() != null) {
             return addressService.getUserAddress(user.getId(), request.getSavedAddressId())
@@ -113,6 +130,21 @@ public class CheckoutService {
 
         if (isBlank(request.getReceiverName()) || isBlank(request.getReceiverPhone()) || isBlank(request.getAddressDetail())) {
             throw new CheckoutException("Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ giao hàng");
+        }
+
+        if (request.getGhnProvinceId() != null || request.getGhnDistrictId() != null || !isBlank(request.getGhnWardCode())) {
+            return addressService.createGhnAddress(
+                            user,
+                            request.getReceiverName(),
+                            request.getReceiverPhone(),
+                            request.getAddressDetail(),
+                            request.getGhnProvinceId(),
+                            request.getGhnDistrictId(),
+                            request.getGhnWardCode(),
+                            request.getProvinceName(),
+                            request.getDistrictName(),
+                            request.getWardName())
+                    .orElseThrow(() -> new CheckoutException("Vui lòng chọn đầy đủ tỉnh/thành phố, quận/huyện, phường/xã và nhập địa chỉ chi tiết"));
         }
 
         return addressService.createAddress(
@@ -125,10 +157,44 @@ public class CheckoutService {
                 .orElseThrow(() -> new CheckoutException("Vui lòng chọn đầy đủ tỉnh/thành phố, phường/xã và nhập địa chỉ chi tiết"));
     }
 
+    private BigDecimal resolveShippingFee(Address address, CheckoutRequest request) {
+        try {
+            if (address != null && address.getGhnDistrictId() != null && !isBlank(address.getGhnWardCode())) {
+                return ghnService.calculateFee(address.getGhnDistrictId(), address.getGhnWardCode());
+            }
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        if (request.getShippingFee() != null && request.getShippingFee() >= 0) {
+            return BigDecimal.valueOf(request.getShippingFee());
+        }
+        return BigDecimal.valueOf(30000);
+    }
+
+    private void attachGhnOrder(Order order) {
+        try {
+            GhnService.GhnOrderResult result = ghnService.createOrder(order);
+            order.setGhnOrderCode(result.orderCode());
+            order.setGhnStatus(result.status());
+            order.setGhnLeadtime(result.leadtime());
+            order.setGhnFinishDate(result.finishDate());
+            order.setGhnUpdatedAt(result.updatedAt());
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            order.setGhnStatus("create_failed");
+            order.setGhnUpdatedAt(LocalDateTime.now());
+        }
+    }
+
     private OrderStatus resolveInitialStatus(PaymentMethod method) {
         OrderStatusCode statusCode = method == PaymentMethod.COD
                 ? OrderStatusCode.PENDING
-                : OrderStatusCode.AWAITING_PAYMENT;
+                : OrderStatusCode.PENDING_PAYMENT;
         return orderStatusRepository.findByDescription(statusCode.getDescription())
                 .orElseGet(() -> orderStatusRepository.save(OrderStatus.builder()
                                 .description(statusCode.getDescription())

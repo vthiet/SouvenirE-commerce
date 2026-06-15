@@ -3,7 +3,7 @@ package nlu.fit.web.souvenirecommerce.legacy.dao.impl;
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseRepository;
 import nlu.fit.web.souvenirecommerce.legacy.dao.IPermissionEntityIRepository;
 import nlu.fit.web.souvenirecommerce.model.entity.Permission;
-import nlu.fit.web.souvenirecommerce.core.config.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 
 import java.util.List;
 import java.util.Optional;

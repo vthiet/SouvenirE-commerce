@@ -24,7 +24,7 @@ body.auth-page {
     min-height: 100vh;
     background:
         linear-gradient(rgba(244, 246, 241, 0.94), rgba(244, 246, 241, 0.94)),
-        url("../../images/Banner/dac-san-xu-dua.png") center/cover fixed;
+        url("../../images/home_banner/dac-san-xu-dua.png") center/cover fixed;
     color: var(--auth-text);
     font-family: Arial, "Helvetica Neue", sans-serif;
 }
@@ -156,6 +156,14 @@ body.auth-page {
     width: 16px;
     height: 16px;
     accent-color: var(--auth-primary);
+}
+
+.captcha-field {
+    max-width: 100%;
+    min-height: 78px;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
 }
 
 .primary-button,

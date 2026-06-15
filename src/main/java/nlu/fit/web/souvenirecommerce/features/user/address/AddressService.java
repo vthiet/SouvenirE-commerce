@@ -69,6 +69,39 @@ public class AddressService {
         return addressRepository.save(address);
     }
 
+    public Optional<Address> createGhnAddress(User user,
+                                              String receiverName,
+                                              String receiverPhone,
+                                              String addressDetail,
+                                              Integer provinceId,
+                                              Integer districtId,
+                                              String wardCode,
+                                              String provinceName,
+                                              String districtName,
+                                              String wardName) {
+        if (user == null || user.getId() == null || isBlank(addressDetail)
+                || provinceId == null || districtId == null || isBlank(wardCode)
+                || isBlank(provinceName) || isBlank(districtName) || isBlank(wardName)) {
+            return Optional.empty();
+        }
+
+        Address address = Address.builder()
+                .user(user)
+                .receiverName(firstNotBlank(receiverName, user.getFullName()))
+                .receiverPhone(firstNotBlank(receiverPhone, user.getPhone()))
+                .addressDetail(addressDetail.trim())
+                .province(provinceName.trim())
+                .city(provinceName.trim())
+                .district(districtName.trim())
+                .ward(wardName.trim())
+                .ghnProvinceId(provinceId)
+                .ghnDistrictId(districtId)
+                .ghnWardCode(wardCode.trim())
+                .isDefault(addressRepository.countByUserId(user.getId()) == 0)
+                .build();
+        return addressRepository.save(address);
+    }
+
     public Optional<Address> getUserAddress(Long userId, Long addressId) {
         return addressRepository.findByIdAndUserId(addressId, userId);
     }

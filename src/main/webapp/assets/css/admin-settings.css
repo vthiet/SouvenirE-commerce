@@ -1,0 +1,46 @@
+.settings-card-body {
+    padding: 24px;
+}
+
+.settings-avatar-wrap {
+    text-align: center;
+}
+
+.settings-card-spaced {
+    margin-top: 24px;
+}
+
+.settings-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.settings-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.settings-grid-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.settings-check-label,
+.settings-check-list {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-check-label {
+    margin: 0;
+}
+
+.settings-check-list {
+    cursor: pointer;
+    margin: 0;
+}

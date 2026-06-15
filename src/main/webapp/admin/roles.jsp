@@ -7,9 +7,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phân quyền - Admin</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/vendors/bootstrap-icons/bootstrap-icons.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/css/style.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendors/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-roles.css">
@@ -31,9 +31,9 @@
             <div class="container-fluid px-3 px-lg-4 py-4">
             <div class="content-header">
                 <h1 class="content-title">Phân quyền</h1>
-                <div class="content-actions">
+                    <div class="content-actions">
                     <c:if test="${canCreateRole}">
-                        <a href="${ctx}/admin/roles" class="btn btn-secondary" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+                        <a href="${ctx}/admin/roles" class="btn btn-secondary role-action-link">
                             <i class="fas fa-plus"></i>
                             Tạo nhóm mới
                         </a>
@@ -106,7 +106,7 @@
                                         </button>
                                     </c:if>
                                     <c:if test="${not empty editRole}">
-                                        <a href="${ctx}/admin/roles" class="btn-secondary" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+                                        <a href="${ctx}/admin/roles" class="btn-secondary role-action-link">
                                             Hủy
                                         </a>
                                     </c:if>
@@ -115,7 +115,7 @@
                         </div>
                     </div>
 
-                    <div class="card" style="margin-top: 24px;">
+                    <div class="card role-card-spaced">
                         <div class="card-header">
                             <h3 class="card-title">Các nhóm quyền hiện có</h3>
                             <p class="card-description">Mỗi nhóm có thể được gán cho nhiều người dùng.</p>
@@ -136,7 +136,7 @@
                                     <tr>
                                         <td>
                                             <strong>${role.name}</strong>
-                                            <div style="color:#6b7280; font-size:12px; margin-top:4px;">
+                                            <div class="role-description">
                                                 ${role.description}
                                             </div>
                                         </td>
@@ -168,7 +168,7 @@
                                         <td>
                                             <div class="inline-actions">
                                                 <c:if test="${canUpdateRole}">
-                                                    <a href="${ctx}/admin/roles?editId=${role.id}" class="btn-icon" style="background:#3b82f6; color:white; text-decoration:none;">
+                                                    <a href="${ctx}/admin/roles?editId=${role.id}" class="btn-icon role-icon-edit">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                 </c:if>
@@ -176,7 +176,7 @@
                                                     <form action="${ctx}/admin/roles" method="post" onsubmit="return confirm('Xóa nhóm quyền này?');">
                                                     <input type="hidden" name="action" value="delete">
                                                     <input type="hidden" name="id" value="${role.id}">
-                                                    <button type="submit" class="btn-icon" style="background:#ef4444; color:white;" <c:if test="${role.system}">disabled</c:if>>
+                                                    <button type="submit" class="btn-icon role-icon-delete" <c:if test="${role.system}">disabled</c:if>>
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -234,13 +234,13 @@
                                             </option>
                                         </c:forEach>
                                     </select>
-                                    <small style="color:#6b7280; display:block; margin-top:8px;">
+                                    <small class="role-helper">
                                         Giữ `Ctrl` hoặc `Cmd` để chọn nhiều người dùng.
                                     </small>
                                 </div>
 
                                 <c:if test="${canUpdateRole}">
-                                    <button type="submit" class="btn-primary" style="width:100%;">
+                                    <button type="submit" class="btn-primary role-submit-full">
                                         <i class="fas fa-users-cog"></i> Lưu phân nhóm
                                     </button>
                                 </c:if>
@@ -248,7 +248,7 @@
                         </div>
                     </div>
 
-                    <div class="card" style="margin-top:24px;">
+                    <div class="card role-card-spaced">
                         <div class="card-header">
                             <h3 class="card-title">Người dùng trong nhóm đang chọn</h3>
                             <p class="card-description">Hiển thị nhanh thành viên đã được gán cho từng nhóm.</p>
@@ -256,13 +256,13 @@
                         <div class="card-content">
                             <c:choose>
                                 <c:when test="${empty roles}">
-                                    <p style="color:#6b7280;">Chưa có nhóm quyền nào.</p>
+                                    <p class="role-empty-note">Chưa có nhóm quyền nào.</p>
                                 </c:when>
                                 <c:otherwise>
                                     <c:forEach items="${roles}" var="role">
-                                        <div style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                                        <div class="role-member-row">
                                             <strong>${role.name}</strong>
-                                            <div class="tag-list" style="margin-top:8px;">
+                                            <div class="tag-list role-tag-list">
                                                 <c:choose>
                                                     <c:when test="${empty role.users}">
                                                         <span class="tag tag-muted">Chưa gán người dùng</span>
@@ -288,7 +288,7 @@
         <jsp:include page="common/admin-footer.jsp" />
     </div>
 </div>
-<script src="${pageContext.request.contextPath}/admin/template/assets/js/bootstrap.bundle.min.js"></script>
-<script src="${pageContext.request.contextPath}/admin/template/assets/js/main.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/admin-main.js"></script>
 </body>
 </html>

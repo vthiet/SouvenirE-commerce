@@ -4,7 +4,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import nlu.fit.web.souvenirecommerce.common.enums.Gender;
+import nlu.fit.web.souvenirecommerce.model.enums.Gender;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import nlu.fit.web.souvenirecommerce.features.user.profile.service.ProfileService;
 import nlu.fit.web.souvenirecommerce.common.utils.CloudinaryUtil;

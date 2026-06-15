@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import nlu.fit.web.souvenirecommerce.features.dashboard.dto.DashboardMetricsDTO;
 import nlu.fit.web.souvenirecommerce.model.entity.Product;
 import nlu.fit.web.souvenirecommerce.features.dashboard.service.AdminDashboardService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.List;
 @WebServlet(name = "AdminDashboardController", urlPatterns = {"/admin/dashboard"})
 public class AdminDashboardController extends HttpServlet {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminDashboardController.class);
     private AdminDashboardService dashboardService;
 
     @Override
@@ -27,6 +30,7 @@ public class AdminDashboardController extends HttpServlet {
             throws ServletException, IOException {
 
         try {
+            log.info("Loading admin dashboard metrics");
             DashboardMetricsDTO metrics = dashboardService.buildDashboardMetrics();
 
             request.setAttribute("totalProducts", metrics.getTotalProducts());
@@ -39,9 +43,10 @@ public class AdminDashboardController extends HttpServlet {
             request.setAttribute("dashboardMetrics", metrics);
 
             request.getRequestDispatcher("/admin/dashboard.jsp").forward(request, response);
+            log.info("Admin dashboard loaded successfully");
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to load admin dashboard", e);
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error loading dashboard");
         }
     }

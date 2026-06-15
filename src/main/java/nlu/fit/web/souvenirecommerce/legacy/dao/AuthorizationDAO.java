@@ -5,7 +5,7 @@ import nlu.fit.web.souvenirecommerce.legacy.model.PermissionItem;
 import nlu.fit.web.souvenirecommerce.model.entity.Permission;
 import nlu.fit.web.souvenirecommerce.model.entity.Role;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
-import nlu.fit.web.souvenirecommerce.core.config.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import org.hibernate.Transaction;
 
 import java.util.ArrayList;

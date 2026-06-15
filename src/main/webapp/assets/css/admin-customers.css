@@ -1,0 +1,56 @@
+.customer-col-id {
+  width: 60px;
+}
+
+.customer-col-status {
+  width: 120px;
+}
+
+.customer-col-date,
+.customer-col-actions {
+  width: 150px;
+}
+
+.customer-name {
+  font-weight: 500;
+}
+
+.customer-form-inline {
+  display: inline;
+}
+
+.customer-toggle-active {
+  background: #f59e0b;
+}
+
+.customer-toggle-banned {
+  background: #10b981;
+}
+
+.customer-pagination {
+  padding: 1.25rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.customer-pagination-link {
+  text-decoration: none;
+}
+
+.customer-pagination-current {
+  padding: 0.5rem 0.75rem;
+  background: #3b82f6;
+  color: #fff;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.customer-pagination-page {
+  padding: 0.5rem 0.75rem;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 6px;
+  text-decoration: none;
+}

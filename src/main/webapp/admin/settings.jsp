@@ -6,12 +6,13 @@
     <meta charset="UTF-8">
     <title>Cài đặt - Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/vendors/bootstrap-icons/bootstrap-icons.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/css/style.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendors/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-pages.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-settings.css">
 </head>
 <body>
 <c:set var="currentAdminUser" value="${not empty sessionScope.user ? sessionScope.user : sessionScope.userInSession}" />
@@ -40,8 +41,8 @@
                     <div class="card-header">
                         <h3>Thông tin cá nhân</h3>
                     </div>
-                    <div style="padding: 24px;">
-                        <div style="text-align: center;">
+                    <div class="settings-card-body">
+                        <div class="settings-avatar-wrap">
                             <div class="profile-avatar">
                                 <c:choose>
                                     <c:when test="${not empty currentAdminUser.fullName}">
@@ -87,7 +88,7 @@
                     <div class="card-header">
                         <h3>Đổi mật khẩu</h3>
                     </div>
-                    <div style="padding: 24px;">
+                    <div class="settings-card-body">
                         <form action="${pageContext.request.contextPath}/admin/settings" method="post">
                             <input type="hidden" name="action" value="changePassword">
 
@@ -120,17 +121,17 @@
             </div>
 
             <!-- System Settings -->
-            <div class="card" style="margin-top: 24px;">
+            <div class="card settings-card-spaced">
                 <div class="card-header">
                     <h3>Cài đặt hệ thống</h3>
                 </div>
-                <div style="padding: 24px;">
+                <div class="settings-card-body">
                     <form action="${pageContext.request.contextPath}/admin/settings" method="post">
                         <input type="hidden" name="action" value="updateSystem">
 
                         <div class="settings-section">
                             <h3>Thông tin website</h3>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="settings-grid settings-grid-2">
                                 <div class="form-group">
                                     <label>Tên website</label>
                                     <input type="text" name="siteName" class="form-control" value="${settings.site_name}">
@@ -152,7 +153,7 @@
 
                         <div class="settings-section">
                             <h3>Tùy chọn chung</h3>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="settings-grid settings-grid-2">
                                 <div class="form-group">
                                     <label>Ngôn ngữ mặc định</label>
                                     <select name="defaultLanguage" class="form-control">
@@ -177,7 +178,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Chế độ bảo trì</label>
-                                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" name="maintenanceMode" ${settings.maintenance_mode == 'true' ? 'checked' : ''}> Bật chế độ bảo trì</label>
+                                    <label class="settings-check-label"><input type="checkbox" name="maintenanceMode" ${settings.maintenance_mode == 'true' ? 'checked' : ''}> Bật chế độ bảo trì</label>
                                 </div>
                                 <div class="form-group">
                                     <label>Logo (URL)</label>
@@ -196,7 +197,7 @@
 
                         <div class="settings-section">
                             <h3>Mạng xã hội</h3>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="settings-grid settings-grid-2">
                                 <div class="form-group">
                                     <label>Facebook</label>
                                     <input type="text" name="socialFacebook" class="form-control" value="${settings.social_facebook}">
@@ -210,17 +211,17 @@
 
                         <div class="settings-section">
                             <h3>Cài đặt thanh toán</h3>
-                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <div class="settings-grid settings-grid-4">
+                                <label class="settings-check-list">
                                     <input type="checkbox" name="paymentCod" ${settings.payment_cod == 'true' ? 'checked' : ''}> COD
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <label class="settings-check-list">
                                     <input type="checkbox" name="paymentVnpay" ${settings.payment_vnpay == 'true' ? 'checked' : ''}> VNPay
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <label class="settings-check-list">
                                     <input type="checkbox" name="paymentMomo" ${settings.payment_momo == 'true' ? 'checked' : ''}> MoMo
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <label class="settings-check-list">
                                     <input type="checkbox" name="paymentCard" ${settings.payment_card == 'true' ? 'checked' : ''}> Visa/Mastercard
                                 </label>
                             </div>
@@ -228,14 +229,14 @@
 
                         <div class="settings-section">
                             <h3>Cài đặt vận chuyển</h3>
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <div class="settings-grid settings-grid-3">
+                                <label class="settings-check-list">
                                     <input type="checkbox" name="shippingGhn" ${settings.shipping_ghn == 'true' ? 'checked' : ''}> Giao Hàng Nhanh
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <label class="settings-check-list">
                                     <input type="checkbox" name="shippingGhtk" ${settings.shipping_ghtk == 'true' ? 'checked' : ''}> Giao Hàng Tiết Kiệm
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <label class="settings-check-list">
                                     <input type="checkbox" name="shippingJnt" ${settings.shipping_jnt == 'true' ? 'checked' : ''}> J&T Express
                                 </label>
                             </div>
@@ -255,7 +256,7 @@
         <jsp:include page="common/admin-footer.jsp"/>
     </div>
 </div>
-<script src="${pageContext.request.contextPath}/admin/template/assets/js/bootstrap.bundle.min.js"></script>
-<script src="${pageContext.request.contextPath}/admin/template/assets/js/main.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/admin-main.js"></script>
 </body>
 </html>

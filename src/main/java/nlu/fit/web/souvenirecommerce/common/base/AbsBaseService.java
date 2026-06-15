@@ -1,5 +1,7 @@
 package nlu.fit.web.souvenirecommerce.common.base;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +15,8 @@ import java.util.Optional;
  */
 public abstract class AbsBaseService<K, T> implements IService<K, T> {
     protected final Logger log = LoggerFactory.getLogger(getClass());
+    @Getter
+    @Setter
     protected IRepository<K, T> repository;
 
     public AbsBaseService(IRepository<K, T> repository) {
@@ -57,14 +61,6 @@ public abstract class AbsBaseService<K, T> implements IService<K, T> {
         log.debug("Request to count entities");
         List<T> all = requireRepository().findAll();
         return all != null ? all.size() : 0;
-    }
-
-    public void setRepository(IRepository<K, T> repository) {
-        this.repository = repository;
-    }
-
-    public IRepository<K, T> getRepository() {
-        return repository;
     }
 
     private IRepository<K, T> requireRepository() {

@@ -27,6 +27,7 @@
             width: 100%;
         }
     </style>
+    <jsp:include page="/WEB-INF/layout/dark-mode.jsp"/>
 
     <script>
         function copy(url) {
@@ -36,6 +37,15 @@
     </script>
 </head>
 <body>
+
+<button class="theme-toggle-button auth-theme-toggle"
+        type="button"
+        data-theme-toggle
+        aria-label="Chuyển giao diện sáng tối"
+        aria-pressed="false">
+    <i class="fa-solid fa-moon" data-theme-icon aria-hidden="true"></i>
+    <span class="theme-label" data-theme-label>Tối</span>
+</button>
 
 <h2>Mini Cloudinary Dashboard</h2>
 

@@ -7,12 +7,13 @@
     <meta charset="UTF-8">
     <title>Quản lý danh mục - Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/vendors/bootstrap-icons/bootstrap-icons.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/admin/template/assets/css/style.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/vendors/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-pages.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-categories.css">
 </head>
 <body>
 <div class="admin-shell">
@@ -34,7 +35,8 @@
                 <div class="category-grid">
                     <c:choose>
                         <c:when test="${empty categories}">
-                            <div class="empty-state" style="grid-column:1/-1;text-align:center;padding:40px"><i class="fas fa-inbox" style="font-size:36px;opacity:.6"></i>
+                            <div class="empty-state category-empty-state">
+                                <i class="fas fa-inbox category-empty-icon"></i>
                                 <p>Chưa có danh mục nào. <a href="javascript:openAddModal()">Thêm danh mục</a></p>
                             </div>
                         </c:when>
@@ -84,7 +86,7 @@
                     <input type="text" id="categoryImage" name="imageUrl" class="form-control" placeholder="assets/images/categories/..." required>
                     <div class="error-message"></div>
                 </div>
-                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+                <div class="category-form-actions">
                     <button type="button" class="btn-cancel" onclick="closeModal()">Hủy</button>
                     <button type="submit" class="btn-submit" id="submitBtn"><span id="submitBtnText">Lưu danh mục</span></button>
                 </div>
@@ -113,7 +115,7 @@
     document.getElementById('categoryName').addEventListener('input',()=>{ SUBMIT_BTN.disabled=!document.getElementById('categoryName').value.trim(); });
     document.getElementById('categoryImage').addEventListener('input',()=>{ SUBMIT_BTN.disabled=!document.getElementById('categoryImage').value.trim(); });
 </script>
-<script src="${pageContext.request.contextPath}/admin/template/assets/js/bootstrap.bundle.min.js"></script>
-<script src="${pageContext.request.contextPath}/admin/template/assets/js/main.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/admin-main.js"></script>
 </body>
 </html>

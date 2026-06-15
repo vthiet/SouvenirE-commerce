@@ -9,9 +9,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/auth/signup.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <jsp:include page="/WEB-INF/layout/dark-mode.jsp"/>
 </head>
 
 <body class="auth-page">
+<button class="theme-toggle-button auth-theme-toggle"
+        type="button"
+        data-theme-toggle
+        aria-label="Chuyển giao diện sáng tối"
+        aria-pressed="false">
+    <i class="fa-solid fa-moon" data-theme-icon aria-hidden="true"></i>
+    <span class="theme-label" data-theme-label>Tối</span>
+</button>
 <main class="auth-shell signup-shell">
     <aside class="auth-media" aria-label="Sản phẩm INOLA">
         <img src="${pageContext.request.contextPath}/assets/images/products/lang-nghe-thu-cong/bo-am-chen-bach-ngoc-hoa-sen-qua-tang-cao-cap.jpg" alt="Quà tặng thủ công">
@@ -63,6 +72,12 @@
                     <div class="spinner"></div>
                     <span>Đang kiểm tra email...</span>
                 </div>
+
+                <c:if test="${recaptchaConfigured}">
+                    <div class="captcha-field">
+                        <div class="g-recaptcha" data-sitekey="${recaptchaSiteKey}"></div>
+                    </div>
+                </c:if>
 
                 <button type="button" class="primary-button" id="continueBtn">
                     <span>Tiếp tục</span>
@@ -203,7 +218,11 @@
 
 <script>
     window.appContextPath = '${pageContext.request.contextPath}';
+    window.recaptchaEnabled = ${recaptchaConfigured ? 'true' : 'false'};
 </script>
+<c:if test="${recaptchaConfigured}">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</c:if>
 <script src="${pageContext.request.contextPath}/assets/js/auth/signup.js"></script>
 </body>
 </html>

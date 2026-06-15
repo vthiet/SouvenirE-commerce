@@ -5,6 +5,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
 import nlu.fit.web.souvenirecommerce.legacy.model.Order;
 import nlu.fit.web.souvenirecommerce.legacy.model.OrderItem;
@@ -15,6 +17,7 @@ import java.util.List;
 @WebServlet("/admin/orders")
 public class AdminOrderController extends HttpServlet {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminOrderController.class);
     private final OrderDAO orderDAO = new OrderDAO();
 
     @Override
@@ -22,6 +25,8 @@ public class AdminOrderController extends HttpServlet {
             throws ServletException, IOException {
 
         String action = request.getParameter("action");
+        log.debug("Admin order GET request received. action={}, page={}, status={}",
+                action, request.getParameter("page"), request.getParameter("status"));
 
         if ("view".equals(action)) {
             viewOrderDetail(request, response);
@@ -59,6 +64,9 @@ public class AdminOrderController extends HttpServlet {
 
         int totalPages = (int) Math.ceil((double) totalOrders / pageSize);
 
+        log.info("Loaded admin orders page {} with {} records (statusFilter={})",
+                page, orders.size(), statusFilter == null || statusFilter.isBlank() ? "all" : statusFilter);
+
         // Get status counts for stats cards
         int pendingCount = orderDAO.getOrderCountByStatus("Chờ xác nhận");
         int processingCount = orderDAO.getOrderCountByStatus("Đang xử lý");
@@ -86,18 +94,32 @@ public class AdminOrderController extends HttpServlet {
 
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
+        log.debug("Admin order POST request received. action={}", action);
 
         if ("updateStatus".equals(action)) {
             updateOrderStatus(request, response);
+        } else {
+            log.warn("Unsupported admin order POST action: {}", action);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported action");
         }
     }
 
     private void viewOrderDetail(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        int orderId = Integer.parseInt(request.getParameter("id"));
+        int orderId;
+        try {
+            orderId = Integer.parseInt(request.getParameter("id"));
+        } catch (NumberFormatException ex) {
+            log.warn("Invalid order id supplied for admin order detail view: {}", request.getParameter("id"));
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid order id");
+            return;
+        }
+
         Order order = orderDAO.getOrderById(orderId);
         List<OrderItem> orderItems = orderDAO.getOrderItems(orderId);
+
+        log.info("Opened admin order detail for orderId={}", orderId);
 
         request.setAttribute("order", order);
         request.setAttribute("orderItems", orderItems);
@@ -107,14 +129,25 @@ public class AdminOrderController extends HttpServlet {
     private void updateOrderStatus(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
-        int orderId = Integer.parseInt(request.getParameter("orderId"));
+        int orderId;
+        try {
+            orderId = Integer.parseInt(request.getParameter("orderId"));
+        } catch (NumberFormatException ex) {
+            log.warn("Invalid order id supplied for admin order status update: {}", request.getParameter("orderId"));
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid order id");
+            return;
+        }
+
         String newStatus = request.getParameter("status");
 
+        log.info("Updating order status. orderId={}, newStatus={}", orderId, newStatus);
         boolean success = orderDAO.updateOrderStatus(orderId, newStatus);
 
         if (success) {
+            log.info("Order status updated successfully. orderId={}, newStatus={}", orderId, newStatus);
             response.sendRedirect(request.getContextPath() + "/admin/orders?success=true");
         } else {
+            log.warn("Order status update failed. orderId={}, newStatus={}", orderId, newStatus);
             response.sendRedirect(request.getContextPath() + "/admin/orders?error=true");
         }
     }
