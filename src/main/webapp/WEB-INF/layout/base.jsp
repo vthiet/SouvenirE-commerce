@@ -106,7 +106,7 @@
 <!-- ================= PAGE JS ================= -->
 
 <c:if test="${not empty pageJs}">
-    <script src="${pageContext.request.contextPath}/assets/js/${pageJs}?v=8">
+    <script src="${pageContext.request.contextPath}/assets/js/${pageJs}?v=10">
     </script>
 </c:if>
 

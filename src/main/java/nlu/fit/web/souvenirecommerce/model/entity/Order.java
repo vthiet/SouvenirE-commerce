@@ -52,6 +52,9 @@ public class Order {
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "shipping_fee", precision = 15, scale = 2)
+    private BigDecimal shippingFee;
+
     @Column(length = 1000)
     private String note;
 
@@ -65,6 +68,21 @@ public class Order {
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private PaymentTransaction paymentTransaction;
+
+    @Column(name = "ghn_order_code", length = 50)
+    private String ghnOrderCode;
+
+    @Column(name = "ghn_status", length = 50)
+    private String ghnStatus;
+
+    @Column(name = "ghn_updated_at")
+    private LocalDateTime ghnUpdatedAt;
+
+    @Column(name = "ghn_leadtime")
+    private LocalDateTime ghnLeadtime;
+
+    @Column(name = "ghn_finish_date")
+    private LocalDateTime ghnFinishDate;
 
     public void addItem(OrderItem item) {
         if (items == null) {

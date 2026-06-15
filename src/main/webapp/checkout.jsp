@@ -24,7 +24,9 @@
               method="post"
               id="checkoutForm"
               data-address-form
-              data-wards-url="${pageContext.request.contextPath}/user/address/wards">
+              data-locations-url="${pageContext.request.contextPath}/api/ghn/locations"
+              data-shipping-fee-url="${pageContext.request.contextPath}/api/shipping-fee"
+              data-subtotal="${cart.total()}">
             <c:forEach items="${checkoutProductIds}" var="productId">
                 <input type="hidden" name="selectedProductId" value="${productId}">
             </c:forEach>
@@ -53,10 +55,14 @@
                                 </label>
                                 <c:forEach items="${savedAddresses}" var="addr">
                                     <label class="address-choice">
-                                        <input type="radio" name="savedAddressId" value="${addr.id}">
+                                        <input type="radio"
+                                               name="savedAddressId"
+                                               value="${addr.id}"
+                                               data-district-id="${addr.ghnDistrictId}"
+                                               data-ward-code="${addr.ghnWardCode}">
                                         <span class="address-choice__content">
                                             <strong><c:out value="${addr.receiverName}"/> · <c:out value="${addr.receiverPhone}"/></strong>
-                                            <span><c:out value="${addr.addressDetail}"/>, <c:out value="${addr.ward}"/>, <c:out value="${addr.province}"/></span>
+                                            <span><c:out value="${addr.addressDetail}"/>, <c:out value="${addr.ward}"/>, <c:out value="${addr.district}"/>, <c:out value="${addr.province}"/></span>
                                             <c:if test="${addr.isDefault()}"><small>Địa chỉ mặc định</small></c:if>
                                         </span>
                                         <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
@@ -89,18 +95,27 @@
                             <div class="payment-form-row">
                                 <div class="payment-field">
                                     <label for="provinceSelect">Tỉnh/Thành phố <span aria-hidden="true">*</span></label>
-                                    <select name="provinceCode" id="provinceSelect" required>
+                                    <select name="ghnProvinceId" id="provinceSelect" required>
                                         <option value="">Chọn Tỉnh/Thành phố</option>
-                                        <c:forEach items="${provinceOptions}" var="province">
-                                            <option value="${province.code}">${empty province.fullName ? province.name : province.fullName}</option>
-                                        </c:forEach>
                                     </select>
+                                    <input type="hidden" name="provinceName" id="provinceName">
                                 </div>
                                 <div class="payment-field">
+                                    <label for="districtSelect">Quận/Huyện <span aria-hidden="true">*</span></label>
+                                    <select name="ghnDistrictId" id="districtSelect" required disabled>
+                                        <option value="">Chọn Quận/Huyện</option>
+                                    </select>
+                                    <input type="hidden" name="districtName" id="districtName">
+                                </div>
+                            </div>
+
+                            <div class="payment-form-row">
+                                <div class="payment-field">
                                     <label for="wardSelect">Phường/Xã <span aria-hidden="true">*</span></label>
-                                    <select name="wardCode" id="wardSelect" required disabled>
+                                    <select name="ghnWardCode" id="wardSelect" required disabled>
                                         <option value="">Chọn Phường/Xã</option>
                                     </select>
+                                    <input type="hidden" name="wardName" id="wardName">
                                     <small id="wardStatus" class="payment-field__status" aria-live="polite"></small>
                                 </div>
                             </div>
@@ -183,12 +198,16 @@
 
                     <dl class="order-summary__totals">
                         <div><dt>Tạm tính</dt><dd><fmt:formatNumber value="${cart.total()}" groupingUsed="true"/>₫</dd></div>
-                        <div><dt>Phí vận chuyển</dt><dd class="order-summary__free">Miễn phí</dd></div>
+                        <div>
+                            <dt>Phí vận chuyển</dt>
+                            <dd class="order-summary__free" id="shippingFeeText">Chọn địa chỉ</dd>
+                        </div>
                         <div class="order-summary__grand-total">
                             <dt>Tổng cộng</dt>
-                            <dd><fmt:formatNumber value="${cart.total()}" groupingUsed="true"/>₫</dd>
+                            <dd id="grandTotalText"><fmt:formatNumber value="${cart.total()}" groupingUsed="true"/>₫</dd>
                         </div>
                     </dl>
+                    <input type="hidden" name="shippingFee" id="shippingFeeInput" value="0">
 
                     <button type="submit" class="payment-submit" id="submitOrder">
                         <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>

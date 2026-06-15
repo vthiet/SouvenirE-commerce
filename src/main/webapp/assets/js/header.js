@@ -15,8 +15,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchDropdown = document.getElementById("headerSearchDropdown");
     const searchList = document.getElementById("headerSearchList");
     const searchClearAll = document.getElementById("headerSearchClearAll");
+    const stickyBar = document.querySelector(".header-menu-bar, .header-breadcrumb");
+    const stickySpacer = document.createElement("div");
     const recentSearchKey = "inolaRecentSearches";
     let searchTimer = null;
+    let stickyThreshold = 0;
 
     function formatCurrency(value) {
         return new Intl.NumberFormat("vi-VN").format(Number(value) || 0) + " đ";
@@ -29,6 +32,41 @@ document.addEventListener("DOMContentLoaded", () => {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    function setupStickyBar() {
+        if (!stickyBar) {
+            return;
+        }
+        stickySpacer.className = "header-sticky-spacer";
+        stickyBar.insertAdjacentElement("afterend", stickySpacer);
+        refreshStickyThreshold();
+        syncStickyBar();
+    }
+
+    function refreshStickyThreshold() {
+        if (!stickyBar) {
+            return;
+        }
+        const wasStuck = stickyBar.classList.contains("is-stuck");
+        if (wasStuck) {
+            stickyBar.classList.remove("is-stuck");
+            stickySpacer.classList.remove("is-active");
+        }
+        stickyThreshold = stickyBar.getBoundingClientRect().top + window.scrollY;
+        if (wasStuck) {
+            syncStickyBar();
+        }
+    }
+
+    function syncStickyBar() {
+        if (!stickyBar) {
+            return;
+        }
+        const shouldStick = window.scrollY >= stickyThreshold;
+        stickyBar.classList.toggle("is-stuck", shouldStick);
+        stickySpacer.classList.toggle("is-active", shouldStick);
+        stickySpacer.style.height = shouldStick ? `${stickyBar.offsetHeight}px` : "0px";
     }
 
     function getRecentSearches() {
@@ -390,6 +428,12 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay?.addEventListener("click", () => {
         closeAll();
     });
+
+    window.addEventListener("resize", () => {
+        refreshStickyThreshold();
+    });
+    window.addEventListener("scroll", syncStickyBar, {passive: true});
+    setupStickyBar();
 
     document.addEventListener("click", (event) => {
         if (!menuButton?.contains(event.target) && !categoryDropdown?.contains(event.target) && !userToggle?.contains(event.target) && !userDropdown?.contains(event.target) && !cartLink?.contains(event.target) && !cartLoginPopover?.contains(event.target) && !searchForm?.contains(event.target)) {

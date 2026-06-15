@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import nlu.fit.web.souvenirecommerce.features.auth.Constants;
+import nlu.fit.web.souvenirecommerce.common.utils.RecaptchaUtil;
 import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
@@ -43,6 +44,7 @@ public class LoginServlet extends HttpServlet {
             }
         }
         req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
+        RecaptchaUtil.expose(req, getServletContext());
 
         req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
     }
@@ -67,6 +69,14 @@ public class LoginServlet extends HttpServlet {
         String loginDetail = req.getParameter("loginDetail");
         String password = req.getParameter("password");
 
+        if (!RecaptchaUtil.verify(req, getServletContext())) {
+            req.setAttribute("error", "Vui lòng xác nhận bạn không phải robot.");
+            req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
+            RecaptchaUtil.expose(req, getServletContext());
+            req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
+            return;
+        }
+
         try {
             User user = authService.loginWithUserCredential(loginDetail, password);
 
@@ -90,6 +100,8 @@ public class LoginServlet extends HttpServlet {
             log.warn("Đăng nhập thất bại cho tài khoản: {}", loginDetail);
 
             req.setAttribute("error", "Email, số điện thoại hoặc mật khẩu không đúng");
+            req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
+            RecaptchaUtil.expose(req, getServletContext());
 
             req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
         }

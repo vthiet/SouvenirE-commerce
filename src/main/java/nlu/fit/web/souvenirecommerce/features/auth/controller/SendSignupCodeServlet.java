@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.common.utils.EmailUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.RecaptchaUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import org.hibernate.Transaction;
 
@@ -35,6 +36,12 @@ public class SendSignupCodeServlet extends HttpServlet {
 
         String email = EmailUtil.normalizeEmail(req.getParameter("email"));
         JsonObject jsonResponse = new JsonObject();
+
+        if (!RecaptchaUtil.verify(req, getServletContext())) {
+            log.warn("Gửi mã đăng ký thất bại do captcha không hợp lệ: email={}", email);
+            writeJson(resp, jsonResponse, "error", "Vui lòng xác nhận bạn không phải robot.");
+            return;
+        }
 
         if (email == null || email.isEmpty()) {
             log.warn("Gửi mã đăng ký thất bại: email rỗng");
