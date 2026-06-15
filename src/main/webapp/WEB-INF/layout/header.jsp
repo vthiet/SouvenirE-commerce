@@ -341,79 +341,64 @@
 
                 </button>
 
-                <c:if test="${empty authUser}">
-                    <div class="cart-login-popover"
-                         id="cartLoginPopover"
-                         hidden
-                         aria-hidden="true">
+                <div class="cart-login-popover"
+                     id="cartLoginPopover"
+                     hidden
+                     aria-hidden="true">
 
-                        <div class="cart-login-message">
-                            <p>Vui lòng đăng nhập để truy cập giỏ hàng</p>
-                        </div>
+                    <div class="cart-preview-content"
+                         id="cartPreviewContent">
 
-                    </div>
-                </c:if>
-
-                <c:if test="${not empty authUser}">
-                    <div class="cart-login-popover"
-                         id="cartLoginPopover"
-                         hidden
-                         aria-hidden="true">
-
-                        <div class="cart-preview-content"
-                             id="cartPreviewContent">
-
-                            <c:choose>
-                                <c:when test="${empty sessionScope.cart or sessionScope.cart.totalQuantity() == 0}">
-                                    <div class="cart-preview-empty">
-                                        <div class="cart-preview-empty-art">
-                                            <i class="fa-solid fa-cart-shopping"></i>
-                                            <i class="fa-solid fa-star"></i>
-                                        </div>
-
-                                        <p>Giỏ hàng trống</p>
+                        <c:choose>
+                            <c:when test="${empty sessionScope.cart or sessionScope.cart.totalQuantity() == 0}">
+                                <div class="cart-preview-empty">
+                                    <div class="cart-preview-empty-art">
+                                        <i class="fa-solid fa-cart-shopping"></i>
+                                        <i class="fa-solid fa-star"></i>
                                     </div>
-                                </c:when>
 
-                                <c:otherwise>
-                                    <h3>Sản phẩm mới thêm</h3>
+                                    <p>Giỏ hàng trống</p>
+                                </div>
+                            </c:when>
 
-                                    <div class="cart-preview-list">
-                                        <c:forEach items="${sessionScope.cart.items}" var="item" varStatus="status">
-                                            <c:if test="${status.index < 3}">
-                                                <c:url var="cartPreviewImage" value="${item.product.imageUrl}"/>
-                                                <div class="cart-preview-item">
-                                                    <img src="${cartPreviewImage}"
-                                                         alt="${item.product.name}">
+                            <c:otherwise>
+                                <h3>Sản phẩm mới thêm</h3>
 
-                                                    <div class="cart-preview-info">
-                                                        <p class="cart-preview-name">${item.product.name}</p>
-                                                        <p class="cart-preview-price">
-                                                            ${item.quantity} x
-                                                            <fmt:formatNumber value="${item.price}" groupingUsed="true"/> đ
-                                                        </p>
-                                                    </div>
+                                <div class="cart-preview-list">
+                                    <c:forEach items="${sessionScope.cart.items}" var="item" varStatus="status">
+                                        <c:if test="${status.index < 3}">
+                                            <c:url var="cartPreviewImage" value="${item.product.imageUrl}"/>
+                                            <div class="cart-preview-item">
+                                                <img src="${cartPreviewImage}"
+                                                     alt="${item.product.name}">
+
+                                                <div class="cart-preview-info">
+                                                    <p class="cart-preview-name">${item.product.name}</p>
+                                                    <p class="cart-preview-price">
+                                                        ${item.quantity} x
+                                                        <fmt:formatNumber value="${item.price}" groupingUsed="true"/> đ
+                                                    </p>
                                                 </div>
-                                            </c:if>
-                                        </c:forEach>
-                                    </div>
+                                            </div>
+                                        </c:if>
+                                    </c:forEach>
+                                </div>
 
-                                    <div class="cart-preview-footer">
-                                        <span>
-                                            ${sessionScope.cart.totalQuantity()} Sản phẩm trong giỏ hàng
-                                        </span>
+                                <div class="cart-preview-footer">
+                                    <span>
+                                        ${sessionScope.cart.totalQuantity()} Sản phẩm trong giỏ hàng
+                                    </span>
 
-                                        <a href="${pageContext.request.contextPath}/cart">
-                                            Xem giỏ hàng
-                                        </a>
-                                    </div>
-                                </c:otherwise>
-                            </c:choose>
-
-                        </div>
+                                    <a href="${pageContext.request.contextPath}/cart">
+                                        Xem giỏ hàng
+                                    </a>
+                                </div>
+                            </c:otherwise>
+                        </c:choose>
 
                     </div>
-                </c:if>
+
+                </div>
             </div>
 
         </div>

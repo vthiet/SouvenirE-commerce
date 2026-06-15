@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
+import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import org.hibernate.Transaction;
 
@@ -20,12 +20,12 @@ import java.io.IOException;
 @Slf4j
 public class LoginGoogleServlet extends HttpServlet {
     private AuthService authService;
-    private CartPersistenceService cartPersistenceService;
+    private CartService cartService;
 
     @Override
     public void init() throws ServletException {
         authService = new AuthService();
-        cartPersistenceService = new CartPersistenceService();
+        cartService = new CartService();
     }
 
     @Override
@@ -36,6 +36,8 @@ public class LoginGoogleServlet extends HttpServlet {
             User user = authService.loginWithGoogle(code);
             HttpSession session = req.getSession(false);
             Object redirectAfterLogin = session == null ? null : session.getAttribute("redirectAfterLogin");
+            Object cartAttribute = session == null ? null : session.getAttribute("cart");
+            Cart preLoginCart = cartAttribute instanceof Cart cart ? cart : null;
             if (session != null) {
                 session.invalidate();
             }
@@ -45,9 +47,9 @@ public class LoginGoogleServlet extends HttpServlet {
             session.setAttribute("userInSession", user);
             session.setAttribute("user", user);
             session.setAttribute("authUser", user);
-            Cart cart = cartPersistenceService.loadCart(user);
-            session.setAttribute("cart", cart);
-            session.setAttribute("cartItemCount", cart.totalQuantity());
+            cartService.prepareGuestCartMerge(session, preLoginCart);
+            Cart cart = cartService.getCartForDisplay(session);
+            cartService.storeCart(session, cart);
             if (redirectAfterLogin instanceof String redirect && !redirect.isBlank()) {
                 resp.sendRedirect(redirect);
                 return;
