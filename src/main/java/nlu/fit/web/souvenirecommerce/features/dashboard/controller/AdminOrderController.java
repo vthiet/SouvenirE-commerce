@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
 import nlu.fit.web.souvenirecommerce.legacy.model.Order;
-import nlu.fit.web.souvenirecommerce.legacy.model.OrderItem;
 
 import java.io.IOException;
 import java.util.List;
@@ -116,14 +115,7 @@ public class AdminOrderController extends HttpServlet {
             return;
         }
 
-        Order order = orderDAO.getOrderById(orderId);
-        List<OrderItem> orderItems = orderDAO.getOrderItems(orderId);
-
-        log.info("Opened admin order detail for orderId={}", orderId);
-
-        request.setAttribute("order", order);
-        request.setAttribute("orderItems", orderItems);
-        request.getRequestDispatcher("/admin/order-detail.jsp").forward(request, response);
+        response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId);
     }
 
     private void updateOrderStatus(HttpServletRequest request, HttpServletResponse response)

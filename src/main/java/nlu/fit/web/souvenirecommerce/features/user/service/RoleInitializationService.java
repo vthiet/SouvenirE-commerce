@@ -15,14 +15,16 @@ public class RoleInitializationService {
 
     public static void initializeDefaultRoles() {
         try {
+            logger.info("Initializing default roles and permissions...");
+            ensureBasePermissions();
+
             if (!rolesExist()) {
-                logger.info("Initializing default roles and permissions...");
                 createRoles();
-                assignPermissions();
-                logger.info("Default roles and permissions initialized successfully!");
-            } else {
-                logger.info("Default roles already exist.");
+                logger.info("Default roles created.");
             }
+
+            assignPermissions();
+            logger.info("Default roles and permissions initialized successfully!");
         } catch (Exception e) {
             logger.severe("Error initializing default roles: " + e.getMessage());
             e.printStackTrace();
@@ -67,7 +69,7 @@ public class RoleInitializationService {
 
         // Admin - All except role management
         assignPermissionsByResourceToRole("Admin",
-                "dashboard", "product", "category", "order", "customer", "banner", "settings");
+                "dashboard", "product", "category", "order", "customer", "banner", "settings", "log");
 
         // Sales - Product, Order, Customer, Dashboard (read/update only)
         assignLimitedPermissionsToRole("Sales",
@@ -78,6 +80,33 @@ public class RoleInitializationService {
         assignSpecificPermissionToRole("User", "dashboard", "read");
 
         logger.info("Permissions assigned to roles successfully.");
+    }
+
+    private static void ensureBasePermissions() throws Exception {
+        ensurePermission("dashboard", "read", "View admin dashboard");
+        ensurePermission("log", "read", "View admin logs");
+    }
+
+    private static void ensurePermission(String resource, String action, String description) throws Exception {
+        String sql = """
+                INSERT INTO permissions (resource, action, description)
+                SELECT ?, ?, ?
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM permissions
+                    WHERE resource = ? AND action = ?
+                )
+                """;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, resource);
+            ps.setString(2, action);
+            ps.setString(3, description);
+            ps.setString(4, resource);
+            ps.setString(5, action);
+            ps.executeUpdate();
+        }
     }
 
     private static void assignAllPermissionsToRole(String roleName) throws Exception {

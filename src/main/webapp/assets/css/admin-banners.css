@@ -31,7 +31,7 @@
   font-size: 3rem;
   margin-bottom: 1rem;
   display: block;
-  color: #d1d5db;
+  color: var(--admin-page-border);
 }
 
 .banner-guidelines-card {
@@ -60,12 +60,12 @@
 
 .banner-toggle-active {
     background: #10b981;
-    color: #fff;
+    color: var(--admin-page-surface);
 }
 
 .banner-toggle-inactive {
     background: #6b7280;
-    color: #fff;
+    color: var(--admin-page-surface);
 }
 
 .banner-empty-state {
@@ -104,3 +104,6 @@
 .banner-file-hint.is-hidden {
     display: none;
 }
+
+
+

@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ include file="common/admin-access-guard.jspf" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -285,7 +286,6 @@
             </div>
         </main>
 
-        <jsp:include page="common/admin-footer.jsp" />
     </div>
 </div>
 <script src="${pageContext.request.contextPath}/assets/js/bootstrap.bundle.min.js"></script>
