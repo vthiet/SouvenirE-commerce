@@ -24,37 +24,38 @@
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </button>
                     </div>
-
-                    <div class="store-note-block-left">
-                        <p class="store-note-title">
-                            <i class="fa-solid fa-box"></i>
-                            Lưu ý từ cửa hàng
-                        </p>
-
-                        <p class="store-note-text">
-                            Với đơn hàng số lượng lớn (từ 20 sản phẩm trở lên),
-                            vui lòng liên hệ hotline hoặc Zalo INOLA để nhận báo giá ưu đãi.
-                        </p>
-                    </div>
                 </div>
 
                 <div class="product-right">
 
                     <h1 class="product-title">${data.product.name}</h1>
 
-                    <div class="product-meta">
-                        <span class="rating">
+                    <div class="product-detail-meta">
+                        <span class="product-meta-chip product-meta-chip--rating">
                             <i class="fa-solid fa-star"></i>
                             ${data.avgRating}
                         </span>
 
-                        <span class="sold">
+                        <span class="product-meta-chip product-meta-chip--sold">
+                            <i class="fa-solid fa-cart-shopping"></i>
                             Đã bán ${data.product.totalSold}
                         </span>
 
-                        <span class="stock">
-                            Còn ${data.product.stockQuantity} sản phẩm
-                        </span>
+                        <c:choose>
+                            <c:when test="${data.product.stockQuantity > 0}">
+                                <span class="product-meta-chip product-meta-chip--stock">
+                                    <i class="fa-solid fa-box"></i>
+                                    Còn ${data.product.stockQuantity} sản phẩm
+                                </span>
+                            </c:when>
+
+                            <c:otherwise>
+                                <span class="product-meta-chip product-meta-chip--out">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    Hết hàng
+                                </span>
+                            </c:otherwise>
+                        </c:choose>
                     </div>
 
                     <div class="product-price">
@@ -86,6 +87,51 @@
                                 ${data.product.shortDescription}
                         </p>
                     </c:if>
+
+                    <div class="product-shipping">
+                        <div class="product-shipping__label">
+                            <i class="fa-solid fa-truck-fast"></i>
+                            <span>Vận chuyển</span>
+                        </div>
+
+                        <div class="product-shipping__content">
+                            <c:choose>
+                                <c:when test="${not empty shippingAddressText}">
+                                    <p>
+                                        Giao đến:
+                                        <strong>${shippingAddressText}</strong>
+                                    </p>
+
+                                    <c:choose>
+                                        <c:when test="${not empty shippingFeeAmount}">
+                                            <p>
+                                                Phí ship dự kiến:
+                                                <strong>
+                                                    <fmt:formatNumber value="${shippingFeeAmount}"/>đ
+                                                </strong>
+                                            </p>
+                                        </c:when>
+
+                                        <c:otherwise>
+                                            <p>
+                                                Phí ship tham khảo:
+                                                <strong>22.000đ - 55.000đ</strong>
+                                            </p>
+                                            <span>Địa chỉ hiện tại chưa đủ mã GHN để tính phí chính xác</span>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </c:when>
+
+                                <c:otherwise>
+                                    <p>
+                                        Phí ship tham khảo:
+                                        <strong>22.000đ - 55.000đ</strong>
+                                    </p>
+                                    <span>Đăng nhập hoặc chọn địa chỉ để xem phí chính xác</span>
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
+                    </div>
 
                     <form action="${pageContext.request.contextPath}/cart/add"
                           method="post"
@@ -121,6 +167,18 @@
                         </button>
 
                     </form>
+
+                    <div class="store-note-block">
+                        <p class="store-note-title">
+                            <i class="fa-solid fa-box"></i>
+                            Lưu ý từ cửa hàng
+                        </p>
+
+                        <p class="store-note-text">
+                            Với đơn hàng số lượng lớn (từ 20 sản phẩm trở lên),
+                            vui lòng liên hệ hotline hoặc Zalo INOLA để nhận báo giá ưu đãi.
+                        </p>
+                    </div>
 
                 </div>
 
