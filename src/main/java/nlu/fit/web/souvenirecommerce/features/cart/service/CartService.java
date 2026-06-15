@@ -15,9 +15,11 @@ import java.util.Optional;
 public class CartService {
     private static final String CART_SESSION_KEY = "cart";
     private static final String CART_ITEM_COUNT_SESSION_KEY = "cartItemCount";
+    private static final String CART_PENDING_MERGE_SESSION_KEY = "cartPendingMerge";
 
     private final CartRepository cartRepository;
     private final NewCartRepository newCartRepository;
+    private final CartPriceService cartPriceService = new CartPriceService();
 
     public CartService() {
         this(new CartRepository(), new NewCartRepository());
@@ -35,8 +37,10 @@ public class CartService {
     public Cart getCartForDisplay(HttpSession session) {
         User user = getCurrentUser(session);
         if (user != null) {
-            mergeSessionCartToDatabase(user, session);
-            return toSessionCart(getOrCreateDatabaseCart(user.getId()));
+            mergePendingSessionCartToDatabase(user, session);
+            Cart cart = toSessionCart(getOrCreateDatabaseCart(user.getId()));
+            storeCart(session, cart);
+            return cart;
         }
 
         return getOrCreateCart(session);
@@ -93,7 +97,7 @@ public class CartService {
             return false;
         }
 
-        cart.addItem(product.get(), quantity);
+        cart.addItem(product.get(), quantity, cartPriceService.getCurrentPrice(product.get()));
         return true;
     }
 
@@ -155,13 +159,20 @@ public class CartService {
         session.setAttribute(CART_ITEM_COUNT_SESSION_KEY, cart.totalQuantity());
     }
 
+    public void prepareGuestCartMerge(HttpSession session, Cart cart) {
+        if (session == null || cart == null || cart.totalQuantity() <= 0) {
+            return;
+        }
+
+        session.setAttribute(CART_SESSION_KEY, cart);
+        session.setAttribute(CART_PENDING_MERGE_SESSION_KEY, true);
+        session.setAttribute(CART_ITEM_COUNT_SESSION_KEY, cart.totalQuantity());
+    }
+
     public int totalQuantity(HttpSession session) {
         User user = getCurrentUser(session);
         if (user != null) {
-            Object sessionCart = session.getAttribute(CART_SESSION_KEY);
-            if (sessionCart instanceof Cart cart && cart.totalQuantity() > 0) {
-                mergeSessionCartToDatabase(user, session);
-            }
+            mergePendingSessionCartToDatabase(user, session);
 
             return newCartRepository.findByUserId(user.getId())
                     .map(NewCart::totalQuantity)
@@ -300,13 +311,19 @@ public class CartService {
         return item.isPresent();
     }
 
-    private void mergeSessionCartToDatabase(User user, HttpSession session) {
+    private void mergePendingSessionCartToDatabase(User user, HttpSession session) {
         if (user == null || session == null) {
+            return;
+        }
+
+        if (!Boolean.TRUE.equals(session.getAttribute(CART_PENDING_MERGE_SESSION_KEY))) {
+            syncDatabaseCartCount(session, user.getId());
             return;
         }
 
         Object cart = session.getAttribute(CART_SESSION_KEY);
         if (!(cart instanceof Cart sessionCart) || sessionCart.totalQuantity() == 0) {
+            session.removeAttribute(CART_PENDING_MERGE_SESSION_KEY);
             syncDatabaseCartCount(session, user.getId());
             return;
         }
@@ -316,13 +333,14 @@ public class CartService {
         }
 
         session.removeAttribute(CART_SESSION_KEY);
+        session.removeAttribute(CART_PENDING_MERGE_SESSION_KEY);
         syncDatabaseCartCount(session, user.getId());
     }
 
     private Cart toSessionCart(NewCart databaseCart) {
         Cart cart = new Cart();
         for (NewCartItem item : databaseCart.getItems()) {
-            cart.addItem(item.getProduct(), item.getQuantity());
+            cart.addItem(item.getProduct(), item.getQuantity(), cartPriceService.getCurrentPrice(item.getProduct()));
         }
         return cart;
     }
