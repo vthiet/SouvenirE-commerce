@@ -10,7 +10,7 @@ import nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository;
 import nlu.fit.web.souvenirecommerce.features.product.dto.ProductDetailDTO;
 import nlu.fit.web.souvenirecommerce.features.product.service.ProductService;
 import nlu.fit.web.souvenirecommerce.features.product.service.ReviewService;
-import nlu.fit.web.souvenirecommerce.features.shipping.GhnService;
+import nlu.fit.web.souvenirecommerce.features.shipping.service.GhnService;
 import nlu.fit.web.souvenirecommerce.features.user.address.AddressService;
 import nlu.fit.web.souvenirecommerce.model.entity.Address;
 

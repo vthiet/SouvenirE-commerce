@@ -1,5 +1,5 @@
 package nlu.fit.web.souvenirecommerce.model.enums;
 
 public enum VerificationCodePurpose {
-    SIGNUP, RESET_PASSWORD
+    SIGNUP, RESET_PASSWORD, CHANGE_PASSWORD
 }

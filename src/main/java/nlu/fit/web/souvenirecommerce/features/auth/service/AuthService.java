@@ -200,6 +200,25 @@ public class AuthService {
         return authRepository.verifyResetPasswordCode(email, code);
     }
 
+    public LocalDateTime sendChangePasswordCode(String email) throws MessagingException {
+        if (!hasEmailExist(email)) {
+            throw new IllegalArgumentException("Email này chưa được đăng ký trong hệ thống");
+        }
+
+        String code = String.format("%06d", RANDOM.nextInt(1_000_000));
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
+        authRepository.createChangePasswordVerificationCode(email, code, expiresAt);
+        emailService.sendChangePasswordCode(email, code);
+        return expiresAt;
+    }
+
+    public boolean verifyChangePasswordCode(String email, String code) {
+        if (!hasEmailExist(email)) {
+            throw new IllegalArgumentException("Email này chưa được đăng ký trong hệ thống");
+        }
+        return authRepository.verifyChangePasswordCode(email, code);
+    }
+
     public boolean resetPassword(String email, String newPassword) {
         if (!hasEmailExist(email)) {
             throw new IllegalArgumentException("Email này chưa được đăng ký trong hệ thống");

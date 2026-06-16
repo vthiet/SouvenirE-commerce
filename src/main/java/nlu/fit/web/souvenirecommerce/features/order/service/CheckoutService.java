@@ -14,7 +14,7 @@ import nlu.fit.web.souvenirecommerce.features.order.payment.PaymentGatewayRegist
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderStatusRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.ProductRepository;
-import nlu.fit.web.souvenirecommerce.features.shipping.GhnService;
+import nlu.fit.web.souvenirecommerce.features.shipping.service.ShippingService;
 import nlu.fit.web.souvenirecommerce.features.user.address.AddressService;
 import nlu.fit.web.souvenirecommerce.model.entity.Address;
 import nlu.fit.web.souvenirecommerce.model.entity.Order;
@@ -36,7 +36,8 @@ public class CheckoutService {
     private final ProductRepository productRepository = new ProductRepository();
     private final AddressService addressService = new AddressService();
     private final PaymentGatewayRegistry paymentGatewayRegistry = new PaymentGatewayRegistry();
-    private final GhnService ghnService = new GhnService();
+    private final ShippingService shippingService = new ShippingService();
+    private final OrderService orderService = new OrderService();
 
     public CheckoutResult checkout(User user, CartEntity cart, CheckoutRequest request) {
         return checkout(user, cart, request, null);
@@ -101,8 +102,14 @@ public class CheckoutService {
                 .qrPayload(paymentPreparation.getQrPayload())
                 .build();
         savedOrder.setPaymentTransaction(paymentTransaction);
-        attachGhnOrder(savedOrder);
         orderRepository.update(savedOrder);
+
+        orderService.logHistory(
+                savedOrder,
+                savedOrder.getStatusDescription(),
+                paymentMethod == PaymentMethod.COD ? "Đơn hàng được đặt thành công (COD)." : "Chờ khách hàng thanh toán qua VNPay.",
+                "Khách hàng"
+        );
 
         return CheckoutResult.builder()
                 .order(savedOrder)
@@ -161,8 +168,8 @@ public class CheckoutService {
 
     private BigDecimal resolveShippingFee(Address address, CheckoutRequest request) {
         try {
-            if (address != null && address.getGhnDistrictId() != null && !isBlank(address.getGhnWardCode())) {
-                return ghnService.calculateFee(address.getGhnDistrictId(), address.getGhnWardCode());
+            if (address != null) {
+                return shippingService.getActiveProvider().calculateFee(address);
             }
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
@@ -174,24 +181,9 @@ public class CheckoutService {
         return BigDecimal.valueOf(30000);
     }
 
-    private void attachGhnOrder(Order order) {
-        try {
-            GhnService.GhnOrderResult result = ghnService.createOrder(order);
-            order.setGhnOrderCode(result.orderCode());
-            order.setGhnStatus(result.status());
-            order.setGhnLeadtime(result.leadtime());
-            order.setGhnFinishDate(result.finishDate());
-            order.setGhnUpdatedAt(result.updatedAt());
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-            order.setGhnStatus("create_failed");
-            order.setGhnUpdatedAt(LocalDateTime.now());
-        }
-    }
-
     private OrderStatus resolveInitialStatus(PaymentMethod method) {
         OrderStatusCode statusCode = method == PaymentMethod.COD
-                ? OrderStatusCode.PENDING
+                ? OrderStatusCode.WAIT_CONFIRM
                 : OrderStatusCode.PENDING_PAYMENT;
         return orderStatusRepository.findByDescription(statusCode.getDescription())
                 .orElseGet(() -> orderStatusRepository.save(OrderStatus.builder()

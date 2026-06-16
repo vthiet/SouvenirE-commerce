@@ -31,6 +31,15 @@ public class CartItemEntity implements Serializable {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
+    @Column(name = "price", nullable = false)
+    private double price;
+
+    @PrePersist
+    @PreUpdate
+    private void updatePrice() {
+        this.price = getUnitPrice();
+    }
+
     public void increaseQuantity() {
         this.quantity++;
     }
@@ -63,6 +72,9 @@ public class CartItemEntity implements Serializable {
     }
 
     public double getPrice() {
-        return getUnitPrice();
+        if (this.price <= 0) {
+            return getUnitPrice();
+        }
+        return this.price;
     }
 }
