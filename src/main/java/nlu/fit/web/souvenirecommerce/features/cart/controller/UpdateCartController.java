@@ -6,9 +6,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
+import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
 
@@ -22,14 +24,26 @@ public class UpdateCartController extends HttpServlet {
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
+        HttpSession session = request.getSession(false);
+        User currentUser = resolveCurrentUser(session);
 
         try {
             Long productId = Long.parseLong(request.getParameter("productId"));
             int quantity   = Integer.parseInt(request.getParameter("quantity"));
 
-            HttpSession session = request.getSession();
+            if (session == null) {
+                session = request.getSession();
+            }
             boolean updated = cartService.updateItem(session, productId, quantity);
             if (!updated) {
+                AuditLogService.failure(
+                        UpdateCartController.class,
+                        currentUser,
+                        "CART",
+                        "CART_ITEM_UPDATED",
+                        "CART",
+                        AuditLogService.describe("productId", productId, "quantity", quantity, "reason", "update_failed")
+                );
                 response.getWriter().write("{\"success\":false}");
                 return;
             }
@@ -53,10 +67,30 @@ public class UpdateCartController extends HttpServlet {
                     itemSubtotal
             );
 
+            AuditLogService.success(
+                    UpdateCartController.class,
+                    currentUser,
+                    "CART",
+                    "CART_ITEM_UPDATED",
+                    "CART",
+                    AuditLogService.describe(
+                            "productId", productId,
+                            "quantity", quantity,
+                            "totalQuantity", cart.totalQuantity(),
+                            "total", cart.total()
+                    )
+            );
             response.getWriter().write(json);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            AuditLogService.failure(
+                    UpdateCartController.class,
+                    currentUser,
+                    "CART",
+                    "CART_ITEM_UPDATED",
+                    "CART",
+                    AuditLogService.describe("reason", "exception", "message", e.getMessage())
+            );
             response.getWriter().write("{\"success\":false}");
         }
     }
@@ -65,5 +99,19 @@ public class UpdateCartController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         doPost(request, response);
+    }
+
+    private User resolveCurrentUser(HttpSession session) {
+        if (session == null) {
+            return null;
+        }
+        User currentUser = (User) session.getAttribute("userInSession");
+        if (currentUser == null) {
+            currentUser = (User) session.getAttribute("currentUser");
+        }
+        if (currentUser == null) {
+            currentUser = (User) session.getAttribute("user");
+        }
+        return currentUser;
     }
 }

@@ -1,5 +1,119 @@
 /* Orders Page Styles - Specific to orders.jsp */
 
+.orders-toolbar {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.orders-status-tabs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 2px 8px;
+}
+
+.orders-status-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    padding: 9px 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    background: var(--surface-default);
+    color: var(--text-soft);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    transition: 0.2s ease;
+}
+
+.orders-status-tab em {
+    min-width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: var(--surface-subtle);
+    color: var(--text-strong);
+    font-style: normal;
+    font-size: 12px;
+}
+
+.orders-status-tab:hover,
+.orders-status-tab.is-active {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+    background: var(--brand-primary-soft);
+}
+
+.orders-status-tab.is-active em {
+    background: var(--brand-primary);
+    color: var(--text-on-primary);
+}
+
+.orders-search {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-default);
+}
+
+.orders-search__field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 42px;
+    padding: 0 13px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    background: var(--surface-subtle);
+    color: var(--text-soft);
+}
+
+.orders-search__field input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text-strong);
+    font: inherit;
+}
+
+.orders-search__button,
+.orders-search__reset {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 0 16px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.orders-search__button {
+    border: 0;
+    background: var(--brand-primary);
+    color: var(--text-on-primary);
+    cursor: pointer;
+}
+
+.orders-search__reset {
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-default);
+    color: var(--text-soft);
+}
+
 .orders-section {
     padding: 22px !important;
 }
@@ -9,12 +123,11 @@
     gap: 16px;
 }
 
-/* Order Card - List View */
 .order-card {
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    background: var(--surface-subtle);
-    padding: 16px;
+    background: var(--surface-default);
+    overflow: hidden;
     transition: all 0.2s ease;
 }
 
@@ -28,7 +141,8 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 12px;
-    margin-bottom: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .order-card__info h3 {
@@ -52,54 +166,137 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
-    border-radius: var(--radius-sm);
+    padding: 5px 11px;
+    border-radius: 999px;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
     white-space: nowrap;
+    border: 1px solid var(--status-border, var(--border-default));
+    background: var(--status-bg, var(--surface-subtle));
+    color: var(--status-text, var(--text-strong));
 }
 
 .order-status--PENDING {
-    background: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffc107;
+    --status-bg: var(--warning-bg);
+    --status-text: var(--warning);
+    --status-border: var(--warning-border);
+}
+
+.order-status--PENDING_PAYMENT {
+    --status-bg: var(--warning-bg);
+    --status-text: var(--warning);
+    --status-border: var(--warning-border);
 }
 
 .order-status--CONFIRMED {
-    background: #cfe2ff;
-    color: #084298;
-    border: 1px solid #0d6efd;
+    --status-bg: var(--brand-primary-soft);
+    --status-text: var(--brand-primary);
+    --status-border: var(--brand-primary);
 }
 
 .order-status--SHIPPED {
-    background: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #17a2b8;
+    --status-bg: var(--surface-muted);
+    --status-text: var(--brand-primary-hover);
+    --status-border: var(--brand-primary-hover);
 }
 
 .order-status--DELIVERED {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #28a745;
+    --status-bg: var(--success-bg);
+    --status-text: var(--success);
+    --status-border: var(--success-border);
 }
 
 .order-status--CANCELLED {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    --status-bg: var(--danger-bg);
+    --status-text: var(--danger);
+    --status-border: var(--danger-border);
+}
+
+.order-status--PAYMENT_FAILED {
+    --status-bg: var(--danger-bg);
+    --status-text: var(--danger);
+    --status-border: var(--danger-border);
 }
 
 .order-card__body {
-    border-top: 1px solid var(--border-subtle);
-    border-bottom: 1px solid var(--border-subtle);
-    padding: 12px 0;
-    margin-bottom: 12px;
+    padding: 0 18px;
 }
 
-.order-total {
+.order-card__items {
+    display: grid;
+}
+
+.order-product {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.order-product:last-child {
+    border-bottom: 0;
+}
+
+.order-product__image {
+    width: 72px;
+    height: 72px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    background: var(--surface-default);
+    object-fit: cover;
+}
+
+.order-product__content {
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.order-product__name {
+    color: var(--text-strong);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.35;
+    text-decoration: none;
+}
+
+.order-product__name:hover {
+    color: var(--brand-primary);
+}
+
+.order-product__quantity {
+    color: var(--text-soft);
+    font-size: 13px;
+}
+
+.order-product__price {
+    color: var(--text-strong);
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.order-product--empty {
+    display: flex;
+    color: var(--text-soft);
+}
+
+.order-card__footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 14px;
+    padding: 15px 18px;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--surface-subtle);
+}
+
+.order-total {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-size: 14px;
 }
 
@@ -108,14 +305,23 @@
 }
 
 .order-total strong {
-    color: var(--text-strong);
-    font-weight: 700;
-    font-size: 16px;
+    color: var(--brand-primary);
+    font-weight: 800;
+    font-size: 18px;
 }
 
-.order-card__footer {
+.order-card__actions {
     display: flex;
     justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.order-action-button {
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 13px;
 }
 
 /* Order Detail View */
@@ -161,6 +367,93 @@
     background: var(--surface-subtle);
     border-radius: var(--radius-md);
     min-width: 180px;
+}
+
+.order-danger-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: 1px solid var(--danger);
+    border-radius: 4px;
+    background: var(--danger);
+    color: var(--text-on-primary);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.order-danger-button:hover {
+    opacity: 0.92;
+}
+
+.order-detail-alert {
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.order-detail-alert--success {
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    color: var(--success);
+}
+
+.order-detail-alert--danger {
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+    color: var(--danger);
+}
+
+.order-detail-actions-block {
+    margin-top: 24px;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 16px;
+}
+
+.order-history-timeline {
+    border-left: 2px solid var(--border-subtle);
+    padding-left: 15px;
+    margin-left: 10px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.timeline-item {
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.order-history-timeline__dot {
+    position: absolute;
+    left: -22px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--brand-primary);
+    border: 2px solid var(--surface-default);
+}
+
+.order-history-timeline__meta {
+    font-size: 0.8rem;
+    color: var(--text-soft);
+}
+
+.order-history-timeline__title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-strong);
+}
+
+.order-history-timeline__description {
+    font-size: 0.9rem;
+    color: var(--text-default);
+    margin-top: 2px;
+}
+
+.order-history-empty {
+    font-size: 0.9rem;
+    color: var(--text-soft);
 }
 
 .order-detail-total span {
@@ -215,8 +508,11 @@
     white-space: nowrap;
 }
 
-/* Responsive Styles */
 @media (max-width: 768px) {
+    .orders-search {
+        grid-template-columns: 1fr;
+    }
+
     .order-detail-header {
         grid-template-columns: 1fr;
     }
@@ -239,7 +535,7 @@
 
 @media (max-width: 640px) {
     .order-card {
-        padding: 12px;
+        border-radius: 14px;
     }
 
     .order-card__header {
@@ -249,15 +545,33 @@
 
     .order-card__footer {
         width: 100%;
+        flex-direction: column;
+        align-items: stretch;
     }
 
-    .primary-button {
+    .order-card__actions,
+    .primary-button,
+    .secondary-button.order-action-button {
         width: 100%;
         justify-content: center;
     }
 
     .order-detail-info {
         grid-template-columns: 1fr;
+    }
+
+    .order-product {
+        grid-template-columns: 64px minmax(0, 1fr);
+    }
+
+    .order-product__image {
+        width: 64px;
+        height: 64px;
+    }
+
+    .order-product__price {
+        grid-column: 2;
+        justify-self: start;
     }
 
     .order-item {
@@ -269,4 +583,3 @@
         width: 100%;
     }
 }
-

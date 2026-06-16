@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 
 import java.io.IOException;
@@ -73,6 +74,14 @@ public class VerifySignupCodeServlet extends HttpServlet {
 
         session.setAttribute("signupVerifiedEmail", email);
         log.info("Xác thực mã đăng ký thành công: email={}", email);
+        AuditLogService.success(
+                VerifySignupCodeServlet.class,
+                email,
+                "AUTH",
+                "SIGNUP_VERIFIED",
+                "ACCOUNT",
+                AuditLogService.describe("result", "verified")
+        );
         writeJson(resp, jsonResponse, "success", "Email đã được xác thực");
     }
 

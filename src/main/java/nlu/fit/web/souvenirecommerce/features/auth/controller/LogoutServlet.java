@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
@@ -22,6 +23,14 @@ public class LogoutServlet extends HttpServlet {
             Object currentUser = session.getAttribute("currentUser");
             if (currentUser instanceof User user) {
                 log.info("Đăng xuất: userId={}, email={}", user.getId(), user.getEmail());
+                AuditLogService.success(
+                        LogoutServlet.class,
+                        user,
+                        "AUTH",
+                        "LOGOUT",
+                        "SESSION",
+                        AuditLogService.describe("sessionId", session.getId())
+                );
             } else {
                 log.info("Đăng xuất: sessionId={}", session.getId());
             }

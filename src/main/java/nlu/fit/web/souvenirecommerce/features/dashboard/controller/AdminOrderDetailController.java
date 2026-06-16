@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.order.service.OrderService;
 import nlu.fit.web.souvenirecommerce.model.entity.Address;
 import nlu.fit.web.souvenirecommerce.model.entity.Order;
@@ -58,10 +59,27 @@ public class AdminOrderDetailController extends HttpServlet {
             String performedBy = (adminUser != null) ? adminUser.getEmail() : "Admin";
             try {
                 orderService.syncGhnStatus(orderId, performedBy);
+                AuditLogService.success(
+                        AdminOrderDetailController.class,
+                        adminUser,
+                        "ORDER",
+                        "ORDER_GHN_SYNCED",
+                        "ORDER",
+                        AuditLogService.describe("orderId", orderId, "performedBy", performedBy)
+                );
                 response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&success=true");
                 return;
             } catch (Exception e) {
-                response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+                AuditLogService.failure(
+                        AdminOrderDetailController.class,
+                        adminUser,
+                        "ORDER",
+                        "ORDER_GHN_SYNCED",
+                        "ORDER",
+                        AuditLogService.describe("orderId", orderId, "performedBy", performedBy, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
+                );
+                String errorMessage = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
                 return;
             }
         }
@@ -102,25 +120,55 @@ public class AdminOrderDetailController extends HttpServlet {
 
         String action = request.getParameter("action");
         try {
+            String auditAction = null;
             if ("confirm".equals(action)) {
                 orderService.confirmOrder(orderId, performedBy);
+                auditAction = "ORDER_CONFIRMED";
             } else if ("ship".equals(action)) {
                 orderService.startShipping(orderId, performedBy);
+                auditAction = "ORDER_SHIPPED";
             } else if ("complete".equals(action)) {
                 orderService.completeOrder(orderId, performedBy);
+                auditAction = "ORDER_COMPLETED";
             } else if ("cancel".equals(action)) {
                 String reason = request.getParameter("reason");
                 if (reason == null || reason.isBlank()) {
                     reason = "Bị hủy bởi Admin";
                 }
                 orderService.cancelOrder(orderId, performedBy, reason);
+                auditAction = "ORDER_CANCELLED";
             } else {
+                AuditLogService.failure(
+                        AdminOrderDetailController.class,
+                        adminUser,
+                        "ORDER",
+                        "ORDER_STATUS_CHANGED",
+                        "ORDER",
+                        AuditLogService.describe("orderId", orderId, "action", action, "reason", "unsupported_action")
+                );
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported action");
                 return;
             }
+            AuditLogService.success(
+                    AdminOrderDetailController.class,
+                    adminUser,
+                    "ORDER",
+                    auditAction,
+                    "ORDER",
+                    AuditLogService.describe("orderId", orderId, "action", action, "performedBy", performedBy)
+            );
             response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&success=true");
         } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+            AuditLogService.failure(
+                    AdminOrderDetailController.class,
+                    adminUser,
+                    "ORDER",
+                    "ORDER_STATUS_CHANGED",
+                    "ORDER",
+                    AuditLogService.describe("orderId", orderId, "action", action, "performedBy", performedBy, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
+            );
+            String errorMessage = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+            response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
         }
     }
 

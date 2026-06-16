@@ -1,5 +1,6 @@
 package nlu.fit.web.souvenirecommerce.features.order.service;
 
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.model.enums.OrderStatusCode;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
@@ -109,6 +110,23 @@ public class CheckoutService {
                 savedOrder.getStatusDescription(),
                 paymentMethod == PaymentMethod.COD ? "Đơn hàng được đặt thành công (COD)." : "Chờ khách hàng thanh toán qua VNPay.",
                 "Khách hàng"
+        );
+
+        AuditLogService.success(
+                CheckoutService.class,
+                user,
+                "ORDER",
+                "ORDER_CREATED",
+                "CHECKOUT",
+                AuditLogService.describe(
+                        "orderCode", savedOrder.getOrderCode(),
+                        "orderId", savedOrder.getId(),
+                        "paymentMethod", paymentMethod,
+                        "status", savedOrder.getStatusDescription(),
+                        "itemCount", cart.totalQuantity(),
+                        "totalAmount", savedOrder.getTotalAmount(),
+                        "paymentUrl", paymentPreparation.getPaymentUrl() == null ? "" : paymentPreparation.getPaymentUrl()
+                )
         );
 
         return CheckoutResult.builder()

@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.common.utils.EmailUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.RecaptchaUtil;
@@ -36,27 +37,60 @@ public class SendSignupCodeServlet extends HttpServlet {
 
         String email = EmailUtil.normalizeEmail(req.getParameter("email"));
         JsonObject jsonResponse = new JsonObject();
+        String actorLabel = email == null || email.isBlank() ? "Guest" : email;
 
         if (!RecaptchaUtil.verify(req, getServletContext())) {
             log.warn("Gửi mã đăng ký thất bại do captcha không hợp lệ: email={}", email);
+            AuditLogService.failure(
+                    SendSignupCodeServlet.class,
+                    actorLabel,
+                    "AUTH",
+                    "SIGNUP_CODE_SENT",
+                    "EMAIL",
+                    AuditLogService.describe("reason", "captcha_failed", "email", email)
+            );
             writeJson(resp, jsonResponse, "error", "Vui lòng xác nhận bạn không phải robot.");
             return;
         }
 
         if (email == null || email.isEmpty()) {
             log.warn("Gửi mã đăng ký thất bại: email rỗng");
+            AuditLogService.failure(
+                    SendSignupCodeServlet.class,
+                    actorLabel,
+                    "AUTH",
+                    "SIGNUP_CODE_SENT",
+                    "EMAIL",
+                    AuditLogService.describe("reason", "email_empty")
+            );
             writeJson(resp, jsonResponse, "error", "Email không được để trống");
             return;
         }
 
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
             log.warn("Gửi mã đăng ký thất bại: email không hợp lệ {}", email);
+            AuditLogService.failure(
+                    SendSignupCodeServlet.class,
+                    actorLabel,
+                    "AUTH",
+                    "SIGNUP_CODE_SENT",
+                    "EMAIL",
+                    AuditLogService.describe("reason", "email_invalid", "email", email)
+            );
             writeJson(resp, jsonResponse, "error", "Email không hợp lệ");
             return;
         }
 
         if (authService.hasEmailExist(email)) {
             log.warn("Gửi mã đăng ký thất bại: email đã tồn tại {}", email);
+            AuditLogService.failure(
+                    SendSignupCodeServlet.class,
+                    actorLabel,
+                    "AUTH",
+                    "SIGNUP_CODE_SENT",
+                    "EMAIL",
+                    AuditLogService.describe("reason", "email_exists", "email", email)
+            );
             writeJson(resp, jsonResponse, "error", "Email này đã được đăng ký");
             return;
         }
@@ -67,6 +101,14 @@ public class SendSignupCodeServlet extends HttpServlet {
         } catch (MessagingException | RuntimeException e) {
             rollbackCurrentTransaction();
             log.error("Gửi mã đăng ký thất bại: email={}", email, e);
+            AuditLogService.failure(
+                    SendSignupCodeServlet.class,
+                    actorLabel,
+                    "AUTH",
+                    "SIGNUP_CODE_SENT",
+                    "EMAIL",
+                    AuditLogService.describe("reason", "send_failed", "email", email, "message", e.getMessage())
+            );
             writeJson(resp, jsonResponse, "error", "Không gửi được mã xác thực. Vui lòng kiểm tra cấu hình email");
             return;
         }
@@ -76,6 +118,14 @@ public class SendSignupCodeServlet extends HttpServlet {
         session.removeAttribute("signupVerifiedEmail");
 
         log.info("Gửi mã đăng ký thành công: email={}, expiresAt={}", email, expiresAt);
+        AuditLogService.success(
+                SendSignupCodeServlet.class,
+                email,
+                "AUTH",
+                "SIGNUP_CODE_SENT",
+                "EMAIL",
+                AuditLogService.describe("email", email, "expiresAt", String.valueOf(expiresAt))
+        );
         writeJson(resp, jsonResponse, "success", "Mã xác thực đã được gửi tới email của bạn");
     }
 

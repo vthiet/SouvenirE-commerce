@@ -3,6 +3,9 @@ package nlu.fit.web.souvenirecommerce.legacy.dao;
 import nlu.fit.web.souvenirecommerce.legacy.model.Order;
 import nlu.fit.web.souvenirecommerce.legacy.model.OrderItem;
 import nlu.fit.web.souvenirecommerce.legacy.utils.DBContext;
+import nlu.fit.web.souvenirecommerce.features.order.dto.OrderItemDTO;
+import nlu.fit.web.souvenirecommerce.features.order.dto.OrderListDTO;
+import nlu.fit.web.souvenirecommerce.features.order.dto.OrderStatusTabDTO;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -539,5 +542,147 @@ public class OrderDAO {
             e.printStackTrace();
         }
         return orders;
+    }
+
+    public List<OrderListDTO> getUserOrderList(int userId, String statusFilter, String keyword) {
+        Map<Integer, OrderListDTO> orderMap = new LinkedHashMap<>();
+        List<Object> params = new ArrayList<>();
+        params.add(userId);
+
+        StringBuilder sql = new StringBuilder("""
+            SELECT o.id,
+                   o.order_date,
+                   o.total_amount,
+                   os.description AS status_name,
+                   pt.status AS payment_status,
+                   pt.payment_url,
+                   od.product_id,
+                   od.quantity,
+                   od.price_at_purchase,
+                   COALESCE(NULLIF(od.product_name, ''), p.name) AS product_name,
+                   COALESCE(NULLIF(od.product_image, ''), p.image_url) AS product_image
+            FROM orders o
+            LEFT JOIN order_status os ON o.status_id = os.id
+            LEFT JOIN payment_transactions pt ON pt.order_id = o.id
+            LEFT JOIN order_details od ON od.order_id = o.id
+            LEFT JOIN products p ON od.product_id = p.id
+            WHERE o.user_id = ?
+        """);
+
+        if (statusFilter != null && !statusFilter.isBlank() && !"all".equalsIgnoreCase(statusFilter)) {
+            sql.append(" AND os.description = ? ");
+            params.add(statusFilter);
+        }
+
+        if (keyword != null && !keyword.isBlank()) {
+            sql.append("""
+                AND (
+                    CAST(o.id AS CHAR) LIKE ?
+                    OR EXISTS (
+                        SELECT 1
+                        FROM order_details od2
+                        LEFT JOIN products p2 ON od2.product_id = p2.id
+                        WHERE od2.order_id = o.id
+                          AND COALESCE(NULLIF(od2.product_name, ''), p2.name) LIKE ?
+                    )
+                )
+            """);
+            String searchPattern = "%" + keyword.trim() + "%";
+            params.add(searchPattern);
+            params.add(searchPattern);
+        }
+
+        sql.append(" ORDER BY o.id DESC, od.product_id ASC ");
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int orderId = rs.getInt("id");
+                    OrderListDTO order = orderMap.computeIfAbsent(orderId, id -> {
+                        OrderListDTO dto = new OrderListDTO();
+                        try {
+                            dto.setOrderId(id);
+                            dto.setOrderDate(rs.getTimestamp("order_date"));
+                            dto.setTotalAmount(rs.getDouble("total_amount"));
+                            dto.setStatusText(rs.getString("status_name"));
+                            dto.setPaymentStatus(rs.getString("payment_status"));
+                            dto.setRepayUrl(rs.getString("payment_url"));
+                        } catch (Exception e) {
+                            throw new IllegalStateException("Cannot map order list row", e);
+                        }
+                        return dto;
+                    });
+
+                    long productId = rs.getLong("product_id");
+                    if (!rs.wasNull()) {
+                        OrderItemDTO item = new OrderItemDTO();
+                        item.setProductId(productId);
+                        item.setProductName(rs.getString("product_name"));
+                        item.setProductImage(rs.getString("product_image"));
+                        item.setQuantity(rs.getInt("quantity"));
+                        item.setPriceAtPurchase(rs.getDouble("price_at_purchase"));
+                        order.getItems().add(item);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return new ArrayList<>(orderMap.values());
+    }
+
+    public List<OrderStatusTabDTO> getUserOrderStatusTabs(int userId) {
+        List<OrderStatusTabDTO> tabs = new ArrayList<>();
+        String sql = """
+            SELECT os.description AS status_name, COUNT(*) AS total
+            FROM orders o
+            LEFT JOIN order_status os ON o.status_id = os.id
+            WHERE o.user_id = ?
+              AND os.description IS NOT NULL
+            GROUP BY os.description
+            ORDER BY MIN(os.id)
+        """;
+
+        int totalOrders = 0;
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String status = rs.getString("status_name");
+                    int count = rs.getInt("total");
+                    totalOrders += count;
+                    tabs.add(new OrderStatusTabDTO(status, toOrderStatusLabel(status), count));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        tabs.add(0, new OrderStatusTabDTO("all", "Tất cả", totalOrders));
+        return tabs;
+    }
+
+    private String toOrderStatusLabel(String status) {
+        if (status == null || status.isBlank()) {
+            return "Đang xử lý";
+        }
+        return switch (status) {
+            case "PENDING_PAYMENT" -> "Chờ thanh toán";
+            case "WAIT_CONFIRM", "PENDING" -> "Chờ xác nhận";
+            case "CONFIRMED" -> "Đã xác nhận";
+            case "SHIPPED" -> "Đang giao";
+            case "DELIVERED" -> "Đã giao";
+            case "COMPLETED" -> "Hoàn thành";
+            case "CANCELLED" -> "Đã hủy";
+            case "PAYMENT_FAILED" -> "Thanh toán thất bại";
+            default -> status;
+        };
     }
 }

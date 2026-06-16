@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - INOLA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/auth/login.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/auth/login.css?v=2">
     <jsp:include page="/WEB-INF/layout/dark-mode.jsp"/>
 </head>
 <body class="auth-page">
@@ -81,20 +81,26 @@
                 <span>Đăng nhập</span>
             </button>
 
-            <a href="${googleAuthUrl}" class="secondary-button">
-                <i class="fa-brands fa-google"></i>
-                <span>Đăng nhập bằng Google</span>
-            </a>
+            <c:if test="${not empty googleAuthUrl}">
+                <a href="${googleAuthUrl}" class="secondary-button">
+                    <i class="fa-brands fa-google"></i>
+                    <span>Đăng nhập bằng Google</span>
+                </a>
+            </c:if>
 
-            <a href="${githubAuthUrl}" class="secondary-button">
-                <i class="fa-brands fa-github"></i>
-                <span>Đăng nhập bằng GitHub</span>
-            </a>
+            <c:if test="${not empty githubAuthUrl}">
+                <a href="${githubAuthUrl}" class="secondary-button">
+                    <i class="fa-brands fa-github"></i>
+                    <span>Đăng nhập bằng GitHub</span>
+                </a>
+            </c:if>
 
-            <a href="${facebookAuthUrl}" class="secondary-button">
-                <i class="fa-brands fa-facebook-f"></i>
-                <span>Đăng nhập bằng Facebook</span>
-            </a>
+            <c:if test="${not empty facebookAuthUrl}">
+                <a href="${facebookAuthUrl}" class="secondary-button">
+                    <i class="fa-brands fa-facebook-f"></i>
+                    <span>Đăng nhập bằng Facebook</span>
+                </a>
+            </c:if>
 
             <a href="${pageContext.request.contextPath}/signup" class="secondary-button">
                 <i class="fa fa-user-plus"></i>

@@ -5,9 +5,12 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.legacy.dao.AuthorizationDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
 import nlu.fit.web.souvenirecommerce.legacy.model.PermissionGroup;
+import nlu.fit.web.souvenirecommerce.model.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +73,8 @@ public class AdminRoleController extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
         String action = req.getParameter("action");
+        HttpSession session = req.getSession();
+        User currentUser = resolveCurrentUser(session);
         log.debug("Admin roles action received: {}", action);
 
         try {
@@ -77,24 +82,56 @@ public class AdminRoleController extends HttpServlet {
                 Long roleId = Long.parseLong(req.getParameter("id"));
                 if (authorizationDAO.deleteRole(roleId)) {
                     log.info("Admin role deleted: roleId={}", roleId);
-                    req.getSession().setAttribute("message", "Xóa nhóm quyền thành công!");
-                    req.getSession().setAttribute("messageType", "success");
+                    AuditLogService.success(
+                            AdminRoleController.class,
+                            currentUser,
+                            "ADMIN",
+                            "ROLE_DELETED",
+                            "ROLE",
+                            AuditLogService.describe("roleId", roleId)
+                    );
+                    session.setAttribute("message", "Xóa nhóm quyền thành công!");
+                    session.setAttribute("messageType", "success");
                 } else {
                     log.warn("Admin role deletion rejected: roleId={}", roleId);
-                    req.getSession().setAttribute("message", "Không thể xóa nhóm quyền hệ thống!");
-                    req.getSession().setAttribute("messageType", "error");
+                    AuditLogService.failure(
+                            AdminRoleController.class,
+                            currentUser,
+                            "ADMIN",
+                            "ROLE_DELETED",
+                            "ROLE",
+                            AuditLogService.describe("roleId", roleId, "reason", "delete_rejected")
+                    );
+                    session.setAttribute("message", "Không thể xóa nhóm quyền hệ thống!");
+                    session.setAttribute("messageType", "error");
                 }
             } else if ("assignUsers".equalsIgnoreCase(action)) {
                 Long roleId = Long.parseLong(req.getParameter("roleId"));
                 List<Long> userIds = parseLongList(req.getParameterValues("userIds"));
                 if (authorizationDAO.assignUsersToRole(roleId, userIds)) {
                     log.info("Admin role assignments updated: roleId={}, userCount={}", roleId, userIds.size());
-                    req.getSession().setAttribute("message", "Cập nhật người dùng cho nhóm quyền thành công!");
-                    req.getSession().setAttribute("messageType", "success");
+                    AuditLogService.success(
+                            AdminRoleController.class,
+                            currentUser,
+                            "ADMIN",
+                            "ROLE_USERS_ASSIGNED",
+                            "ROLE",
+                            AuditLogService.describe("roleId", roleId, "userCount", userIds.size())
+                    );
+                    session.setAttribute("message", "Cập nhật người dùng cho nhóm quyền thành công!");
+                    session.setAttribute("messageType", "success");
                 } else {
                     log.warn("Admin role assignments failed: roleId={}", roleId);
-                    req.getSession().setAttribute("message", "Cập nhật người dùng cho nhóm quyền thất bại!");
-                    req.getSession().setAttribute("messageType", "error");
+                    AuditLogService.failure(
+                            AdminRoleController.class,
+                            currentUser,
+                            "ADMIN",
+                            "ROLE_USERS_ASSIGNED",
+                            "ROLE",
+                            AuditLogService.describe("roleId", roleId, "userCount", userIds.size(), "reason", "assignment_failed")
+                    );
+                    session.setAttribute("message", "Cập nhật người dùng cho nhóm quyền thất bại!");
+                    session.setAttribute("messageType", "error");
                 }
             } else {
                 Long roleId = null;
@@ -109,29 +146,78 @@ public class AdminRoleController extends HttpServlet {
 
                 if (authorizationDAO.saveRole(roleId, name, description, permissionIds)) {
                     log.info("Admin role saved: roleId={}, name={}", roleId, name);
-                    req.getSession().setAttribute("message", roleId == null
+                    AuditLogService.success(
+                            AdminRoleController.class,
+                            currentUser,
+                            "ADMIN",
+                            "ROLE_SAVED",
+                            "ROLE",
+                            AuditLogService.describe(
+                                    "roleId", roleId,
+                                    "name", name,
+                                    "permissionCount", permissionIds.size()
+                            )
+                    );
+                    session.setAttribute("message", roleId == null
                             ? "Tạo nhóm quyền thành công!"
                             : "Cập nhật nhóm quyền thành công!");
-                    req.getSession().setAttribute("messageType", "success");
+                    session.setAttribute("messageType", "success");
                 } else {
                     log.warn("Admin role save failed: roleId={}, name={}", roleId, name);
-                    req.getSession().setAttribute("message", "Không thể lưu nhóm quyền!");
-                    req.getSession().setAttribute("messageType", "error");
+                    AuditLogService.failure(
+                            AdminRoleController.class,
+                            currentUser,
+                            "ADMIN",
+                            "ROLE_SAVED",
+                            "ROLE",
+                            AuditLogService.describe(
+                                    "roleId", roleId,
+                                    "name", name,
+                                    "permissionCount", permissionIds.size(),
+                                    "reason", "save_failed"
+                            )
+                    );
+                    session.setAttribute("message", "Không thể lưu nhóm quyền!");
+                    session.setAttribute("messageType", "error");
                 }
             }
         } catch (Exception e) {
             if (e instanceof RoleExistsException) {
                 log.warn("Admin role validation failed: {}", e.getMessage());
-                req.getSession().setAttribute("message", "Tên nhóm quyền đã tồn tại!");
-                req.getSession().setAttribute("messageType", "error");
+                AuditLogService.failure(
+                        AdminRoleController.class,
+                        currentUser,
+                        "ADMIN",
+                        "ROLE_SAVED",
+                        "ROLE",
+                        AuditLogService.describe("action", action, "reason", "role_exists", "message", e.getMessage())
+                );
+                session.setAttribute("message", "Tên nhóm quyền đã tồn tại!");
+                session.setAttribute("messageType", "error");
             } else if (e instanceof PermissionNotFoundException) {
                 log.warn("Admin role validation failed: {}", e.getMessage());
-                req.getSession().setAttribute("message", "Có quyền không hợp lệ (một hoặc nhiều permissions không tồn tại).");
-                req.getSession().setAttribute("messageType", "error");
+                AuditLogService.failure(
+                        AdminRoleController.class,
+                        currentUser,
+                        "ADMIN",
+                        "ROLE_SAVED",
+                        "ROLE",
+                        AuditLogService.describe("action", action, "reason", "permission_not_found", "message", e.getMessage())
+                );
+                session.setAttribute("message", "Có quyền không hợp lệ (một hoặc nhiều permissions không tồn tại).");
+                session.setAttribute("messageType", "error");
             } else {
                 log.error("Admin role action failed: {}", action, e);
-                req.getSession().setAttribute("message", "Có lỗi xảy ra: " + e.getMessage());
-                req.getSession().setAttribute("messageType", "error");
+                AuditLogService.failure(
+                        AdminRoleController.class,
+                        currentUser,
+                        "ADMIN",
+                        "ROLE_SAVED",
+                        "ROLE",
+                        AuditLogService.describe("action", action, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
+                );
+                session.setAttribute("message", "Có lỗi xảy ra: " + e.getMessage());
+                session.setAttribute("messageType", "error");
             }
         }
 
@@ -150,5 +236,16 @@ public class AdminRoleController extends HttpServlet {
             list.add(Long.parseLong(value));
         }
         return list;
+    }
+
+    private User resolveCurrentUser(HttpSession session) {
+        if (session == null) {
+            return null;
+        }
+        User currentUser = (User) session.getAttribute("user");
+        if (currentUser == null) {
+            currentUser = (User) session.getAttribute("userInSession");
+        }
+        return currentUser;
     }
 }

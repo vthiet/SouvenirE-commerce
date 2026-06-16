@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
@@ -81,6 +82,8 @@ public class CheckoutController extends HttpServlet {
         }
 
         try {
+            CheckoutRequest checkoutRequest = buildCheckoutRequest(request);
+            PaymentContext paymentContext = buildPaymentContext(request);
             CheckoutResult result = checkoutService.checkout(
                     user,
                     checkoutCart,
@@ -97,6 +100,14 @@ public class CheckoutController extends HttpServlet {
             }
             response.sendRedirect(request.getContextPath() + "/order-success");
         } catch (CheckoutException e) {
+            AuditLogService.failure(
+                    CheckoutController.class,
+                    user,
+                    "ORDER",
+                    "CHECKOUT_FAILED",
+                    "CHECKOUT",
+                    AuditLogService.describe("reason", e.getMessage())
+            );
             request.setAttribute("error", e.getMessage());
             prepareCheckoutHeader(request);
             prepareCheckoutPage(request, user, checkoutCart);

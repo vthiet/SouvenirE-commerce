@@ -6,10 +6,13 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.product.dto.CategoryAdminDTO;
 import nlu.fit.web.souvenirecommerce.features.product.service.ICategoryService;
 import nlu.fit.web.souvenirecommerce.features.product.service.impl.CategoryServiceImpl;
 import nlu.fit.web.souvenirecommerce.common.utils.GsonUtil;
+import nlu.fit.web.souvenirecommerce.model.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,12 +86,28 @@ public class AdminCategoryController extends HttpServlet {
             }
         } catch (IllegalArgumentException e) {
             log.warn("POST /admin/categories validation error: {}", e.getMessage());
+            AuditLogService.failure(
+                    AdminCategoryController.class,
+                    getCurrentAdminUser(req),
+                    "CATEGORY",
+                    "CATEGORY_ACTION_FAILED",
+                    "CATEGORY",
+                    AuditLogService.describe("action", action, "reason", e.getMessage())
+            );
             response.put("success", false);
             response.put("message", e.getMessage());
             resp.getWriter().write(gson.toJson(response));
             throw new RuntimeException("Category operation validation failed: " + e.getMessage(), e);
         } catch (Exception e) {
             log.error("POST /admin/categories failed for action: {}", action, e);
+            AuditLogService.failure(
+                    AdminCategoryController.class,
+                    getCurrentAdminUser(req),
+                    "CATEGORY",
+                    "CATEGORY_ACTION_FAILED",
+                    "CATEGORY",
+                    AuditLogService.describe("action", action, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
+            );
             response.put("success", false);
             response.put("message", "Lỗi: " + e.getMessage());
             resp.getWriter().write(gson.toJson(response));
@@ -102,6 +121,7 @@ public class AdminCategoryController extends HttpServlet {
     private void handleAddCategory(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> response) throws IOException {
         String name = req.getParameter("name");
         String image = req.getParameter("imageUrl");
+        User currentUser = getCurrentAdminUser(req);
 
         log.info("Adding new category: name={}", name);
 
@@ -117,6 +137,14 @@ public class AdminCategoryController extends HttpServlet {
         
         resp.getWriter().write(gson.toJson(response));
         log.info("Category created successfully: id={}", created.getId());
+        AuditLogService.success(
+                AdminCategoryController.class,
+                currentUser,
+                "CATEGORY",
+                "CATEGORY_CREATED",
+                "CATEGORY",
+                AuditLogService.describe("name", name, "image", image, "categoryId", created.getId())
+        );
     }
 
     /**
@@ -126,6 +154,7 @@ public class AdminCategoryController extends HttpServlet {
         long id = Long.parseLong(req.getParameter("id"));
         String name = req.getParameter("name");
         String image = req.getParameter("imageUrl");
+        User currentUser = getCurrentAdminUser(req);
 
         log.info("Updating category: id={}, name={}", id, name);
 
@@ -141,6 +170,14 @@ public class AdminCategoryController extends HttpServlet {
         
         resp.getWriter().write(gson.toJson(response));
         log.info("Category updated successfully: id={}", id);
+        AuditLogService.success(
+                AdminCategoryController.class,
+                currentUser,
+                "CATEGORY",
+                "CATEGORY_UPDATED",
+                "CATEGORY",
+                AuditLogService.describe("categoryId", id, "name", name, "image", image)
+        );
     }
 
     /**
@@ -148,6 +185,7 @@ public class AdminCategoryController extends HttpServlet {
      */
     private void handleDeleteCategory(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> response) throws IOException {
         long id = Long.parseLong(req.getParameter("id"));
+        User currentUser = getCurrentAdminUser(req);
 
         log.info("Deleting category: id={}", id);
 
@@ -163,5 +201,30 @@ public class AdminCategoryController extends HttpServlet {
         
         resp.getWriter().write(gson.toJson(response));
         log.info("Category deleted successfully: id={}", id);
+        AuditLogService.success(
+                AdminCategoryController.class,
+                currentUser,
+                "CATEGORY",
+                "CATEGORY_DELETED",
+                "CATEGORY",
+                AuditLogService.describe("categoryId", id)
+        );
+    }
+
+    private User getCurrentAdminUser(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        Object user = session.getAttribute("user");
+        if (user instanceof User) {
+            return (User) user;
+        }
+        user = session.getAttribute("userInSession");
+        if (user instanceof User) {
+            return (User) user;
+        }
+        user = session.getAttribute("currentUser");
+        return user instanceof User ? (User) user : null;
     }
 }
