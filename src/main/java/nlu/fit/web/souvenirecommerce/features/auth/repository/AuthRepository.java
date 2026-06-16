@@ -421,6 +421,83 @@ public class AuthRepository extends AbsBaseRepository<Long, User> {
         return true;
     }
 
+    public User upsertFacebookUser(
+            String providerUserId,
+            String email,
+            String firstName,
+            String lastName,
+            String avatarUrl
+    ) {
+        if (providerUserId == null || providerUserId.isBlank()) {
+            throw new IllegalArgumentException("Facebook providerUserId is required");
+        }
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Facebook email is required");
+        }
+
+        User user = getSession().createQuery("""
+                        select distinct u from OAuthAccount oa
+                        join oa.user u
+                        left join fetch u.credentials
+                        left join fetch u.roles r
+                        left join fetch r.permissions
+                        left join fetch u.oauthAccounts
+                        where lower(oa.provider) = 'facebook'
+                          and oa.providerUserId = :providerUserId
+                        """, User.class)
+                .setParameter("providerUserId", providerUserId.trim())
+                .uniqueResultOptional()
+                .orElse(null);
+
+        if (user == null) {
+            user = findByUserEmail(email).orElse(null);
+        }
+
+        if (user == null) {
+            user = User.builder()
+                    .email(email.trim().toLowerCase())
+                    .firstName(normalizeName(firstName, "Facebook"))
+                    .lastName(normalizeName(lastName, "User"))
+                    .phone("0000000000")
+                    .gender(Gender.OTHER)
+                    .avatarUrl(avatarUrl == null || avatarUrl.isBlank() ? "default-avatar.png" : avatarUrl.trim())
+                    .isActive(true)
+                    .roles(new HashSet<>())
+                    .build();
+            user.getRoles().add(resolveOrCreateCustomerRole());
+            getSession().persist(user);
+        }
+
+        OAuthAccount oauthAccount = getSession().createQuery("""
+                        from OAuthAccount oa
+                        where lower(oa.provider) = 'facebook'
+                          and oa.providerUserId = :providerUserId
+                        """, OAuthAccount.class)
+                .setParameter("providerUserId", providerUserId.trim())
+                .uniqueResultOptional()
+                .orElse(null);
+
+        if (oauthAccount == null) {
+            oauthAccount = OAuthAccount.builder()
+                    .user(user)
+                    .provider("facebook")
+                    .providerUserId(providerUserId.trim())
+                    .providerEmail(email.trim().toLowerCase())
+                    .tokenExpiresAt(LocalDateTime.now().plusHours(1))
+                    .build();
+            getSession().persist(oauthAccount);
+        } else {
+            oauthAccount.setUser(user);
+            oauthAccount.setProviderEmail(email.trim().toLowerCase());
+            oauthAccount.setTokenExpiresAt(LocalDateTime.now().plusHours(1));
+            getSession().merge(oauthAccount);
+        }
+
+        user.setUpdatedAt(LocalDateTime.now());
+        user.setActive(true);
+        return getSession().merge(user);
+    }
+
     private String normalizeName(String value, String fallback) {
         if (value == null || value.isBlank()) {
             return fallback;
