@@ -18,6 +18,7 @@ public class PaymentProcessingService {
     private final PaymentTransactionRepository paymentRepository = new PaymentTransactionRepository();
     private final OrderStatusRepository orderStatusRepository = new OrderStatusRepository();
     private final VnPayService vnPayService = new VnPayService();
+    private final nlu.fit.web.souvenirecommerce.features.order.service.OrderService orderService = new nlu.fit.web.souvenirecommerce.features.order.service.OrderService();
 
     public PaymentCallbackResult processVnPayCallback(Map<String, String> fields) {
         Long orderId = parseLong(fields.get("vnp_TxnRef"));
@@ -48,8 +49,6 @@ public class PaymentProcessingService {
         transaction.setProviderTransactionRef(fields.get("vnp_TransactionNo"));
         transaction.setStatus(successful ? PaymentStatus.PAID : PaymentStatus.FAILED);
         transaction.setPaidAt(successful ? LocalDateTime.now() : null);
-        transaction.getOrder().setStatus(resolveStatus(
-                successful ? OrderStatusCode.PAID : OrderStatusCode.PAYMENT_FAILED));
         paymentRepository.update(transaction);
         if (successful) {
             AuditLogService.success(
@@ -79,6 +78,12 @@ public class PaymentProcessingService {
                             "transactionRef", transaction.getProviderTransactionRef()
                     )
             );
+        }
+
+        if (successful) {
+            orderService.updateStatus(transaction.getOrder(), OrderStatusCode.WAIT_CONFIRM, "Hệ thống", "Khách hàng thanh toán thành công qua VNPay.");
+        } else {
+            orderService.cancelOrder(transaction.getOrder().getId(), "Hệ thống", "Thanh toán VNPay thất bại hoặc bị hủy bởi khách hàng.");
         }
 
         return result(PaymentCallbackResult.Outcome.PROCESSED, successful, transaction);

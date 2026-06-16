@@ -4,12 +4,16 @@ import lombok.Getter;
 
 @Getter
 public enum OrderStatusCode {
-    PENDING("Đang xử lý"),
     PENDING_PAYMENT("Chờ thanh toán"),
-    PAYMENT_FAILED("Thanh toán thất bại"),
-    PAID("Đã thanh toán"),
+    WAIT_CONFIRM("Chờ xác nhận"),
+    PENDING("Đang xử lý"),
+    SHIPPING("Đang giao"),
+    DELIVERED("Đã giao"),
+    COMPLETED("Hoàn thành"),
     CANCELLED("Đã hủy"),
-    COMPLETED("Hoàn thành");
+    RETURNED("Đã trả hàng"),
+    PAYMENT_FAILED("Thanh toán thất bại"),
+    PAID("Đã thanh toán");
 
     private final String description;
 

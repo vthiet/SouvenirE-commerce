@@ -14,7 +14,7 @@ import java.io.Serializable;
 
 @Entity
 @Table(name = "cart_items")
-public class NewCartItem implements Serializable {
+public class CartItemEntity implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,7 +22,7 @@ public class NewCartItem implements Serializable {
 
     @ManyToOne
     @JoinColumn(name = "cart_id", nullable = false)
-    private NewCart cart;
+    private CartEntity cart;
 
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
@@ -30,6 +30,15 @@ public class NewCartItem implements Serializable {
 
     @Column(name = "quantity", nullable = false)
     private int quantity;
+
+    @Column(name = "price", nullable = false)
+    private double price;
+
+    @PrePersist
+    @PreUpdate
+    private void updatePrice() {
+        this.price = getUnitPrice();
+    }
 
     public void increaseQuantity() {
         this.quantity++;
@@ -60,5 +69,12 @@ public class NewCartItem implements Serializable {
             return product.getSalePrice();
         }
         return product.getOriginalPrice();
+    }
+
+    public double getPrice() {
+        if (this.price <= 0) {
+            return getUnitPrice();
+        }
+        return this.price;
     }
 }

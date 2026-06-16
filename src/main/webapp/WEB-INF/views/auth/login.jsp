@@ -70,15 +70,37 @@
                 <a href="${pageContext.request.contextPath}/forgot-password">Quên mật khẩu?</a>
             </div>
 
+            <c:if test="${recaptchaConfigured}">
+                <div class="captcha-field">
+                    <div class="g-recaptcha" data-sitekey="${recaptchaSiteKey}"></div>
+                </div>
+            </c:if>
+
             <button type="submit" class="primary-button">
                 <i class="fa fa-arrow-right-to-bracket"></i>
                 <span>Đăng nhập</span>
             </button>
 
-            <a href="${googleAuthUrl}" class="secondary-button">
-                <i class="fa-brands fa-google"></i>
-                <span>Đăng nhập bằng Google</span>
-            </a>
+            <c:if test="${not empty googleAuthUrl}">
+                <a href="${googleAuthUrl}" class="secondary-button">
+                    <i class="fa-brands fa-google"></i>
+                    <span>Đăng nhập bằng Google</span>
+                </a>
+            </c:if>
+
+            <c:if test="${not empty githubAuthUrl}">
+                <a href="${githubAuthUrl}" class="secondary-button">
+                    <i class="fa-brands fa-github"></i>
+                    <span>Đăng nhập bằng GitHub</span>
+                </a>
+            </c:if>
+
+            <c:if test="${not empty facebookAuthUrl}">
+                <a href="${facebookAuthUrl}" class="secondary-button">
+                    <i class="fa-brands fa-facebook-f"></i>
+                    <span>Đăng nhập bằng Facebook</span>
+                </a>
+            </c:if>
 
             <a href="${pageContext.request.contextPath}/signup" class="secondary-button">
                 <i class="fa fa-user-plus"></i>
@@ -96,5 +118,8 @@
         </div>
     </aside>
 </main>
+<c:if test="${recaptchaConfigured}">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</c:if>
 </body>
 </html>

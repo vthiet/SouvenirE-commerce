@@ -223,4 +223,3 @@ Tài liệu này tổng hợp theo code hiện tại trong project (controller/s
 5. Chuẩn hóa transaction ở các DAO order/user.
 6. Bổ sung Brand module.
 7. Tách dashboard theo role và thêm báo cáo định kỳ.
-

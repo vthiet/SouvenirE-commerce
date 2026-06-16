@@ -226,6 +226,14 @@ body.auth-page {
     box-shadow: 0 0 0 3px rgba(36, 122, 82, 0.14);
 }
 
+.captcha-field {
+    max-width: 100%;
+    min-height: 78px;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+}
+
 .password-wrap {
     padding-right: 6px;
 }

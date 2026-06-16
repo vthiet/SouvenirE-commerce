@@ -12,6 +12,7 @@ import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.model.enums.Gender;
 import nlu.fit.web.souvenirecommerce.common.utils.EmailUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.RecaptchaUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import org.hibernate.Transaction;
 
@@ -30,6 +31,7 @@ public class SignupServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        RecaptchaUtil.expose(req, getServletContext());
         req.getRequestDispatcher("/WEB-INF/views/auth/signup.jsp").forward(req, resp);
     }
 

@@ -7,10 +7,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPriceService;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
+import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutRequest;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutResult;
@@ -27,8 +26,7 @@ import java.util.Set;
 @WebServlet("/checkout")
 public class CheckoutController extends HttpServlet {
     private final CheckoutService checkoutService = new CheckoutService();
-    private final CartPersistenceService cartPersistenceService = new CartPersistenceService();
-    private final CartPriceService cartPriceService = new CartPriceService();
+    private final CartService cartService = new CartService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -43,13 +41,13 @@ public class CheckoutController extends HttpServlet {
             return;
         }
 
-        Cart cart = getCart(session);
-        Cart checkoutCart = buildCheckoutCart(cart, parseSelectedProductIds(request));
+        CartEntity cart = cartService.getCartForDisplay(session);
+        cartService.storeCart(session, cart);
+        CartEntity checkoutCart = buildCheckoutCart(cart, parseSelectedProductIds(request));
         if (checkoutCart.totalQuantity() == 0) {
             response.sendRedirect(request.getContextPath() + "/cart");
             return;
         }
-        refreshCartPrices(checkoutCart);
         rememberSelectedProductIds(session, checkoutCart);
 
         prepareCheckoutHeader(request);
@@ -70,18 +68,18 @@ public class CheckoutController extends HttpServlet {
             return;
         }
 
-        Cart cart = getCart(session);
+        CartEntity cart = cartService.getCartForDisplay(session);
+        cartService.storeCart(session, cart);
         Set<Long> selectedProductIds = parseSelectedProductIds(request);
         if (selectedProductIds.isEmpty()) {
             selectedProductIds = getRememberedSelectedProductIds(session);
         }
 
-        Cart checkoutCart = buildCheckoutCart(cart, selectedProductIds);
+        CartEntity checkoutCart = buildCheckoutCart(cart, selectedProductIds);
         if (checkoutCart.totalQuantity() == 0) {
             response.sendRedirect(request.getContextPath() + "/cart");
             return;
         }
-        refreshCartPrices(checkoutCart);
 
         try {
             CheckoutRequest checkoutRequest = buildCheckoutRequest(request);
@@ -89,26 +87,9 @@ public class CheckoutController extends HttpServlet {
             CheckoutResult result = checkoutService.checkout(
                     user,
                     checkoutCart,
-                    checkoutRequest,
-                    paymentContext);
-            AuditLogService.success(
-                    CheckoutController.class,
-                    user,
-                    "ORDER",
-                    "ORDER_PLACED",
-                    "CHECKOUT",
-                    AuditLogService.describe(
-                            "orderCode", result.getOrderCode(),
-                            "paymentMethod", checkoutRequest.getPaymentMethod(),
-                            "amount", result.getOrder().getTotalAmount(),
-                            "items", checkoutCart.totalQuantity(),
-                            "externalPayment", result.requiresExternalPayment()
-                    )
-            );
-            removeSelectedItems(cart, checkoutCart);
-            session.setAttribute("cart", cart);
-            session.setAttribute("cartItemCount", cart.totalQuantity());
-            cartPersistenceService.saveCart(user, cart);
+                    buildCheckoutRequest(request),
+                    buildPaymentContext(request));
+            removeSelectedItems(session, checkoutCart);
             session.removeAttribute("checkoutSelectedProductIds");
             session.setAttribute("lastOrderCode", result.getOrderCode());
             session.setAttribute("lastOrderId", result.getOrder().getId());
@@ -134,6 +115,85 @@ public class CheckoutController extends HttpServlet {
         }
     }
 
+    // ── Checkout cart helpers ─────────────────────────────────────────────────
+
+    private CartEntity buildCheckoutCart(CartEntity sourceCart, Set<Long> selectedProductIds) {
+        CartEntity checkoutCart = new CartEntity();
+        if (sourceCart == null || selectedProductIds == null || selectedProductIds.isEmpty()) {
+            return checkoutCart;
+        }
+        for (Long productId : selectedProductIds) {
+            CartItemEntity item = sourceCart.getItem(productId);
+            if (item != null && item.getProduct() != null && item.getQuantity() > 0) {
+                checkoutCart.addItem(CartItemEntity.builder()
+                        .product(item.getProduct())
+                        .quantity(item.getQuantity())
+                        .build());
+            }
+        }
+        return checkoutCart;
+    }
+
+    private Set<Long> productIdsOf(CartEntity cart) {
+        Set<Long> ids = new LinkedHashSet<>();
+        if (cart == null) return ids;
+        for (CartItemEntity item : cart.getItems()) {
+            if (item.getProduct() != null && item.getProduct().getId() != null) {
+                ids.add(item.getProduct().getId());
+            }
+        }
+        return ids;
+    }
+
+    private void rememberSelectedProductIds(HttpSession session, CartEntity checkoutCart) {
+        if (session != null) {
+            session.setAttribute("checkoutSelectedProductIds", productIdsOf(checkoutCart));
+        }
+    }
+
+    private void removeSelectedItems(HttpSession session, CartEntity checkoutCart) {
+        for (Long productId : productIdsOf(checkoutCart)) {
+            cartService.removeItem(session, productId);
+        }
+        CartEntity cart = cartService.getCartForDisplay(session);
+        cartService.storeCart(session, cart);
+    }
+
+    // ── Request parsing ───────────────────────────────────────────────────────
+
+    private Set<Long> parseSelectedProductIds(HttpServletRequest request) {
+        Set<Long> productIds = new LinkedHashSet<>();
+        addProductIds(productIds, request.getParameter("items"));
+        String[] values = request.getParameterValues("selectedProductId");
+        if (values != null) {
+            for (String v : values) addProductIds(productIds, v);
+        }
+        return productIds;
+    }
+
+    private void addProductIds(Set<Long> ids, String raw) {
+        if (raw == null || raw.isBlank()) return;
+        for (String token : raw.split(",")) {
+            try { ids.add(Long.valueOf(token.trim())); } catch (NumberFormatException ignored) {
+                // Ignore invalid ids from the browser and keep the checkout scoped to valid cart items.
+            }
+        }
+    }
+
+    private Set<Long> getRememberedSelectedProductIds(HttpSession session) {
+        Set<Long> ids = new LinkedHashSet<>();
+        if (session == null) return ids;
+        Object value = session.getAttribute("checkoutSelectedProductIds");
+        if (value instanceof Set<?> remembered) {
+            for (Object id : remembered) {
+                if (id instanceof Long productId) ids.add(productId);
+            }
+        }
+        return ids;
+    }
+
+    // ── Page preparation ──────────────────────────────────────────────────────
+
     private void prepareCheckoutHeader(HttpServletRequest request) {
         request.setAttribute("headerMode", "CHECKOUT_FLOW");
         request.setAttribute("checkoutStep", "CHECKOUT");
@@ -144,7 +204,7 @@ public class CheckoutController extends HttpServlet {
         request.setAttribute("contentPage", "/checkout.jsp");
     }
 
-    private void prepareCheckoutPage(HttpServletRequest request, User user, Cart checkoutCart) {
+    private void prepareCheckoutPage(HttpServletRequest request, User user, CartEntity checkoutCart) {
         request.setAttribute("currentUser", user);
         request.setAttribute("authUser", user);
         request.setAttribute("cart", checkoutCart);
@@ -153,6 +213,8 @@ public class CheckoutController extends HttpServlet {
         request.setAttribute("provinceOptions", checkoutService.getProvinces());
         request.setAttribute("vnpayAvailable", checkoutService.isPaymentMethodAvailable(PaymentMethod.VNPAY_QR));
     }
+
+    // ── Payment context ───────────────────────────────────────────────────────
 
     private PaymentContext buildPaymentContext(HttpServletRequest request) {
         return PaymentContext.builder()
@@ -177,160 +239,46 @@ public class CheckoutController extends HttpServlet {
                 .addressDetail(request.getParameter("addressDetail"))
                 .provinceCode(parseInteger(request.getParameter("provinceCode")))
                 .wardCode(parseInteger(request.getParameter("wardCode")))
+                .ghnProvinceId(parseInteger(request.getParameter("ghnProvinceId")))
+                .ghnDistrictId(parseInteger(request.getParameter("ghnDistrictId")))
+                .ghnWardCode(request.getParameter("ghnWardCode"))
+                .provinceName(request.getParameter("provinceName"))
+                .districtName(request.getParameter("districtName"))
+                .wardName(request.getParameter("wardName"))
+                .shippingFee(parseDouble(request.getParameter("shippingFee")))
                 .note(request.getParameter("note"))
                 .paymentMethod(parsePaymentMethod(request.getParameter("paymentMethod")))
                 .build();
     }
 
+    // ── Type parsing utilities ────────────────────────────────────────────────
+
     private PaymentMethod parsePaymentMethod(String value) {
-        if (value == null || value.isBlank()) {
-            return PaymentMethod.COD;
-        }
-        try {
-            return PaymentMethod.valueOf(value);
-        } catch (IllegalArgumentException e) {
-            return PaymentMethod.COD;
-        }
+        if (value == null || value.isBlank()) return PaymentMethod.COD;
+        try { return PaymentMethod.valueOf(value); } catch (IllegalArgumentException e) { return PaymentMethod.COD; }
     }
 
     private Integer parseInteger(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return Integer.valueOf(value);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        if (value == null || value.isBlank()) return null;
+        try { return Integer.valueOf(value); } catch (NumberFormatException e) { return null; }
     }
 
     private Long parseLong(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return Long.valueOf(value);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        if (value == null || value.isBlank()) return null;
+        try { return Long.valueOf(value); } catch (NumberFormatException e) { return null; }
     }
 
-    private Cart getCart(HttpSession session) {
-        if (session == null) {
-            return null;
-        }
-        Object cart = session.getAttribute("cart");
-        return cart instanceof Cart ? (Cart) cart : null;
-    }
-
-    private Cart buildCheckoutCart(Cart sourceCart, Set<Long> selectedProductIds) {
-        Cart checkoutCart = new Cart();
-        if (sourceCart == null || selectedProductIds == null || selectedProductIds.isEmpty()) {
-            return checkoutCart;
-        }
-
-        for (Long productId : selectedProductIds) {
-            CartItem item = sourceCart.getItem(productId);
-            if (item != null && item.getProduct() != null && item.getQuantity() > 0) {
-                checkoutCart.addItem(item.getProduct(), item.getQuantity(), item.getPrice());
-            }
-        }
-
-        return checkoutCart;
-    }
-
-    private Set<Long> parseSelectedProductIds(HttpServletRequest request) {
-        Set<Long> productIds = new LinkedHashSet<>();
-        addProductIds(productIds, request.getParameter("items"));
-        String[] selectedProductIdValues = request.getParameterValues("selectedProductId");
-        if (selectedProductIdValues != null) {
-            for (String value : selectedProductIdValues) {
-                addProductIds(productIds, value);
-            }
-        }
-        return productIds;
-    }
-
-    private void addProductIds(Set<Long> productIds, String rawValue) {
-        if (rawValue == null || rawValue.isBlank()) {
-            return;
-        }
-
-        for (String token : rawValue.split(",")) {
-            try {
-                productIds.add(Long.valueOf(token.trim()));
-            } catch (NumberFormatException ignored) {
-                // Ignore invalid ids from the browser and keep the checkout scoped to valid cart items.
-            }
-        }
-    }
-
-    private Set<Long> getRememberedSelectedProductIds(HttpSession session) {
-        Set<Long> productIds = new LinkedHashSet<>();
-        if (session == null) {
-            return productIds;
-        }
-
-        Object value = session.getAttribute("checkoutSelectedProductIds");
-        if (value instanceof Set<?> rememberedIds) {
-            for (Object rememberedId : rememberedIds) {
-                if (rememberedId instanceof Long productId) {
-                    productIds.add(productId);
-                }
-            }
-        }
-        return productIds;
-    }
-
-    private void rememberSelectedProductIds(HttpSession session, Cart checkoutCart) {
-        if (session != null) {
-            session.setAttribute("checkoutSelectedProductIds", productIdsOf(checkoutCart));
-        }
-    }
-
-    private Set<Long> productIdsOf(Cart cart) {
-        Set<Long> productIds = new LinkedHashSet<>();
-        if (cart == null) {
-            return productIds;
-        }
-
-        for (CartItem item : cart.getItems()) {
-            if (item.getProduct() != null && item.getProduct().getId() != null) {
-                productIds.add(item.getProduct().getId());
-            }
-        }
-        return productIds;
-    }
-
-    private void removeSelectedItems(Cart cart, Cart checkoutCart) {
-        for (Long productId : productIdsOf(checkoutCart)) {
-            cart.removeItem(productId);
-        }
+    private Double parseDouble(String value) {
+        if (value == null || value.isBlank()) return null;
+        try { return Double.valueOf(value); } catch (NumberFormatException e) { return null; }
     }
 
     private User getCurrentUser(HttpSession session) {
-        if (session == null) {
-            return null;
+        if (session == null) return null;
+        for (String key : new String[]{"userInSession", "user", "currentUser", "authUser"}) {
+            Object u = session.getAttribute(key);
+            if (u instanceof User user) return user;
         }
-        Object user = session.getAttribute("userInSession");
-        if (user instanceof User) {
-            return (User) user;
-        }
-        user = session.getAttribute("user");
-        if (user instanceof User) {
-            return (User) user;
-        }
-        user = session.getAttribute("currentUser");
-        if (user instanceof User) {
-            return (User) user;
-        }
-        user = session.getAttribute("authUser");
-        return user instanceof User ? (User) user : null;
-    }
-
-    private void refreshCartPrices(Cart cart) {
-        for (CartItem item : cart.getItems()) {
-            item.setPrice(cartPriceService.getCurrentPrice(item.getProduct()));
-        }
+        return null;
     }
 }

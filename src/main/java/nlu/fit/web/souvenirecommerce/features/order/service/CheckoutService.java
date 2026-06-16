@@ -2,8 +2,8 @@ package nlu.fit.web.souvenirecommerce.features.order.service;
 
 import nlu.fit.web.souvenirecommerce.model.enums.OrderStatusCode;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutRequest;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutResult;
@@ -14,6 +14,7 @@ import nlu.fit.web.souvenirecommerce.features.order.payment.PaymentGatewayRegist
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderStatusRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.ProductRepository;
+import nlu.fit.web.souvenirecommerce.features.shipping.service.ShippingService;
 import nlu.fit.web.souvenirecommerce.features.user.address.AddressService;
 import nlu.fit.web.souvenirecommerce.model.entity.Address;
 import nlu.fit.web.souvenirecommerce.model.entity.Order;
@@ -25,6 +26,7 @@ import nlu.fit.web.souvenirecommerce.model.entity.Province;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.math.BigDecimal;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -34,10 +36,14 @@ public class CheckoutService {
     private final ProductRepository productRepository = new ProductRepository();
     private final AddressService addressService = new AddressService();
     private final PaymentGatewayRegistry paymentGatewayRegistry = new PaymentGatewayRegistry();
-    public CheckoutResult checkout(User user, Cart cart, CheckoutRequest request) {
+    private final ShippingService shippingService = new ShippingService();
+    private final OrderService orderService = new OrderService();
+
+    public CheckoutResult checkout(User user, CartEntity cart, CheckoutRequest request) {
         return checkout(user, cart, request, null);
     }
-    public CheckoutResult checkout(User user, Cart cart, CheckoutRequest request, PaymentContext paymentContext) {
+
+    public CheckoutResult checkout(User user, CartEntity cart, CheckoutRequest request, PaymentContext paymentContext) {
         validateUser(user);
         validateCart(cart);
         PaymentMethod paymentMethod = request.getPaymentMethod() == null ? PaymentMethod.COD : request.getPaymentMethod();
@@ -58,12 +64,12 @@ public class CheckoutService {
                 .build();
 
         BigDecimal totalAmount = BigDecimal.ZERO;
-        for (CartItem cartItem : cart.getItems()) {
+        for (CartItemEntity cartItem : cart.getItems()) {
             Product product = productRepository.findById(cartItem.getProduct().getId())
                     .orElseThrow(() -> new CheckoutException("Sản phẩm không tồn tại"));
             validateStock(product, cartItem.getQuantity());
 
-            BigDecimal price = BigDecimal.valueOf(cartItem.getPrice());
+            BigDecimal price = BigDecimal.valueOf(cartItem.getUnitPrice());
             order.addItem(OrderItem.builder()
                     .product(product)
                     .quantity(cartItem.getQuantity())
@@ -76,7 +82,9 @@ public class CheckoutService {
             product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
             product.setTotalSold(product.getTotalSold() + cartItem.getQuantity());
         }
-        order.setTotalAmount(totalAmount);
+        BigDecimal shippingFee = resolveShippingFee(shippingAddress, request);
+        order.setShippingFee(shippingFee);
+        order.setTotalAmount(totalAmount.add(shippingFee));
 
         Order savedOrder = orderRepository.save(order)
                 .orElseThrow(() -> new CheckoutException("Không thể tạo đơn hàng"));
@@ -88,13 +96,20 @@ public class CheckoutService {
                 .method(paymentMethod)
                 .provider(paymentPreparation.getProvider())
                 .status(paymentPreparation.getStatus())
-                .amount(totalAmount)
+                .amount(savedOrder.getTotalAmount())
                 .providerTransactionRef(paymentPreparation.getProviderTransactionRef())
                 .paymentUrl(paymentPreparation.getPaymentUrl())
                 .qrPayload(paymentPreparation.getQrPayload())
                 .build();
         savedOrder.setPaymentTransaction(paymentTransaction);
         orderRepository.update(savedOrder);
+
+        orderService.logHistory(
+                savedOrder,
+                savedOrder.getStatusDescription(),
+                paymentMethod == PaymentMethod.COD ? "Đơn hàng được đặt thành công (COD)." : "Chờ khách hàng thanh toán qua VNPay.",
+                "Khách hàng"
+        );
 
         return CheckoutResult.builder()
                 .order(savedOrder)
@@ -126,6 +141,21 @@ public class CheckoutService {
             throw new CheckoutException("Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ giao hàng");
         }
 
+        if (request.getGhnProvinceId() != null || request.getGhnDistrictId() != null || !isBlank(request.getGhnWardCode())) {
+            return addressService.createGhnAddress(
+                            user,
+                            request.getReceiverName(),
+                            request.getReceiverPhone(),
+                            request.getAddressDetail(),
+                            request.getGhnProvinceId(),
+                            request.getGhnDistrictId(),
+                            request.getGhnWardCode(),
+                            request.getProvinceName(),
+                            request.getDistrictName(),
+                            request.getWardName())
+                    .orElseThrow(() -> new CheckoutException("Vui lòng chọn đầy đủ tỉnh/thành phố, quận/huyện, phường/xã và nhập địa chỉ chi tiết"));
+        }
+
         return addressService.createAddress(
                         user,
                         request.getReceiverName(),
@@ -136,9 +166,24 @@ public class CheckoutService {
                 .orElseThrow(() -> new CheckoutException("Vui lòng chọn đầy đủ tỉnh/thành phố, phường/xã và nhập địa chỉ chi tiết"));
     }
 
+    private BigDecimal resolveShippingFee(Address address, CheckoutRequest request) {
+        try {
+            if (address != null) {
+                return shippingService.getActiveProvider().calculateFee(address);
+            }
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+        }
+
+        if (request.getShippingFee() != null && request.getShippingFee() >= 0) {
+            return BigDecimal.valueOf(request.getShippingFee());
+        }
+        return BigDecimal.valueOf(30000);
+    }
+
     private OrderStatus resolveInitialStatus(PaymentMethod method) {
         OrderStatusCode statusCode = method == PaymentMethod.COD
-                ? OrderStatusCode.PENDING
+                ? OrderStatusCode.WAIT_CONFIRM
                 : OrderStatusCode.PENDING_PAYMENT;
         return orderStatusRepository.findByDescription(statusCode.getDescription())
                 .orElseGet(() -> orderStatusRepository.save(OrderStatus.builder()
@@ -153,16 +198,14 @@ public class CheckoutService {
         }
     }
 
-    private void validateCart(Cart cart) {
+    private void validateCart(CartEntity cart) {
         if (cart == null || cart.totalQuantity() <= 0) {
             throw new CheckoutException("Giỏ hàng đang trống");
         }
     }
 
     private void validateStock(Product product, int requestedQuantity) {
-        if (requestedQuantity <= 0) {
-            throw new CheckoutException("Số lượng sản phẩm không hợp lệ");
-        }
+        if (requestedQuantity <= 0) throw new CheckoutException("Số lượng sản phẩm không hợp lệ");
         if (product.getStockQuantity() < requestedQuantity) {
             throw new CheckoutException("Sản phẩm " + product.getName() + " không đủ tồn kho");
         }

@@ -1,9 +1,11 @@
 package nlu.fit.web.souvenirecommerce.features.order.repository;
 
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseRepository;
+import nlu.fit.web.souvenirecommerce.model.entity.Address;
 import nlu.fit.web.souvenirecommerce.model.entity.Order;
 
 import java.util.List;
+import java.util.Optional;
 
 public class OrderRepository extends AbsBaseRepository<Long, Order> {
     public OrderRepository() {
@@ -31,5 +33,34 @@ public class OrderRepository extends AbsBaseRepository<Long, Order> {
                         """, Order.class)
                 .setParameter("userId", userId)
                 .getResultList();
+    }
+
+    public Optional<Address> findLatestShippingAddressByUserId(Long userId) {
+        if (userId == null) {
+            return Optional.empty();
+        }
+
+        List<Address> addresses = getSession()
+                .createQuery("""
+                        select a
+                        from CustomerOrder o
+                        join o.address a
+                        where o.user.id = :userId
+                        order by
+                            case
+                                when a.ghnDistrictId is not null
+                                    and a.ghnWardCode is not null
+                                    and a.ghnWardCode <> ''
+                                then 0
+                                else 1
+                            end,
+                            o.orderDate desc,
+                            o.id desc
+                        """, Address.class)
+                .setParameter("userId", userId)
+                .setMaxResults(1)
+                .getResultList();
+
+        return addresses.stream().findFirst();
     }
 }

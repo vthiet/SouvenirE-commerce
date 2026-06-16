@@ -7,48 +7,23 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.common.utils.GsonUtil;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPriceService;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
+import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartSummaryService;
-import nlu.fit.web.souvenirecommerce.legacy.dao.ProductDAO;
-import nlu.fit.web.souvenirecommerce.model.entity.Product;
-import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 
 @WebServlet(name = "AddCart", value = "/cart/add")
 public class AddCartServlet extends HttpServlet {
-    private final CartPersistenceService cartPersistenceService = new CartPersistenceService();
+    private final CartService cartService = new CartService();
     private final CartSummaryService cartSummaryService = new CartSummaryService();
-    private final CartPriceService cartPriceService = new CartPriceService();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         HttpSession session = request.getSession();
-        User user = (User) session.getAttribute("userInSession");
-
-        if (user == null) {
-            if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
-                response.setContentType("application/json");
-                response.setCharacterEncoding("UTF-8");
-                response.getWriter().print("""
-                        {
-                          "success": false,
-                          "requireLogin": true,
-                          "message": "Vui lòng đăng nhập"
-                        }
-                        """);
-                return;
-            }
-
-            session.setAttribute("redirectAfterLogin", request.getHeader("Referer"));
-            response.sendRedirect(request.getContextPath() + "/login");
-            return;
-        }
 
         Long productId;
         int quantity;
@@ -61,19 +36,25 @@ public class AddCartServlet extends HttpServlet {
             return;
         }
 
-        Product product = new ProductDAO().getProductById(productId);
-        if (product == null || quantity <= 0 || quantity > product.getStockQuantity()) {
+        boolean added = cartService.addItem(session, productId, quantity);
+        if (!added) {
+            if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.getWriter().print("""
+                        {
+                          "success": false,
+                          "message": "Không thể thêm sản phẩm vào giỏ hàng"
+                        }
+                        """);
+                return;
+            }
             response.sendRedirect(request.getContextPath() + "/home");
             return;
         }
 
-        Cart cart = (Cart) session.getAttribute("cart");
-        if (cart == null) cart = new Cart();
-
-        cart.addItem(product, quantity, cartPriceService.getCurrentPrice(product));
-        session.setAttribute("cart", cart);
-        session.setAttribute("cartItemCount", cart.totalQuantity());
-        cartPersistenceService.saveCart(user, cart);
+        CartEntity cart = cartService.getCartForDisplay(session);
+        cartService.storeCart(session, cart);
 
         if ("true".equals(request.getParameter("buyNow"))) {
             response.sendRedirect(request.getContextPath() + "/checkout");
@@ -87,7 +68,7 @@ public class AddCartServlet extends HttpServlet {
             out.print(GsonUtil.getGson().toJson(cartSummaryService.buildSummary(cart, request.getContextPath())));
             return;
         }
- 
+
         response.sendRedirect(request.getHeader("Referer"));
     }
 

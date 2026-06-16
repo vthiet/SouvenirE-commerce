@@ -6,10 +6,14 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.features.order.dto.OrderListDTO;
+import nlu.fit.web.souvenirecommerce.features.order.dto.OrderStatusTabDTO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
 import nlu.fit.web.souvenirecommerce.legacy.model.Order;
 import nlu.fit.web.souvenirecommerce.legacy.model.OrderItem;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
+import nlu.fit.web.souvenirecommerce.features.order.service.OrderService;
+import nlu.fit.web.souvenirecommerce.model.entity.OrderHistory;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,6 +22,7 @@ import java.util.List;
 public class UserOrderController extends HttpServlet {
 
     private final OrderDAO orderDAO = new OrderDAO();
+    private final OrderService orderService = new OrderService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -49,6 +54,40 @@ public class UserOrderController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        User user = (session != null) ? (User) session.getAttribute("userInSession") : null;
+        if (user == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        if ("cancel".equals(action)) {
+            long orderId;
+            try {
+                orderId = Long.parseLong(request.getParameter("orderId"));
+            } catch (NumberFormatException e) {
+                response.sendRedirect(request.getContextPath() + "/user/orders");
+                return;
+            }
+
+            try {
+                // Verify order ownership
+                Order order = orderDAO.getOrderById((int) orderId);
+                if (order != null && order.getUserId() == user.getId().intValue()) {
+                    String reason = request.getParameter("reason");
+                    if (reason == null || reason.isBlank()) {
+                        reason = "Khách hàng tự hủy đơn hàng";
+                    }
+                    orderService.cancelOrder(orderId, user.getEmail(), reason);
+                    response.sendRedirect(request.getContextPath() + "/user/orders?action=detail&id=" + orderId + "&success=true");
+                    return;
+                }
+            } catch (Exception e) {
+                response.sendRedirect(request.getContextPath() + "/user/orders?action=detail&id=" + orderId + "&error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+                return;
+            }
+        }
 
         response.sendRedirect(request.getContextPath() + "/user/orders");
     }
@@ -56,11 +95,20 @@ public class UserOrderController extends HttpServlet {
     private void viewOrderList(HttpServletRequest request,
                                HttpServletResponse response,
                                User user)
-             throws ServletException, IOException {
+         throws ServletException, IOException {
 
-         List<Order> orderList = orderDAO.getOrdersByUserId(user.getId().intValue());
+         String selectedStatus = normalizeParam(request.getParameter("status"));
+         if (selectedStatus == null) {
+             selectedStatus = "all";
+         }
+         String keyword = normalizeParam(request.getParameter("q"));
+         List<OrderListDTO> orderList = orderDAO.getUserOrderList(user.getId().intValue(), selectedStatus, keyword);
+         List<OrderStatusTabDTO> statusTabs = orderDAO.getUserOrderStatusTabs(user.getId().intValue());
 
          request.setAttribute("orderList", orderList);
+         request.setAttribute("statusTabs", statusTabs);
+         request.setAttribute("selectedStatus", selectedStatus);
+         request.setAttribute("keyword", keyword);
          request.setAttribute("pageTitle", "Đơn hàng");
          request.setAttribute("pageCss", "account/account-layout.css");
          request.setAttribute("contentCss", "account/orders.css");
@@ -69,6 +117,14 @@ public class UserOrderController extends HttpServlet {
          request.setAttribute("contentPage", "/WEB-INF/views/account/account_layout.jsp");
 
          request.getRequestDispatcher("/WEB-INF/layout/base.jsp").forward(request, response);
+     }
+
+     private String normalizeParam(String value) {
+         if (value == null) {
+             return null;
+         }
+         String trimmed = value.trim();
+         return trimmed.isEmpty() ? null : trimmed;
      }
 
      private void viewOrderDetail(HttpServletRequest request,
@@ -92,9 +148,11 @@ public class UserOrderController extends HttpServlet {
          }
 
          List<OrderItem> orderItems = orderDAO.getOrderItems(orderId);
+         List<OrderHistory> historyList = orderService.getOrderHistory((long) orderId);
 
          request.setAttribute("order", order);
          request.setAttribute("orderItems", orderItems);
+         request.setAttribute("historyList", historyList);
          request.setAttribute("pageTitle", "Chi tiết đơn hàng");
          request.setAttribute("pageCss", "account/account-layout.css");
          request.setAttribute("contentCss", "account/orders.css");

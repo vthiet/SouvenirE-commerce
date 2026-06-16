@@ -5,16 +5,14 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
-import nlu.fit.web.souvenirecommerce.features.cart.service.CartPersistenceService;
-import nlu.fit.web.souvenirecommerce.model.entity.User;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
+import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 
 import java.io.IOException;
 
 @WebServlet("/cart/remove")
 public class RemoveCartController extends HttpServlet {
-    private final CartPersistenceService cartPersistenceService = new CartPersistenceService();
+    private final CartService cartService = new CartService();
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -28,32 +26,16 @@ public class RemoveCartController extends HttpServlet {
             return;
         }
 
-        Cart cart = (Cart) session.getAttribute("cart");
-        if (cart == null) {
-            handleResponse(response, isAjax, false, 0, 0);
-            return;
-        }
-
         try {
             Long productId = Long.parseLong(request.getParameter("productId"));
-            CartItem removedItem = cart.removeItem(productId);
-            session.setAttribute("cart", cart);
-            session.setAttribute("cartItemCount", cart.totalQuantity());
-            cartPersistenceService.saveCart(getCurrentUser(session), cart);
+            boolean removed = cartService.removeItem(session, productId);
+            CartEntity cart = cartService.getCartForDisplay(session);
+            cartService.storeCart(session, cart);
 
-            if (removedItem != null) {
-                handleResponse(
-                        response,
-                        isAjax,
-                        true,
-                        cart.totalQuantity(),
-                        cart.total()
-                );
-            } else {
-                handleResponse(response, isAjax, false, cart.totalQuantity(), cart.total());
-            }
+            handleResponse(response, isAjax, removed, cart.totalQuantity(), cart.total());
 
         } catch (Exception e) {
+            CartEntity cart = cartService.getCartForDisplay(session);
             handleResponse(response, isAjax, false, cart.totalQuantity(), cart.total());
         }
     }
@@ -61,10 +43,8 @@ public class RemoveCartController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-
         doPost(request, response);
     }
-
 
     private void handleResponse(HttpServletResponse response,
                                 boolean isAjax,
@@ -88,17 +68,5 @@ public class RemoveCartController extends HttpServlet {
         } else {
             response.sendRedirect("/cart");
         }
-    }
-
-    private User getCurrentUser(HttpSession session) {
-        Object user = session.getAttribute("userInSession");
-
-        if (user instanceof User currentUser) {
-            return currentUser;
-        }
-
-        user = session.getAttribute("authUser");
-
-        return user instanceof User currentUser ? currentUser : null;
     }
 }
