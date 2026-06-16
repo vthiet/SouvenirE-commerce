@@ -81,20 +81,26 @@
                 <span>Đăng nhập</span>
             </button>
 
-            <a href="${googleAuthUrl}" class="secondary-button">
-                <i class="fa-brands fa-google"></i>
-                <span>Đăng nhập bằng Google</span>
-            </a>
+            <c:if test="${not empty googleAuthUrl}">
+                <a href="${googleAuthUrl}" class="secondary-button">
+                    <i class="fa-brands fa-google"></i>
+                    <span>Đăng nhập bằng Google</span>
+                </a>
+            </c:if>
 
-            <a href="${githubAuthUrl}" class="secondary-button">
-                <i class="fa-brands fa-github"></i>
-                <span>Đăng nhập bằng GitHub</span>
-            </a>
+            <c:if test="${not empty githubAuthUrl}">
+                <a href="${githubAuthUrl}" class="secondary-button">
+                    <i class="fa-brands fa-github"></i>
+                    <span>Đăng nhập bằng GitHub</span>
+                </a>
+            </c:if>
 
-            <a href="${facebookAuthUrl}" class="secondary-button">
-                <i class="fa-brands fa-facebook-f"></i>
-                <span>Đăng nhập bằng Facebook</span>
-            </a>
+            <c:if test="${not empty facebookAuthUrl}">
+                <a href="${facebookAuthUrl}" class="secondary-button">
+                    <i class="fa-brands fa-facebook-f"></i>
+                    <span>Đăng nhập bằng Facebook</span>
+                </a>
+            </c:if>
 
             <a href="${pageContext.request.contextPath}/signup" class="secondary-button">
                 <i class="fa fa-user-plus"></i>
