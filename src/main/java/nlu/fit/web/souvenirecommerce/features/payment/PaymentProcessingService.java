@@ -1,6 +1,7 @@
 package nlu.fit.web.souvenirecommerce.features.payment;
 
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderStatusRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository;
 import nlu.fit.web.souvenirecommerce.model.entity.OrderStatus;
@@ -50,6 +51,35 @@ public class PaymentProcessingService {
         transaction.getOrder().setStatus(resolveStatus(
                 successful ? OrderStatusCode.PAID : OrderStatusCode.PAYMENT_FAILED));
         paymentRepository.update(transaction);
+        if (successful) {
+            AuditLogService.success(
+                    PaymentProcessingService.class,
+                    transaction.getOrder().getUser(),
+                    "ORDER",
+                    "PAYMENT_CONFIRMED",
+                    "PAYMENT",
+                    AuditLogService.describe(
+                            "orderCode", transaction.getOrder().getOrderCode(),
+                            "provider", transaction.getProvider(),
+                            "responseCode", responseCode,
+                            "transactionRef", transaction.getProviderTransactionRef()
+                    )
+            );
+        } else {
+            AuditLogService.failure(
+                    PaymentProcessingService.class,
+                    transaction.getOrder().getUser(),
+                    "ORDER",
+                    "PAYMENT_FAILED",
+                    "PAYMENT",
+                    AuditLogService.describe(
+                            "orderCode", transaction.getOrder().getOrderCode(),
+                            "provider", transaction.getProvider(),
+                            "responseCode", responseCode,
+                            "transactionRef", transaction.getProviderTransactionRef()
+                    )
+            );
+        }
 
         return result(PaymentCallbackResult.Outcome.PROCESSED, successful, transaction);
     }
@@ -81,6 +111,19 @@ public class PaymentProcessingService {
         transaction.setPaymentUrl(paymentUrl);
         transaction.getOrder().setStatus(resolveStatus(OrderStatusCode.PENDING_PAYMENT));
         paymentRepository.update(transaction);
+        AuditLogService.success(
+                PaymentProcessingService.class,
+                transaction.getOrder().getUser(),
+                "ORDER",
+                "PAYMENT_RETRY",
+                "PAYMENT",
+                AuditLogService.describe(
+                        "orderCode", transaction.getOrder().getOrderCode(),
+                        "amount", transaction.getAmount(),
+                        "provider", transaction.getProvider(),
+                        "clientIp", clientIp
+                )
+        );
         return paymentUrl;
     }
 

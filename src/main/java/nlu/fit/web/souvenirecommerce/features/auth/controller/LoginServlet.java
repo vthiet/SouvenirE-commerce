@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import nlu.fit.web.souvenirecommerce.features.auth.Constants;
 import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
@@ -78,6 +79,14 @@ public class LoginServlet extends HttpServlet {
             session = req.getSession(true);
             setAuthenticatedUser(session, user);
             log.info("Đăng nhập thành công: userId={}, loginDetail={}", user.getId(), loginDetail);
+            AuditLogService.success(
+                    LoginServlet.class,
+                    user,
+                    "AUTH",
+                    "LOGIN",
+                    "SESSION",
+                    AuditLogService.describe("loginDetail", loginDetail, "method", "password")
+            );
 
             if (redirectAfterLogin instanceof String redirect && !redirect.isBlank()) {
                 resp.sendRedirect(redirect);
@@ -88,6 +97,14 @@ public class LoginServlet extends HttpServlet {
 
         } catch (IllegalArgumentException e) {
             log.warn("Đăng nhập thất bại cho tài khoản: {}", loginDetail);
+            AuditLogService.failure(
+                    LoginServlet.class,
+                    loginDetail == null || loginDetail.isBlank() ? "unknown" : loginDetail.trim(),
+                    "AUTH",
+                    "LOGIN",
+                    "SESSION",
+                    AuditLogService.describe("reason", "invalid_credentials")
+            );
 
             req.setAttribute("error", "Email, số điện thoại hoặc mật khẩu không đúng");
 

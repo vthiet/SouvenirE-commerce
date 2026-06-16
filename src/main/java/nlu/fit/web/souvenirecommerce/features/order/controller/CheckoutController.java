@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartPriceService;
@@ -83,11 +84,27 @@ public class CheckoutController extends HttpServlet {
         refreshCartPrices(checkoutCart);
 
         try {
+            CheckoutRequest checkoutRequest = buildCheckoutRequest(request);
+            PaymentContext paymentContext = buildPaymentContext(request);
             CheckoutResult result = checkoutService.checkout(
                     user,
                     checkoutCart,
-                    buildCheckoutRequest(request),
-                    buildPaymentContext(request));
+                    checkoutRequest,
+                    paymentContext);
+            AuditLogService.success(
+                    CheckoutController.class,
+                    user,
+                    "ORDER",
+                    "ORDER_PLACED",
+                    "CHECKOUT",
+                    AuditLogService.describe(
+                            "orderCode", result.getOrderCode(),
+                            "paymentMethod", checkoutRequest.getPaymentMethod(),
+                            "amount", result.getOrder().getTotalAmount(),
+                            "items", checkoutCart.totalQuantity(),
+                            "externalPayment", result.requiresExternalPayment()
+                    )
+            );
             removeSelectedItems(cart, checkoutCart);
             session.setAttribute("cart", cart);
             session.setAttribute("cartItemCount", cart.totalQuantity());
@@ -102,6 +119,14 @@ public class CheckoutController extends HttpServlet {
             }
             response.sendRedirect(request.getContextPath() + "/order-success");
         } catch (CheckoutException e) {
+            AuditLogService.failure(
+                    CheckoutController.class,
+                    user,
+                    "ORDER",
+                    "CHECKOUT_FAILED",
+                    "CHECKOUT",
+                    AuditLogService.describe("reason", e.getMessage())
+            );
             request.setAttribute("error", e.getMessage());
             prepareCheckoutHeader(request);
             prepareCheckoutPage(request, user, checkoutCart);

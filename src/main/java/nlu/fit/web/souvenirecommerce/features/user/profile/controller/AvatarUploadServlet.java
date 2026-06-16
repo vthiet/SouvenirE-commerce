@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.product.service.CloudinaryService;
 import nlu.fit.web.souvenirecommerce.features.user.profile.service.ProfileService;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
@@ -75,6 +76,14 @@ public class AvatarUploadServlet extends HttpServlet {
             Optional<User> updatedUser = profileService.update(currentUser);
             User savedUser = updatedUser.orElse(currentUser);
             updateUserSession(session, savedUser);
+            AuditLogService.success(
+                    AvatarUploadServlet.class,
+                    savedUser,
+                    "ACCOUNT",
+                    "AVATAR_CHANGED",
+                    "PROFILE",
+                    AuditLogService.describe("publicId", publicId, "source", "avatar-upload")
+            );
 
             if (oldPublicId != null && !oldPublicId.isBlank() && !oldPublicId.equals(publicId)) {
                 try {
@@ -92,10 +101,26 @@ public class AvatarUploadServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/user/profile");
 
         } catch (IllegalArgumentException e) {
+            AuditLogService.failure(
+                    AvatarUploadServlet.class,
+                    currentUser,
+                    "ACCOUNT",
+                    "AVATAR_CHANGE_FAILED",
+                    "PROFILE",
+                    AuditLogService.describe("reason", e.getMessage())
+            );
             handleError(req, resp, session, e.getMessage());
 
         } catch (Exception e) {
             log.error("Cập nhật avatar thất bại cho người dùng có ID: {}", currentUser.getId(), e);
+            AuditLogService.failure(
+                    AvatarUploadServlet.class,
+                    currentUser,
+                    "ACCOUNT",
+                    "AVATAR_CHANGE_FAILED",
+                    "PROFILE",
+                    AuditLogService.describe("reason", e.getClass().getSimpleName(), "message", e.getMessage())
+            );
             handleError(req, resp, session, "Có lỗi xảy ra trong quá trình tải ảnh đại diện");
         }
     }

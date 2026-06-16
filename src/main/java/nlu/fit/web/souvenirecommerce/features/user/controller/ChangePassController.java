@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
@@ -53,18 +54,58 @@ public class ChangePassController extends HttpServlet {
         String confirmPassword = request.getParameter("confirmPassword");
 
         if (user.getId() == null || !userDAOImpl.checkPassword(user.getId().intValue(), currentPassword)) {
+            AuditLogService.failure(
+                    ChangePassController.class,
+                    user,
+                    "SECURITY",
+                    "PASSWORD_CHANGED",
+                    "CREDENTIAL",
+                    AuditLogService.describe("reason", "current_password_invalid")
+            );
             request.setAttribute("error", "Mật khẩu hiện tại không đúng");
         } else if (!newPassword.equals(confirmPassword)) {
+            AuditLogService.failure(
+                    ChangePassController.class,
+                    user,
+                    "SECURITY",
+                    "PASSWORD_CHANGED",
+                    "CREDENTIAL",
+                    AuditLogService.describe("reason", "confirmation_mismatch")
+            );
             request.setAttribute("error", "Mật khẩu xác nhận không khớp");
         } else if (newPassword.length() < 8) {
+            AuditLogService.failure(
+                    ChangePassController.class,
+                    user,
+                    "SECURITY",
+                    "PASSWORD_CHANGED",
+                    "CREDENTIAL",
+                    AuditLogService.describe("reason", "password_too_short")
+            );
             request.setAttribute("error", "Mật khẩu mới phải từ 8 ký tự trở lên");
         } else {
 
             boolean updated = userDAOImpl.updatePassword(user.getId().intValue(), newPassword);
 
             if (updated) {
+                AuditLogService.success(
+                        ChangePassController.class,
+                        user,
+                        "SECURITY",
+                        "PASSWORD_CHANGED",
+                        "CREDENTIAL",
+                        AuditLogService.describe("result", "updated")
+                );
                 request.setAttribute("success", "Đổi mật khẩu thành công");
             } else {
+                AuditLogService.failure(
+                        ChangePassController.class,
+                        user,
+                        "SECURITY",
+                        "PASSWORD_CHANGED",
+                        "CREDENTIAL",
+                        AuditLogService.describe("reason", "update_failed")
+                );
                 request.setAttribute("error", "Có lỗi xảy ra, vui lòng thử lại");
             }
         }

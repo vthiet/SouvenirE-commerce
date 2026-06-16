@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.legacy.dao.SettingsDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
@@ -75,6 +76,14 @@ public class AdminSettingsController extends HttpServlet {
 
                 if (currentUser.getId() != null && userDAOImpl.updateUser(currentUser.getId().intValue(), fullName, email, phone)) {
                     log.info("Admin profile updated: userId={}", currentUser.getId());
+                    AuditLogService.success(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "ACCOUNT",
+                            "ADMIN_PROFILE_UPDATED",
+                            "ADMIN_SETTINGS",
+                            AuditLogService.describe("fullName", fullName, "email", email, "phone", phone)
+                    );
                     // Update session user
                     String normalized = fullName == null ? "" : fullName.trim();
                     int split = normalized.lastIndexOf(' ');
@@ -94,6 +103,14 @@ public class AdminSettingsController extends HttpServlet {
                     session.setAttribute("messageType", "success");
                 } else {
                     log.warn("Admin profile update failed: userId={}", currentUser.getId());
+                    AuditLogService.failure(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "ACCOUNT",
+                            "ADMIN_PROFILE_UPDATED",
+                            "ADMIN_SETTINGS",
+                            AuditLogService.describe("reason", "update_failed")
+                    );
                     session.setAttribute("message", "Cập nhật thông tin thất bại!");
                     session.setAttribute("messageType", "error");
                 }
@@ -105,18 +122,50 @@ public class AdminSettingsController extends HttpServlet {
 
                 if (!newPassword.equals(confirmPassword)) {
                     log.warn("Admin password change rejected because confirmation did not match: userId={}", currentUser.getId());
+                    AuditLogService.failure(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "SECURITY",
+                            "ADMIN_PASSWORD_CHANGED",
+                            "ADMIN_SETTINGS",
+                            AuditLogService.describe("reason", "confirmation_mismatch")
+                    );
                     session.setAttribute("message", "Mật khẩu mới không khớp!");
                     session.setAttribute("messageType", "error");
                 } else if (currentUser.getId() == null || !userDAOImpl.checkPassword(currentUser.getId().intValue(), currentPassword)) {
                     log.warn("Admin password change rejected because current password was invalid: userId={}", currentUser.getId());
+                    AuditLogService.failure(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "SECURITY",
+                            "ADMIN_PASSWORD_CHANGED",
+                            "ADMIN_SETTINGS",
+                            AuditLogService.describe("reason", "current_password_invalid")
+                    );
                     session.setAttribute("message", "Mật khẩu hiện tại không đúng!");
                     session.setAttribute("messageType", "error");
                 } else if (userDAOImpl.updatePasswordByUserId(currentUser.getId().intValue(), newPassword)) {
                     log.info("Admin password changed: userId={}", currentUser.getId());
+                    AuditLogService.success(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "SECURITY",
+                            "ADMIN_PASSWORD_CHANGED",
+                            "ADMIN_SETTINGS",
+                            AuditLogService.describe("result", "updated")
+                    );
                     session.setAttribute("message", "Đổi mật khẩu thành công!");
                     session.setAttribute("messageType", "success");
                 } else {
                     log.warn("Admin password change failed: userId={}", currentUser.getId());
+                    AuditLogService.failure(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "SECURITY",
+                            "ADMIN_PASSWORD_CHANGED",
+                            "ADMIN_SETTINGS",
+                            AuditLogService.describe("reason", "update_failed")
+                    );
                     session.setAttribute("message", "Đổi mật khẩu thất bại!");
                     session.setAttribute("messageType", "error");
                 }
@@ -147,10 +196,31 @@ public class AdminSettingsController extends HttpServlet {
 
                 if (settingsDAO.updateMultipleSettings(settings)) {
                     log.info("Admin system settings updated: userId={}", currentUser.getId());
+                    AuditLogService.success(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "SYSTEM",
+                            "SYSTEM_SETTINGS_UPDATED",
+                            "ADMIN_SETTINGS",
+                            AuditLogService.describe(
+                                    "siteName", settings.get("site_name"),
+                                    "maintenanceMode", settings.get("maintenance_mode"),
+                                    "paymentVnpay", settings.get("payment_vnpay"),
+                                    "shippingGhn", settings.get("shipping_ghn")
+                            )
+                    );
                     session.setAttribute("message", "Cập nhật cài đặt hệ thống thành công!");
                     session.setAttribute("messageType", "success");
                 } else {
                     log.warn("Admin system settings update failed: userId={}", currentUser.getId());
+                    AuditLogService.failure(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "SYSTEM",
+                            "SYSTEM_SETTINGS_UPDATED",
+                            "ADMIN_SETTINGS",
+                            AuditLogService.describe("reason", "update_failed")
+                    );
                     session.setAttribute("message", "Cập nhật cài đặt hệ thống thất bại!");
                     session.setAttribute("messageType", "error");
                 }
