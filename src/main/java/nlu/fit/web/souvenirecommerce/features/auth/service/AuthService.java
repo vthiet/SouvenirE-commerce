@@ -3,10 +3,12 @@ package nlu.fit.web.souvenirecommerce.features.auth.service;
 import jakarta.mail.MessagingException;
 import nlu.fit.web.souvenirecommerce.features.auth.dto.GooglePojo;
 import nlu.fit.web.souvenirecommerce.features.auth.dto.GithubPojo;
+import nlu.fit.web.souvenirecommerce.features.auth.dto.FacebookPojo;
 import nlu.fit.web.souvenirecommerce.features.auth.repository.AuthRepository;
 import nlu.fit.web.souvenirecommerce.features.auth.service.impl.EmailServiceImpl;
 import nlu.fit.web.souvenirecommerce.features.auth.util.GoogleUtils;
 import nlu.fit.web.souvenirecommerce.features.auth.util.GithubUtils;
+import nlu.fit.web.souvenirecommerce.features.auth.util.FacebookUtils;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
@@ -122,6 +124,37 @@ public class AuthService {
                 firstName,
                 lastName,
                 githubUser.getAvatarUrl()
+        );
+    }
+
+    public FacebookPojo processFacebookLogin(String code) throws IOException {
+        if (code == null || code.isEmpty()){
+            throw new IllegalArgumentException("Code is invalid");
+        }
+
+        String accessToken = FacebookUtils.getToken(code);
+
+        FacebookPojo facebookUser = FacebookUtils.getUserInfo(accessToken);
+
+        if (facebookUser == null || facebookUser.getId() == null) {
+            throw new IllegalStateException("Facebook ID is null");
+        }
+
+        if (facebookUser.getEmail() == null || facebookUser.getEmail().isBlank()) {
+            facebookUser.setEmail(facebookUser.getId() + "@facebook.com");
+        }
+
+        return facebookUser;
+    }
+
+    public User loginWithFacebook(String code) throws IOException {
+        FacebookPojo facebookUser = processFacebookLogin(code);
+        return authRepository.upsertFacebookUser(
+                facebookUser.getId(),
+                facebookUser.getEmail(),
+                facebookUser.getFirstName(),
+                facebookUser.getLastName(),
+                facebookUser.getAvatarUrl()
         );
     }
 

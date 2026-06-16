@@ -45,6 +45,7 @@ public class LoginServlet extends HttpServlet {
         }
         req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
         req.setAttribute("githubAuthUrl", buildGithubAuthUrl());
+        req.setAttribute("facebookAuthUrl", buildFacebookAuthUrl());
         RecaptchaUtil.expose(req, getServletContext());
 
         req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
@@ -74,6 +75,7 @@ public class LoginServlet extends HttpServlet {
             req.setAttribute("error", "Vui lòng xác nhận bạn không phải robot.");
             req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
             req.setAttribute("githubAuthUrl", buildGithubAuthUrl());
+            req.setAttribute("facebookAuthUrl", buildFacebookAuthUrl());
             RecaptchaUtil.expose(req, getServletContext());
             req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
             return;
@@ -106,6 +108,7 @@ public class LoginServlet extends HttpServlet {
             req.setAttribute("error", "Email, số điện thoại hoặc mật khẩu không đúng");
             req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
             req.setAttribute("githubAuthUrl", buildGithubAuthUrl());
+            req.setAttribute("facebookAuthUrl", buildFacebookAuthUrl());
             RecaptchaUtil.expose(req, getServletContext());
 
             req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
@@ -140,5 +143,14 @@ public class LoginServlet extends HttpServlet {
                 + URLEncoder.encode(Constants.GITHUB_REDIRECT_URI, StandardCharsets.UTF_8)
                 + "&client_id="
                 + URLEncoder.encode(Constants.GITHUB_CLIENT_ID, StandardCharsets.UTF_8);
+    }
+
+    private String buildFacebookAuthUrl() {
+        return "https://www.facebook.com/v19.0/dialog/oauth?scope="
+                + URLEncoder.encode("email,public_profile", StandardCharsets.UTF_8)
+                + "&redirect_uri="
+                + URLEncoder.encode(Constants.FACEBOOK_REDIRECT_URI, StandardCharsets.UTF_8)
+                + "&client_id="
+                + URLEncoder.encode(Constants.FACEBOOK_CLIENT_ID, StandardCharsets.UTF_8);
     }
 }

@@ -91,6 +91,11 @@
                 <span>Đăng nhập bằng GitHub</span>
             </a>
 
+            <a href="${facebookAuthUrl}" class="secondary-button">
+                <i class="fa-brands fa-facebook-f"></i>
+                <span>Đăng nhập bằng Facebook</span>
+            </a>
+
             <a href="${pageContext.request.contextPath}/signup" class="secondary-button">
                 <i class="fa fa-user-plus"></i>
                 <span>Tạo tài khoản mới</span>
