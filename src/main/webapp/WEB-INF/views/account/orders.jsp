@@ -22,12 +22,12 @@
 <c:if test="${not empty requestScope.order}">
     <section class="profile-panel">
         <c:if test="${not empty param.success}">
-            <div class="alert alert-success" style="background-color: #d1e7dd; border-color: #badbcc; color: #0f5132; padding: 12px; border-radius: 4px; margin-bottom: 15px;">
+            <div class="alert alert-success order-detail-alert order-detail-alert--success">
                 <i class="fa-solid fa-circle-check"></i> Thao tác xử lý đơn hàng thành công!
             </div>
         </c:if>
         <c:if test="${not empty param.error}">
-            <div class="alert alert-danger" style="background-color: #f8d7da; border-color: #f5c2c7; color: #842029; padding: 12px; border-radius: 4px; margin-bottom: 15px;">
+            <div class="alert alert-danger order-detail-alert order-detail-alert--danger">
                 <i class="fa-solid fa-circle-exclamation"></i> Lỗi: <c:out value="${param.error}"/>
             </div>
         </c:if>
@@ -92,11 +92,11 @@
         </div>
 
         <c:if test="${requestScope.order.status eq 'Chờ xác nhận' || requestScope.order.status eq 'PENDING' || requestScope.order.status eq 'Chờ thanh toán' || requestScope.order.status eq 'PENDING_PAYMENT'}">
-            <div style="margin-top: 24px; border-top: 1px solid #e9ecef; padding-top: 16px;">
+            <div class="order-detail-actions-block">
                 <form id="cancelOrderForm" method="post" action="${pageContext.request.contextPath}/user/orders" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?')">
                     <input type="hidden" name="action" value="cancel">
                     <input type="hidden" name="orderId" value="${requestScope.order.id}">
-                    <button type="submit" class="danger-button" style="background-color: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                    <button type="submit" class="order-danger-button">
                         <i class="fa-solid fa-ban"></i> Hủy đơn hàng
                     </button>
                 </form>
@@ -104,24 +104,24 @@
         </c:if>
 
         <h3 style="margin-top: 32px; margin-bottom: 16px;">Lịch sử xử lý đơn hàng</h3>
-        <div class="order-history-timeline" style="border-left: 2px solid #e9ecef; padding-left: 15px; margin-left: 10px; margin-top: 16px; margin-bottom: 16px;">
+        <div class="order-history-timeline">
             <c:forEach items="${requestScope.historyList}" var="history">
-                <div class="timeline-item" style="margin-bottom: 15px; position: relative;">
-                    <span style="position: absolute; left: -22px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background-color: #0d6efd; border: 2px solid #fff;"></span>
-                    <div style="font-size: 0.8rem; color: #6c757d;">
+                <div class="timeline-item">
+                    <span class="order-history-timeline__dot"></span>
+                    <div class="order-history-timeline__meta">
                         <fmt:formatDate value="${java.sql.Timestamp.valueOf(history.createdAt)}" pattern="dd/MM/yyyy HH:mm"/>
                         &middot; <c:out value="${history.performedBy}"/>
                     </div>
-                    <div style="font-weight: 600; font-size: 0.9rem; color: #212529;">
+                    <div class="order-history-timeline__title">
                         Trạng thái: <c:out value="${history.status}"/>
                     </div>
-                    <div style="font-size: 0.9rem; color: #495057; margin-top: 2px;">
+                    <div class="order-history-timeline__description">
                         <c:out value="${history.description}"/>
                     </div>
                 </div>
             </c:forEach>
             <c:if test="${empty requestScope.historyList}">
-                <p class="text-muted" style="font-size: 0.9rem;">Chưa có lịch sử xử lý cho đơn hàng này.</p>
+                <p class="order-history-empty text-muted">Chưa có lịch sử xử lý cho đơn hàng này.</p>
             </c:if>
         </div>
     </section>

@@ -38,8 +38,8 @@ body.auth-page {
     display: grid;
     grid-template-columns: minmax(320px, 1.04fr) minmax(380px, 0.96fr);
     background: var(--auth-surface);
-    border: 1px solid rgba(31, 41, 51, 0.08);
-    box-shadow: 0 24px 70px rgba(31, 41, 51, 0.14);
+    border: 1px solid var(--auth-border);
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
 }
 
@@ -223,7 +223,7 @@ body.auth-page {
 
 .input-wrap:focus-within {
     border-color: var(--auth-primary);
-    box-shadow: 0 0 0 3px rgba(36, 122, 82, 0.14);
+    box-shadow: var(--focus-ring);
 }
 
 .captcha-field {
@@ -452,8 +452,9 @@ body.auth-page {
     display: grid;
     gap: 6px;
     padding: 18px;
-    background: rgba(255, 255, 255, 0.92);
+    background: var(--surface-default);
     color: var(--auth-text);
+    border: 1px solid var(--auth-border);
     border-left: 4px solid var(--auth-accent);
 }
 

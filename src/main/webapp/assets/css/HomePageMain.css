@@ -15,7 +15,7 @@
     width: 100%;
     height: 410px;
     overflow: hidden;
-    background: #000;
+    background: var(--surface-inverse);
     margin-bottom: 0;
     border-radius: 0;
 }
@@ -46,8 +46,8 @@
     top: 50%;
     z-index: 10;
     padding: 12px 16px;
-    color: #ffffff;
-    background: rgba(0, 0, 0, 0.45);
+    color: var(--text-on-primary);
+    background: rgba(31, 41, 51, 0.45);
     border-radius: 4px;
     font-size: 22px;
     transform: translateY(-50%);
@@ -56,7 +56,7 @@
 
 .home-page .slideshow-container .prev:hover,
 .home-page .slideshow-container .next:hover {
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(31, 41, 51, 0.78);
 }
 
 .home-page .slideshow-container .prev {
@@ -80,14 +80,14 @@
     width: 12px;
     height: 12px;
     margin: 0 5px;
-    background-color: #bbbbbb;
+    background-color: rgba(255, 255, 255, 0.45);
     border-radius: 50%;
     transition: background-color 0.3s;
 }
 
 .home-page .dot.active,
 .home-page .dot:hover {
-    background-color: #ffffff;
+    background-color: var(--text-on-primary);
 }
 
 /* Quick panels */
@@ -100,7 +100,7 @@
     min-height: 128px;
     margin: 0;
     padding: 20px 20px 18px;
-    background: #f5f5f5;
+    background: var(--surface-muted);
     border-radius: 0 0 12px 12px;
 }
 
@@ -114,11 +114,12 @@
     gap: 6px;
     padding: 6px 4px;
     border-radius: 12px;
-    color: #6f747b;
+    border: 1px solid transparent;
+    color: var(--text-soft);
     font-weight: 700;
     text-decoration: none;
     text-align: center;
-    transition: transform 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+    transition: transform 0.2s ease, color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .home-page .home-quick-panel__icon {
@@ -128,14 +129,14 @@
     justify-content: center;
     width: 42px;
     height: 42px;
-    color: #3f3f3f;
+    color: var(--text-strong);
     font-size: 32px;
     line-height: 1;
 }
 
 .home-page .home-quick-panel__title {
     display: block;
-    color: #646970;
+    color: var(--text-default);
     font-size: 15px;
     line-height: 1.35;
     font-weight: 700;
@@ -146,7 +147,7 @@
 .home-page .home-quick-panel__subtitle {
     display: block;
     max-width: 150px;
-    color: #8a8f96;
+    color: var(--text-subtle);
     font-size: 12px;
     line-height: 1.25;
     font-weight: 500;
@@ -155,14 +156,16 @@
 }
 
 .home-page .home-quick-panel:hover {
-    background: rgba(255, 255, 255, .7);
-    color: #1f8a5b;
+    background: var(--surface-default);
+    color: var(--brand-primary);
     transform: translateY(-3px);
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-sm);
 }
 
 .home-page .home-quick-panel:hover .home-quick-panel__icon,
 .home-page .home-quick-panel:hover .home-quick-panel__title {
-    color: #1f8a5b;
+    color: var(--brand-primary);
 }
 
 /* Sections */
@@ -213,20 +216,38 @@
 }
 
 .home-page .see-more-btn {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     width: fit-content;
     margin: 24px auto 0;
     padding: 10px 32px;
-    background: #000000;
-    color: #ffffff;
+    background: var(--brand-primary);
+    color: var(--text-on-primary);
+    border: 1px solid var(--brand-primary);
     border-radius: 25px;
     font-weight: 600;
+    box-shadow: var(--shadow-sm);
     transition: 0.3s;
 }
 
 .home-page .see-more-btn:hover {
-    background: #333333;
-    transform: scale(1.05);
+    background: var(--brand-primary-hover);
+    border-color: var(--brand-primary-hover);
+    transform: translateY(-1px);
+}
+
+.home-page .see-more-btn--light {
+    background: transparent;
+    color: var(--brand-primary);
+    border-color: var(--border-default);
+    box-shadow: none;
+}
+
+.home-page .see-more-btn--light:hover {
+    background: var(--surface-default);
+    border-color: var(--brand-primary);
 }
 
 /* Extension */
@@ -281,8 +302,8 @@
     top: 50%;
     z-index: 5;
     padding: 6px 12px;
-    color: #ffffff;
-    background: rgba(0, 0, 0, 0.4);
+    color: var(--text-on-primary);
+    background: rgba(31, 41, 51, 0.45);
     border-radius: 50%;
     font-size: 32px;
     transform: translateY(-50%);

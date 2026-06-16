@@ -28,19 +28,19 @@
 
     <!-- Theme variables -->
     <link rel="stylesheet"
-          href="${pageContext.request.contextPath}/assets/css/theme.css">
+          href="${pageContext.request.contextPath}/assets/css/theme.css?v=2">
 
     <!-- Base/reset/layout -->
     <link rel="stylesheet"
-          href="${pageContext.request.contextPath}/assets/css/Base.css">
+          href="${pageContext.request.contextPath}/assets/css/Base.css?v=2">
 
     <!-- Header -->
     <link rel="stylesheet"
-          href="${pageContext.request.contextPath}/assets/css/layout/header.css?v=10">
+          href="${pageContext.request.contextPath}/assets/css/layout/header.css?v=11">
 
     <!-- Footer -->
     <link rel="stylesheet"
-          href="${pageContext.request.contextPath}/assets/css/layout/footer.css">
+          href="${pageContext.request.contextPath}/assets/css/layout/footer.css?v=2">
 
     <!-- Font Awesome -->
     <link rel="stylesheet"
@@ -54,12 +54,12 @@
 
     <c:if test="${not empty pageCss}">
         <link rel="stylesheet"
-              href="${pageContext.request.contextPath}/assets/css/${pageCss}?v=14">
+              href="${pageContext.request.contextPath}/assets/css/${pageCss}?v=16">
     </c:if>
 
     <c:if test="${not empty contentCss}">
         <link rel="stylesheet"
-              href="${pageContext.request.contextPath}/assets/css/${contentCss}">
+              href="${pageContext.request.contextPath}/assets/css/${contentCss}?v=2">
     </c:if>
 
     <c:if test="${requestScope.enableSelect2}">
