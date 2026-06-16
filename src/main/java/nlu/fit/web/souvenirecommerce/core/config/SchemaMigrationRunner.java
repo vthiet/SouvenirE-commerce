@@ -31,6 +31,7 @@ public final class SchemaMigrationRunner {
              Statement statement = connection.createStatement()) {
             migrateUserPasswordColumn(connection, statement);
             ensureUniqueUserPhone(connection, statement);
+            ensureInnoDBStorageEngine(connection, statement);
         } catch (SQLException e) {
             throw new IllegalStateException("Database schema migration failed", e);
         }
@@ -108,6 +109,26 @@ public final class SchemaMigrationRunner {
                 }
             }
             return false;
+        }
+    }
+
+    private static void ensureInnoDBStorageEngine(Connection connection, Statement statement) throws SQLException {
+        String dbName = connection.getCatalog();
+        String query = "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" + dbName + "'";
+        java.util.List<String> tablesToAlter = new java.util.ArrayList<>();
+        try (var rs = statement.executeQuery(query)) {
+            while (rs.next()) {
+                String tableName = rs.getString("TABLE_NAME");
+                String engine = rs.getString("ENGINE");
+                if (engine != null && !engine.equalsIgnoreCase("InnoDB")) {
+                    tablesToAlter.add(tableName);
+                }
+            }
+        }
+
+        for (String tableName : tablesToAlter) {
+            log.info("Altering table {} storage engine to InnoDB ROW_FORMAT=DEFAULT", tableName);
+            statement.executeUpdate("ALTER TABLE `" + tableName + "` ENGINE=InnoDB ROW_FORMAT=DEFAULT");
         }
     }
 

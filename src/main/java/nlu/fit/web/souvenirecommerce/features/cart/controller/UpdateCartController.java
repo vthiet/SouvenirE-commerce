@@ -6,8 +6,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 
 import java.io.IOException;
@@ -15,17 +15,17 @@ import java.io.IOException;
 @WebServlet("/cart/update")
 public class UpdateCartController extends HttpServlet {
     private final CartService cartService = new CartService();
-    
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        
+
         try {
             Long productId = Long.parseLong(request.getParameter("productId"));
-            int quantity  = Integer.parseInt(request.getParameter("quantity"));
+            int quantity   = Integer.parseInt(request.getParameter("quantity"));
 
             HttpSession session = request.getSession();
             boolean updated = cartService.updateItem(session, productId, quantity);
@@ -34,10 +34,10 @@ public class UpdateCartController extends HttpServlet {
                 return;
             }
 
-            Cart cart = cartService.getCartForDisplay(session);
+            CartEntity cart = cartService.getCartForDisplay(session);
             cartService.storeCart(session, cart);
 
-            CartItem item = cart.getItem(productId);
+            CartItemEntity item = cart.getItem(productId);
             double itemSubtotal = (item != null) ? item.getSubTotal() : 0;
 
             String json = """
@@ -60,9 +60,10 @@ public class UpdateCartController extends HttpServlet {
             response.getWriter().write("{\"success\":false}");
         }
     }
-     
+
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         doPost(request, response);
     }
 }

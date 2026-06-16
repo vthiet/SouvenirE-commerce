@@ -86,6 +86,11 @@
                 <span>Đăng nhập bằng Google</span>
             </a>
 
+            <a href="${githubAuthUrl}" class="secondary-button">
+                <i class="fa-brands fa-github"></i>
+                <span>Đăng nhập bằng GitHub</span>
+            </a>
+
             <a href="${pageContext.request.contextPath}/signup" class="secondary-button">
                 <i class="fa fa-user-plus"></i>
                 <span>Tạo tài khoản mới</span>

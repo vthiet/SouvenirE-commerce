@@ -1,7 +1,7 @@
 package nlu.fit.web.souvenirecommerce.features.cart.service;
 
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.model.entity.Product;
 
 import java.util.ArrayList;
@@ -12,20 +12,16 @@ import java.util.Map;
 public class CartSummaryService {
     private final CartPriceService cartPriceService = new CartPriceService();
 
-    public Map<String, Object> buildSummary(Cart cart, String contextPath) {
-        Cart safeCart = cart == null ? new Cart() : cart;
+    public Map<String, Object> buildSummary(CartEntity cart, String contextPath) {
+        CartEntity safeCart = cart == null ? new CartEntity() : cart;
         Map<String, Object> response = new LinkedHashMap<>();
         List<Map<String, Object>> items = new ArrayList<>();
 
-        for (CartItem cartItem : safeCart.getItems()) {
+        for (CartItemEntity cartItem : safeCart.getItems()) {
             Product product = cartItem.getProduct();
-
-            if (product == null) {
-                continue;
-            }
+            if (product == null) continue;
 
             double currentPrice = cartPriceService.getCurrentPrice(product);
-            cartItem.setPrice(currentPrice);
 
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", product.getId());

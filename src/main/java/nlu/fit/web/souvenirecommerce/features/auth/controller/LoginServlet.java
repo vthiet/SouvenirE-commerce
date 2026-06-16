@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import nlu.fit.web.souvenirecommerce.features.auth.Constants;
 import nlu.fit.web.souvenirecommerce.common.utils.RecaptchaUtil;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import java.io.IOException;
@@ -44,6 +44,7 @@ public class LoginServlet extends HttpServlet {
             }
         }
         req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
+        req.setAttribute("githubAuthUrl", buildGithubAuthUrl());
         RecaptchaUtil.expose(req, getServletContext());
 
         req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
@@ -72,6 +73,7 @@ public class LoginServlet extends HttpServlet {
         if (!RecaptchaUtil.verify(req, getServletContext())) {
             req.setAttribute("error", "Vui lòng xác nhận bạn không phải robot.");
             req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
+            req.setAttribute("githubAuthUrl", buildGithubAuthUrl());
             RecaptchaUtil.expose(req, getServletContext());
             req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
             return;
@@ -83,7 +85,7 @@ public class LoginServlet extends HttpServlet {
             HttpSession session = req.getSession(false);
             Object redirectAfterLogin = session == null ? null : session.getAttribute("redirectAfterLogin");
             Object cartAttribute = session == null ? null : session.getAttribute("cart");
-            Cart preLoginCart = cartAttribute instanceof Cart cart ? cart : null;
+            CartEntity preLoginCart = cartAttribute instanceof CartEntity cart ? cart : null;
             if (session != null) {
                 session.invalidate();
             }
@@ -103,13 +105,14 @@ public class LoginServlet extends HttpServlet {
 
             req.setAttribute("error", "Email, số điện thoại hoặc mật khẩu không đúng");
             req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
+            req.setAttribute("githubAuthUrl", buildGithubAuthUrl());
             RecaptchaUtil.expose(req, getServletContext());
 
             req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
         }
     }
 
-    private void setAuthenticatedUser(HttpSession session, User user, Cart preLoginCart) {
+    private void setAuthenticatedUser(HttpSession session, User user, CartEntity preLoginCart) {
         session.setAttribute("currentUser", user);
         session.setAttribute("userInSession", user);
         session.setAttribute("user", user);
@@ -118,7 +121,7 @@ public class LoginServlet extends HttpServlet {
 
         cartService.prepareGuestCartMerge(session, preLoginCart);
 
-        Cart cart = cartService.getCartForDisplay(session);
+        CartEntity cart = cartService.getCartForDisplay(session);
         cartService.storeCart(session, cart);
     }
 
@@ -128,5 +131,14 @@ public class LoginServlet extends HttpServlet {
                 + "&response_type=code&client_id="
                 + URLEncoder.encode(Constants.GOOGLE_CLIENT_ID, StandardCharsets.UTF_8)
                 + "&approval_prompt=force";
+    }
+
+    private String buildGithubAuthUrl() {
+        return "https://github.com/login/oauth/authorize?scope="
+                + URLEncoder.encode("read:user user:email", StandardCharsets.UTF_8)
+                + "&redirect_uri="
+                + URLEncoder.encode(Constants.GITHUB_REDIRECT_URI, StandardCharsets.UTF_8)
+                + "&client_id="
+                + URLEncoder.encode(Constants.GITHUB_CLIENT_ID, StandardCharsets.UTF_8);
     }
 }
