@@ -51,11 +51,21 @@ public class LoginGoogleServlet extends HttpServlet {
             cartService.prepareGuestCartMerge(session, preLoginCart);
             CartEntity cart = cartService.getCartForDisplay(session);
             cartService.storeCart(session, cart);
+            String redirectTarget = req.getContextPath() + "/home";
             if (redirectAfterLogin instanceof String redirect && !redirect.isBlank()) {
-                resp.sendRedirect(redirect);
-                return;
+                redirectTarget = redirect;
             }
-            resp.sendRedirect(req.getContextPath() + "/home");
+
+            AuditLogService.success(
+                    LoginGoogleServlet.class,
+                    user,
+                    "AUTH",
+                    "LOGIN_GOOGLE",
+                    "SESSION",
+                    AuditLogService.describe("method", "google", "redirect", redirectTarget)
+            );
+
+            resp.sendRedirect(redirectTarget);
         } catch (Exception e) {
             rollbackCurrentTransaction();
             log.warn("Đăng nhập Google thất bại", e);

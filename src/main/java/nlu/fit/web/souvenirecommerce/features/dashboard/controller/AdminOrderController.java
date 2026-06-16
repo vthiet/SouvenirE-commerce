@@ -5,10 +5,13 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
 import nlu.fit.web.souvenirecommerce.legacy.model.Order;
+import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
 import java.util.List;
@@ -93,12 +96,21 @@ public class AdminOrderController extends HttpServlet {
 
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
+        User currentUser = resolveCurrentUser(request);
         log.debug("Admin order POST request received. action={}", action);
 
         if ("updateStatus".equals(action)) {
-            updateOrderStatus(request, response);
+            updateOrderStatus(request, response, currentUser);
         } else {
             log.warn("Unsupported admin order POST action: {}", action);
+            AuditLogService.failure(
+                    AdminOrderController.class,
+                    currentUser,
+                    "ORDER",
+                    "ORDER_STATUS_UPDATED",
+                    "ORDER",
+                    AuditLogService.describe("action", action, "reason", "unsupported_action")
+            );
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported action");
         }
     }
@@ -118,7 +130,7 @@ public class AdminOrderController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId);
     }
 
-    private void updateOrderStatus(HttpServletRequest request, HttpServletResponse response)
+    private void updateOrderStatus(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws IOException {
 
         int orderId;
@@ -126,6 +138,14 @@ public class AdminOrderController extends HttpServlet {
             orderId = Integer.parseInt(request.getParameter("orderId"));
         } catch (NumberFormatException ex) {
             log.warn("Invalid order id supplied for admin order status update: {}", request.getParameter("orderId"));
+            AuditLogService.failure(
+                    AdminOrderController.class,
+                    currentUser,
+                    "ORDER",
+                    "ORDER_STATUS_UPDATED",
+                    "ORDER",
+                    AuditLogService.describe("orderId", request.getParameter("orderId"), "reason", "invalid_order_id")
+            );
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid order id");
             return;
         }
@@ -137,10 +157,41 @@ public class AdminOrderController extends HttpServlet {
 
         if (success) {
             log.info("Order status updated successfully. orderId={}, newStatus={}", orderId, newStatus);
+            AuditLogService.success(
+                    AdminOrderController.class,
+                    currentUser,
+                    "ORDER",
+                    "ORDER_STATUS_UPDATED",
+                    "ORDER",
+                    AuditLogService.describe("orderId", orderId, "newStatus", newStatus)
+            );
             response.sendRedirect(request.getContextPath() + "/admin/orders?success=true");
         } else {
             log.warn("Order status update failed. orderId={}, newStatus={}", orderId, newStatus);
+            AuditLogService.failure(
+                    AdminOrderController.class,
+                    currentUser,
+                    "ORDER",
+                    "ORDER_STATUS_UPDATED",
+                    "ORDER",
+                    AuditLogService.describe("orderId", orderId, "newStatus", newStatus, "reason", "update_failed")
+            );
             response.sendRedirect(request.getContextPath() + "/admin/orders?error=true");
         }
+    }
+
+    private User resolveCurrentUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        User currentUser = (User) session.getAttribute("userInSession");
+        if (currentUser == null) {
+            currentUser = (User) session.getAttribute("currentUser");
+        }
+        if (currentUser == null) {
+            currentUser = (User) session.getAttribute("user");
+        }
+        return currentUser;
     }
 }

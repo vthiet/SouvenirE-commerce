@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.order.dto.OrderListDTO;
 import nlu.fit.web.souvenirecommerce.features.order.dto.OrderStatusTabDTO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
@@ -57,6 +58,14 @@ public class UserOrderController extends HttpServlet {
         HttpSession session = request.getSession(false);
         User user = (session != null) ? (User) session.getAttribute("userInSession") : null;
         if (user == null) {
+            AuditLogService.failure(
+                    UserOrderController.class,
+                    "Guest",
+                    "ORDER",
+                    "ORDER_CANCELLED",
+                    "ORDER",
+                    AuditLogService.describe("reason", "not_authenticated")
+            );
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
@@ -67,6 +76,14 @@ public class UserOrderController extends HttpServlet {
             try {
                 orderId = Long.parseLong(request.getParameter("orderId"));
             } catch (NumberFormatException e) {
+                AuditLogService.failure(
+                        UserOrderController.class,
+                        user,
+                        "ORDER",
+                        "ORDER_CANCELLED",
+                        "ORDER",
+                        AuditLogService.describe("orderId", request.getParameter("orderId"), "reason", "invalid_order_id")
+                );
                 response.sendRedirect(request.getContextPath() + "/user/orders");
                 return;
             }
@@ -80,11 +97,36 @@ public class UserOrderController extends HttpServlet {
                         reason = "Khách hàng tự hủy đơn hàng";
                     }
                     orderService.cancelOrder(orderId, user.getEmail(), reason);
+                    AuditLogService.success(
+                            UserOrderController.class,
+                            user,
+                            "ORDER",
+                            "ORDER_CANCELLED",
+                            "ORDER",
+                            AuditLogService.describe("orderId", orderId, "reason", reason)
+                    );
                     response.sendRedirect(request.getContextPath() + "/user/orders?action=detail&id=" + orderId + "&success=true");
                     return;
                 }
+                AuditLogService.failure(
+                        UserOrderController.class,
+                        user,
+                        "ORDER",
+                        "ORDER_CANCELLED",
+                        "ORDER",
+                        AuditLogService.describe("orderId", orderId, "reason", "ownership_check_failed")
+                );
             } catch (Exception e) {
-                response.sendRedirect(request.getContextPath() + "/user/orders?action=detail&id=" + orderId + "&error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+                AuditLogService.failure(
+                        UserOrderController.class,
+                        user,
+                        "ORDER",
+                        "ORDER_CANCELLED",
+                        "ORDER",
+                        AuditLogService.describe("orderId", orderId, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
+                );
+                String errorMessage = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                response.sendRedirect(request.getContextPath() + "/user/orders?action=detail&id=" + orderId + "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
                 return;
             }
         }

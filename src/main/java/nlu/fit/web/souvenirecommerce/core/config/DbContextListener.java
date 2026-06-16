@@ -5,6 +5,7 @@ import jakarta.servlet.ServletContextListener;
 import lombok.extern.slf4j.Slf4j;
 import com.mysql.cj.jdbc.AbandonedConnectionCleanupThread;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.core.logging.ProjectLogPaths;
 import nlu.fit.web.souvenirecommerce.legacy.utils.DBContext;
 import org.hibernate.Session;
 
@@ -18,8 +19,11 @@ public class DbContextListener implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        ProjectLogPaths.ensureLogDirExists();
+
         String contextPath = sce.getServletContext().getContextPath();
         log.info("Application starting: contextPath={}", contextPath);
+        log.info("Log directory ready: {}", ProjectLogPaths.resolveLogDir());
 
         SchemaMigrationRunner.runBeforeHibernate();
         HibernateUtil.getSessionFactory();

@@ -34,6 +34,24 @@
                     </div>
                 </div>
 
+                <div class="card mb-3">
+                    <div class="card-body py-3">
+                        <div class="small text-muted mb-1">Log source đang được đọc</div>
+                        <div class="fw-semibold"><c:out value="${resolvedLogDir}" /></div>
+                        <div class="small text-muted mt-2">
+                            File:
+                            <c:choose>
+                                <c:when test="${empty resolvedLogFile}">
+                                    <span class="text-warning">Không xác định được file log</span>
+                                </c:when>
+                                <c:otherwise>
+                                    <c:out value="${resolvedLogFile}" />
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card">
                     <div class="card-body">
                         <form method="get" action="${ctx}/admin/logs" class="row g-3 align-items-end">
