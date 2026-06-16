@@ -16,9 +16,9 @@ import org.hibernate.Transaction;
 
 import java.io.IOException;
 
-@WebServlet("/login-google")
+@WebServlet("/login-github")
 @Slf4j
-public class LoginGoogleServlet extends HttpServlet {
+public class LoginGithubServlet extends HttpServlet {
     private AuthService authService;
     private CartService cartService;
 
@@ -33,7 +33,7 @@ public class LoginGoogleServlet extends HttpServlet {
         String code = req.getParameter("code");
 
         try {
-            User user = authService.loginWithGoogle(code);
+            User user = authService.loginWithGithub(code);
             HttpSession session = req.getSession(false);
             Object redirectAfterLogin = session == null ? null : session.getAttribute("redirectAfterLogin");
             Object cartAttribute = session == null ? null : session.getAttribute("cart");
@@ -57,8 +57,8 @@ public class LoginGoogleServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/home");
         } catch (Exception e) {
             rollbackCurrentTransaction();
-            log.warn("Đăng nhập Google thất bại", e);
-            req.getSession(true).setAttribute("error", "Đăng nhập Google thất bại.");
+            log.warn("Đăng nhập GitHub thất bại", e);
+            req.getSession(true).setAttribute("error", "Đăng nhập GitHub thất bại.");
             resp.sendRedirect(req.getContextPath() + "/login");
         }
     }
@@ -70,7 +70,7 @@ public class LoginGoogleServlet extends HttpServlet {
                 transaction.rollback();
             }
         } catch (RuntimeException rollbackError) {
-            log.warn("Không thể rollback transaction đăng nhập Google", rollbackError);
+            log.warn("Không thể rollback transaction đăng nhập GitHub", rollbackError);
         }
     }
 }

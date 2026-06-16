@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.common.utils.GsonUtil;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartSummaryService;
 
@@ -23,7 +23,7 @@ public class CartSummaryController extends HttpServlet {
             throws IOException {
 
         HttpSession session = request.getSession(true);
-        Cart cart = cartService.getCartForDisplay(session);
+        CartEntity cart = cartService.getCartForDisplay(session);
         cartService.storeCart(session, cart);
 
         response.setContentType("application/json");
