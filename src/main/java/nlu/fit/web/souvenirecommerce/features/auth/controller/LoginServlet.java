@@ -43,9 +43,7 @@ public class LoginServlet extends HttpServlet {
                 session.removeAttribute("error");
             }
         }
-        req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
-        req.setAttribute("githubAuthUrl", buildGithubAuthUrl());
-        req.setAttribute("facebookAuthUrl", buildFacebookAuthUrl());
+        exposeOAuthUrls(req);
         RecaptchaUtil.expose(req, getServletContext());
 
         req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
@@ -73,9 +71,7 @@ public class LoginServlet extends HttpServlet {
 
         if (!RecaptchaUtil.verify(req, getServletContext())) {
             req.setAttribute("error", "Vui lòng xác nhận bạn không phải robot.");
-            req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
-            req.setAttribute("githubAuthUrl", buildGithubAuthUrl());
-            req.setAttribute("facebookAuthUrl", buildFacebookAuthUrl());
+            exposeOAuthUrls(req);
             RecaptchaUtil.expose(req, getServletContext());
             req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
             return;
@@ -106,9 +102,7 @@ public class LoginServlet extends HttpServlet {
             log.warn("Đăng nhập thất bại cho tài khoản: {}", loginDetail);
 
             req.setAttribute("error", "Email, số điện thoại hoặc mật khẩu không đúng");
-            req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
-            req.setAttribute("githubAuthUrl", buildGithubAuthUrl());
-            req.setAttribute("facebookAuthUrl", buildFacebookAuthUrl());
+            exposeOAuthUrls(req);
             RecaptchaUtil.expose(req, getServletContext());
 
             req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
@@ -128,7 +122,16 @@ public class LoginServlet extends HttpServlet {
         cartService.storeCart(session, cart);
     }
 
+    private void exposeOAuthUrls(HttpServletRequest req) {
+        req.setAttribute("googleAuthUrl", buildGoogleAuthUrl());
+        req.setAttribute("githubAuthUrl", buildGithubAuthUrl());
+        req.setAttribute("facebookAuthUrl", buildFacebookAuthUrl());
+    }
+
     private String buildGoogleAuthUrl() {
+        if (isBlank(Constants.GOOGLE_CLIENT_ID) || Constants.GOOGLE_CLIENT_ID.startsWith("null.")) {
+            return null;
+        }
         return "https://accounts.google.com/o/oauth2/auth?scope=email%20profile&redirect_uri="
                 + URLEncoder.encode(Constants.GOOGLE_REDIRECT_URI, StandardCharsets.UTF_8)
                 + "&response_type=code&client_id="
@@ -137,6 +140,9 @@ public class LoginServlet extends HttpServlet {
     }
 
     private String buildGithubAuthUrl() {
+        if (isBlank(Constants.GITHUB_CLIENT_ID)) {
+            return null;
+        }
         return "https://github.com/login/oauth/authorize?scope="
                 + URLEncoder.encode("read:user user:email", StandardCharsets.UTF_8)
                 + "&redirect_uri="
@@ -146,11 +152,18 @@ public class LoginServlet extends HttpServlet {
     }
 
     private String buildFacebookAuthUrl() {
+        if (isBlank(Constants.FACEBOOK_CLIENT_ID)) {
+            return null;
+        }
         return "https://www.facebook.com/v19.0/dialog/oauth?scope="
                 + URLEncoder.encode("email,public_profile", StandardCharsets.UTF_8)
                 + "&redirect_uri="
                 + URLEncoder.encode(Constants.FACEBOOK_REDIRECT_URI, StandardCharsets.UTF_8)
                 + "&client_id="
                 + URLEncoder.encode(Constants.FACEBOOK_CLIENT_ID, StandardCharsets.UTF_8);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
 <c:set var="currentUser" value="${sessionScope.currentUser}"/>
 
@@ -135,6 +136,41 @@
 
 <!-- Order List Section -->
 <c:if test="${empty requestScope.order}">
+    <section class="orders-toolbar">
+        <nav class="orders-status-tabs" aria-label="Lọc trạng thái đơn hàng">
+            <c:forEach items="${requestScope.statusTabs}" var="tab">
+                <c:url var="tabUrl" value="/user/orders">
+                    <c:param name="status" value="${tab.code}"/>
+                    <c:if test="${not empty requestScope.keyword}">
+                        <c:param name="q" value="${requestScope.keyword}"/>
+                    </c:if>
+                </c:url>
+                <a class="orders-status-tab ${requestScope.selectedStatus eq tab.code || (empty requestScope.selectedStatus && tab.code eq 'all') ? 'is-active' : ''}"
+                   href="${tabUrl}">
+                    <span>${tab.label}</span>
+                    <em>${tab.count}</em>
+                </a>
+            </c:forEach>
+        </nav>
+
+        <form class="orders-search" method="get" action="${pageContext.request.contextPath}/user/orders">
+            <c:if test="${not empty requestScope.selectedStatus && requestScope.selectedStatus ne 'all'}">
+                <input type="hidden" name="status" value="${requestScope.selectedStatus}">
+            </c:if>
+            <label class="orders-search__field">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="search"
+                       name="q"
+                       value="${fn:escapeXml(requestScope.keyword)}"
+                       placeholder="Tìm theo mã đơn hàng hoặc tên sản phẩm">
+            </label>
+            <button type="submit" class="orders-search__button">Tìm kiếm</button>
+            <c:if test="${not empty requestScope.keyword || (not empty requestScope.selectedStatus && requestScope.selectedStatus ne 'all')}">
+                <a class="orders-search__reset" href="${pageContext.request.contextPath}/user/orders">Xóa lọc</a>
+            </c:if>
+        </form>
+    </section>
+
     <c:choose>
         <c:when test="${not empty requestScope.orderList}">
             <section class="profile-panel orders-section">
@@ -143,49 +179,68 @@
                         <article class="order-card">
                             <div class="order-card__header">
                                 <div class="order-card__info">
-                                    <h3>Đơn hàng #${order.id}</h3>
+                                    <h3>Đơn hàng #${order.orderId}</h3>
                                     <p class="order-date">
                                         <fmt:formatDate value="${order.orderDate}" pattern="dd/MM/yyyy HH:mm"/>
+                                        <span>· ${order.itemCount} sản phẩm</span>
                                     </p>
                                 </div>
                                 <div class="order-card__status">
-                                    <c:set var="listStatusClass" value="PENDING"/>
-                                    <c:choose>
-                                        <c:when test="${order.status eq 'Chờ xác nhận' || order.status eq 'PENDING'}"><c:set var="listStatusClass" value="PENDING"/></c:when>
-                                        <c:when test="${order.status eq 'Đang xử lý' || order.status eq 'Đã xác nhận' || order.status eq 'CONFIRMED'}"><c:set var="listStatusClass" value="CONFIRMED"/></c:when>
-                                        <c:when test="${order.status eq 'Đang giao' || order.status eq 'SHIPPED'}"><c:set var="listStatusClass" value="SHIPPED"/></c:when>
-                                        <c:when test="${order.status eq 'Hoàn thành' || order.status eq 'Đã giao' || order.status eq 'DELIVERED'}"><c:set var="listStatusClass" value="DELIVERED"/></c:when>
-                                        <c:when test="${order.status eq 'Đã hủy' || order.status eq 'CANCELLED'}"><c:set var="listStatusClass" value="CANCELLED"/></c:when>
-                                        <c:otherwise><c:set var="listStatusClass" value="PENDING"/></c:otherwise>
-                                    </c:choose>
-                                    <span class="order-status order-status--${listStatusClass}">
-                                        <c:choose>
-                                            <c:when test="${order.status eq 'PENDING'}">Chờ xác nhận</c:when>
-                                            <c:when test="${order.status eq 'CONFIRMED'}">Đã xác nhận</c:when>
-                                            <c:when test="${order.status eq 'SHIPPED'}">Đang gửi</c:when>
-                                            <c:when test="${order.status eq 'DELIVERED'}">Đã giao</c:when>
-                                            <c:when test="${order.status eq 'CANCELLED'}">Đã hủy</c:when>
-                                            <c:otherwise>${order.status}</c:otherwise>
-                                        </c:choose>
+                                    <span class="order-status order-status--${order.statusClass}">
+                                        ${order.statusText}
                                     </span>
                                 </div>
                             </div>
 
                             <div class="order-card__body">
-                                <div class="order-total">
-                                    <span>Tổng tiền:</span>
-                                    <strong>
-                                        <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="₫"/>
-                                    </strong>
+                                <div class="order-card__items">
+                                    <c:forEach items="${order.items}" var="item">
+                                        <div class="order-product">
+                                            <c:url var="itemImageUrl" value="${item.productImagePath}"/>
+                                            <img class="order-product__image"
+                                                 src="${itemImageUrl}"
+                                                 alt="${fn:escapeXml(item.productName)}"
+                                                 loading="lazy">
+                                            <div class="order-product__content">
+                                                <a class="order-product__name"
+                                                   href="${pageContext.request.contextPath}/product?id=${item.productId}">
+                                                    ${item.productName}
+                                                </a>
+                                                <span class="order-product__quantity">Số lượng: ${item.quantity}</span>
+                                            </div>
+                                            <div class="order-product__price">
+                                                <fmt:formatNumber value="${item.priceAtPurchase}" type="currency" currencySymbol="₫"/>
+                                            </div>
+                                        </div>
+                                    </c:forEach>
+                                    <c:if test="${empty order.items}">
+                                        <div class="order-product order-product--empty">
+                                            <span>Đơn hàng này chưa có thông tin sản phẩm.</span>
+                                        </div>
+                                    </c:if>
                                 </div>
                             </div>
 
                             <div class="order-card__footer">
-                                <a href="${pageContext.request.contextPath}/user/orders?action=detail&id=${order.id}"
-                                   class="primary-button">
-                                    <i class="fa-solid fa-eye"></i>
-                                    <span>Xem chi tiết</span>
-                                </a>
+                                <div class="order-total">
+                                    <span>Thành tiền:</span>
+                                    <strong>
+                                        <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="₫"/>
+                                    </strong>
+                                </div>
+                                <div class="order-card__actions">
+                                    <c:if test="${order.repayable}">
+                                        <a href="${order.repayUrl}" class="secondary-button order-action-button">
+                                            <i class="fa-solid fa-credit-card"></i>
+                                            <span>Thanh toán lại</span>
+                                        </a>
+                                    </c:if>
+                                    <a href="${pageContext.request.contextPath}/user/orders?action=detail&id=${order.orderId}"
+                                       class="primary-button order-action-button">
+                                        <i class="fa-solid fa-eye"></i>
+                                        <span>Xem chi tiết</span>
+                                    </a>
+                                </div>
                             </div>
                         </article>
                     </c:forEach>
@@ -196,7 +251,8 @@
             <section class="profile-panel">
                 <div class="empty-state">
                     <i class="fa-regular fa-box-open"></i>
-                    <p>Bạn chưa có đơn hàng nào.</p>
+                    <p>Không tìm thấy đơn hàng phù hợp.</p>
+                    <a href="${pageContext.request.contextPath}/user/orders" class="text-button">Xem tất cả đơn hàng</a>
                 </div>
             </section>
         </c:otherwise>
