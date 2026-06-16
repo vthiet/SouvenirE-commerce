@@ -281,6 +281,146 @@ public class AuthRepository extends AbsBaseRepository<Long, User> {
                 });
     }
 
+    public User upsertGithubUser(
+            String providerUserId,
+            String email,
+            String firstName,
+            String lastName,
+            String avatarUrl
+    ) {
+        if (providerUserId == null || providerUserId.isBlank()) {
+            throw new IllegalArgumentException("GitHub providerUserId is required");
+        }
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("GitHub email is required");
+        }
+
+        User user = getSession().createQuery("""
+                        select distinct u from OAuthAccount oa
+                        join oa.user u
+                        left join fetch u.credentials
+                        left join fetch u.roles r
+                        left join fetch r.permissions
+                        left join fetch u.oauthAccounts
+                        where lower(oa.provider) = 'github'
+                          and oa.providerUserId = :providerUserId
+                        """, User.class)
+                .setParameter("providerUserId", providerUserId.trim())
+                .uniqueResultOptional()
+                .orElse(null);
+
+        if (user == null) {
+            user = findByUserEmail(email).orElse(null);
+        }
+
+        if (user == null) {
+            user = User.builder()
+                    .email(email.trim().toLowerCase())
+                    .firstName(normalizeName(firstName, "GitHub"))
+                    .lastName(normalizeName(lastName, "User"))
+                    .phone("0000000000")
+                    .gender(Gender.OTHER)
+                    .avatarUrl(avatarUrl == null || avatarUrl.isBlank() ? "default-avatar.png" : avatarUrl.trim())
+                    .isActive(true)
+                    .roles(new HashSet<>())
+                    .build();
+            user.getRoles().add(resolveOrCreateCustomerRole());
+            getSession().persist(user);
+        }
+
+        OAuthAccount oauthAccount = getSession().createQuery("""
+                        from OAuthAccount oa
+                        where lower(oa.provider) = 'github'
+                          and oa.providerUserId = :providerUserId
+                        """, OAuthAccount.class)
+                .setParameter("providerUserId", providerUserId.trim())
+                .uniqueResultOptional()
+                .orElse(null);
+
+        if (oauthAccount == null) {
+            oauthAccount = OAuthAccount.builder()
+                    .user(user)
+                    .provider("github")
+                    .providerUserId(providerUserId.trim())
+                    .providerEmail(email.trim().toLowerCase())
+                    .tokenExpiresAt(LocalDateTime.now().plusHours(1))
+                    .build();
+            getSession().persist(oauthAccount);
+        } else {
+            oauthAccount.setUser(user);
+            oauthAccount.setProviderEmail(email.trim().toLowerCase());
+            oauthAccount.setTokenExpiresAt(LocalDateTime.now().plusHours(1));
+            getSession().merge(oauthAccount);
+        }
+
+        user.setUpdatedAt(LocalDateTime.now());
+        user.setActive(true);
+        return getSession().merge(user);
+    }
+
+    public void createResetPasswordVerificationCode(String email, String code, LocalDateTime expiresAt) {
+        VerificationCode verificationCode = VerificationCode.builder()
+                .email(email.trim().toLowerCase())
+                .code(code)
+                .purpose(VerificationCodePurpose.RESET_PASSWORD)
+                .expiresAt(expiresAt)
+                .build();
+        getSession().persist(verificationCode);
+    }
+
+    public boolean verifyResetPasswordCode(String email, String code) {
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<VerificationCode> verificationCode = getSession().createQuery("""
+                        select vc from VerificationCode vc
+                        where lower(vc.email) = lower(:email)
+                          and vc.code = :code
+                          and vc.purpose = :purpose
+                          and vc.verifiedAt is null
+                          and vc.expiresAt >= :now
+                        order by vc.createdAt desc
+                        """, VerificationCode.class)
+                .setParameter("email", email.trim().toLowerCase())
+                .setParameter("code", code)
+                .setParameter("purpose", VerificationCodePurpose.RESET_PASSWORD)
+                .setParameter("now", now)
+                .setMaxResults(1)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .uniqueResultOptional();
+
+        if (verificationCode.isEmpty()) {
+            return false;
+        }
+
+        verificationCode.get().setVerifiedAt(now);
+        getSession().merge(verificationCode.get());
+        return true;
+    }
+
+    public boolean resetPassword(String email, String newPassword) {
+        Optional<User> userOpt = findByUserEmail(email);
+        if (userOpt.isEmpty()) {
+            return false;
+        }
+        User user = userOpt.get();
+        UserCredential credentials = user.getCredentials();
+        if (credentials == null) {
+            credentials = UserCredential.builder()
+                    .user(user)
+                    .passwordHash(PasswordUtil.hashPassword(newPassword))
+                    .emailVerified(true)
+                    .build();
+            user.setCredentials(credentials);
+            getSession().persist(credentials);
+        } else {
+            credentials.setPasswordHash(PasswordUtil.hashPassword(newPassword));
+            getSession().merge(credentials);
+        }
+        user.setUpdatedAt(LocalDateTime.now());
+        getSession().merge(user);
+        return true;
+    }
+
     private String normalizeName(String value, String fallback) {
         if (value == null || value.isBlank()) {
             return fallback;

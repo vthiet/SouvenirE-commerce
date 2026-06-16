@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 
 import java.io.IOException;
@@ -29,23 +29,13 @@ public class RemoveCartController extends HttpServlet {
         try {
             Long productId = Long.parseLong(request.getParameter("productId"));
             boolean removed = cartService.removeItem(session, productId);
-            Cart cart = cartService.getCartForDisplay(session);
+            CartEntity cart = cartService.getCartForDisplay(session);
             cartService.storeCart(session, cart);
 
-            if (removed) {
-                handleResponse(
-                        response,
-                        isAjax,
-                        true,
-                        cart.totalQuantity(),
-                        cart.total()
-                );
-            } else {
-                handleResponse(response, isAjax, false, cart.totalQuantity(), cart.total());
-            }
+            handleResponse(response, isAjax, removed, cart.totalQuantity(), cart.total());
 
         } catch (Exception e) {
-            Cart cart = cartService.getCartForDisplay(session);
+            CartEntity cart = cartService.getCartForDisplay(session);
             handleResponse(response, isAjax, false, cart.totalQuantity(), cart.total());
         }
     }
@@ -53,10 +43,8 @@ public class RemoveCartController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-
         doPost(request, response);
     }
-
 
     private void handleResponse(HttpServletResponse response,
                                 boolean isAjax,

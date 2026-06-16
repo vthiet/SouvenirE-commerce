@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.common.utils.GsonUtil;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartSummaryService;
 
@@ -49,12 +49,11 @@ public class AddCartServlet extends HttpServlet {
                         """);
                 return;
             }
-
             response.sendRedirect(request.getContextPath() + "/home");
             return;
         }
 
-        Cart cart = cartService.getCartForDisplay(session);
+        CartEntity cart = cartService.getCartForDisplay(session);
         cartService.storeCart(session, cart);
 
         if ("true".equals(request.getParameter("buyNow"))) {
@@ -69,7 +68,7 @@ public class AddCartServlet extends HttpServlet {
             out.print(GsonUtil.getGson().toJson(cartSummaryService.buildSummary(cart, request.getContextPath())));
             return;
         }
- 
+
         response.sendRedirect(request.getHeader("Referer"));
     }
 

@@ -1,8 +1,8 @@
 package nlu.fit.web.souvenirecommerce.common.utils;
 
 import jakarta.persistence.EntityManager;
-import nlu.fit.web.souvenirecommerce.features.cart.model.NewCart;
-import nlu.fit.web.souvenirecommerce.features.cart.model.NewCartItem;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.model.entity.*;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -48,8 +48,8 @@ public class HibernateUtil {
         configuration.addAnnotatedClass(Promotion.class);
         configuration.addAnnotatedClass(ProductSpecification.class);
         configuration.addAnnotatedClass(Review.class);
-        configuration.addAnnotatedClass(NewCart.class);
-        configuration.addAnnotatedClass(NewCartItem.class);
+        configuration.addAnnotatedClass(CartEntity.class);
+        configuration.addAnnotatedClass(CartItemEntity.class);
     }
 
     public static SessionFactory getSessionFactory() {

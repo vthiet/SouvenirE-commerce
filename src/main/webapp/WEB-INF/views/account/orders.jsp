@@ -28,12 +28,21 @@
                 </div>
                 <div class="info-item">
                     <label>Ngày đặt hàng</label>
-                    <p><fmt:formatDate value="${requestScope.order.createdAt}" pattern="dd/MM/yyyy HH:mm"/></p>
+                    <p><fmt:formatDate value="${requestScope.order.orderDate}" pattern="dd/MM/yyyy HH:mm"/></p>
                 </div>
                 <div class="info-item">
                     <label>Trạng thái</label>
                     <p>
-                        <span class="order-status order-status--${requestScope.order.status}">
+                        <c:set var="statusClass" value="PENDING"/>
+                        <c:choose>
+                            <c:when test="${requestScope.order.status eq 'Chờ xác nhận' || requestScope.order.status eq 'PENDING'}"><c:set var="statusClass" value="PENDING"/></c:when>
+                            <c:when test="${requestScope.order.status eq 'Đang xử lý' || requestScope.order.status eq 'Đã xác nhận' || requestScope.order.status eq 'CONFIRMED'}"><c:set var="statusClass" value="CONFIRMED"/></c:when>
+                            <c:when test="${requestScope.order.status eq 'Đang giao' || requestScope.order.status eq 'SHIPPED'}"><c:set var="statusClass" value="SHIPPED"/></c:when>
+                            <c:when test="${requestScope.order.status eq 'Hoàn thành' || requestScope.order.status eq 'Đã giao' || requestScope.order.status eq 'DELIVERED'}"><c:set var="statusClass" value="DELIVERED"/></c:when>
+                            <c:when test="${requestScope.order.status eq 'Đã hủy' || requestScope.order.status eq 'CANCELLED'}"><c:set var="statusClass" value="CANCELLED"/></c:when>
+                            <c:otherwise><c:set var="statusClass" value="PENDING"/></c:otherwise>
+                        </c:choose>
+                        <span class="order-status order-status--${statusClass}">
                             <c:choose>
                                 <c:when test="${requestScope.order.status eq 'PENDING'}">Chờ xác nhận</c:when>
                                 <c:when test="${requestScope.order.status eq 'CONFIRMED'}">Đã xác nhận</c:when>
@@ -64,7 +73,7 @@
                     <div class="item-details">
                         <span>x${item.quantity}</span>
                         <span class="item-price">
-                            <fmt:formatNumber value="${item.unitPrice}" type="currency" currencySymbol="₫"/>
+                            <fmt:formatNumber value="${item.priceAtPurchase}" type="currency" currencySymbol="₫"/>
                         </span>
                     </div>
                 </div>
@@ -92,11 +101,20 @@
                                 <div class="order-card__info">
                                     <h3>Đơn hàng #${order.id}</h3>
                                     <p class="order-date">
-                                        <fmt:formatDate value="${order.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
+                                        <fmt:formatDate value="${order.orderDate}" pattern="dd/MM/yyyy HH:mm"/>
                                     </p>
                                 </div>
                                 <div class="order-card__status">
-                                    <span class="order-status order-status--${order.status}">
+                                    <c:set var="listStatusClass" value="PENDING"/>
+                                    <c:choose>
+                                        <c:when test="${order.status eq 'Chờ xác nhận' || order.status eq 'PENDING'}"><c:set var="listStatusClass" value="PENDING"/></c:when>
+                                        <c:when test="${order.status eq 'Đang xử lý' || order.status eq 'Đã xác nhận' || order.status eq 'CONFIRMED'}"><c:set var="listStatusClass" value="CONFIRMED"/></c:when>
+                                        <c:when test="${order.status eq 'Đang giao' || order.status eq 'SHIPPED'}"><c:set var="listStatusClass" value="SHIPPED"/></c:when>
+                                        <c:when test="${order.status eq 'Hoàn thành' || order.status eq 'Đã giao' || order.status eq 'DELIVERED'}"><c:set var="listStatusClass" value="DELIVERED"/></c:when>
+                                        <c:when test="${order.status eq 'Đã hủy' || order.status eq 'CANCELLED'}"><c:set var="listStatusClass" value="CANCELLED"/></c:when>
+                                        <c:otherwise><c:set var="listStatusClass" value="PENDING"/></c:otherwise>
+                                    </c:choose>
+                                    <span class="order-status order-status--${listStatusClass}">
                                         <c:choose>
                                             <c:when test="${order.status eq 'PENDING'}">Chờ xác nhận</c:when>
                                             <c:when test="${order.status eq 'CONFIRMED'}">Đã xác nhận</c:when>

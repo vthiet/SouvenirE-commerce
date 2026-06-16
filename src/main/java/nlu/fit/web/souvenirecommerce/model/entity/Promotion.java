@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "promotions")
+
 @Getter
 @Setter
 @NoArgsConstructor

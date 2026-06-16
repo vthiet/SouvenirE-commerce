@@ -2,9 +2,11 @@ package nlu.fit.web.souvenirecommerce.features.auth.service;
 
 import jakarta.mail.MessagingException;
 import nlu.fit.web.souvenirecommerce.features.auth.dto.GooglePojo;
+import nlu.fit.web.souvenirecommerce.features.auth.dto.GithubPojo;
 import nlu.fit.web.souvenirecommerce.features.auth.repository.AuthRepository;
 import nlu.fit.web.souvenirecommerce.features.auth.service.impl.EmailServiceImpl;
 import nlu.fit.web.souvenirecommerce.features.auth.util.GoogleUtils;
+import nlu.fit.web.souvenirecommerce.features.auth.util.GithubUtils;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
@@ -71,6 +73,58 @@ public class AuthService {
         );
     }
 
+    public GithubPojo processGithubLogin(String code) throws IOException {
+        if (code == null || code.isEmpty()){
+            throw new IllegalArgumentException("Code is invalid");
+        }
+
+        String accessToken = GithubUtils.getToken(code);
+
+        GithubPojo githubUser = GithubUtils.getUserInfo(accessToken);
+
+        if (githubUser == null || githubUser.getId() == null) {
+            throw new IllegalStateException("GitHub ID is null");
+        }
+
+        if (githubUser.getEmail() == null || githubUser.getEmail().isBlank()) {
+            String email = GithubUtils.getEmail(accessToken);
+            githubUser.setEmail(email);
+        }
+
+        return githubUser;
+    }
+
+    public User loginWithGithub(String code) throws IOException {
+        GithubPojo githubUser = processGithubLogin(code);
+
+        String name = githubUser.getName();
+        String login = githubUser.getLogin();
+        String firstName = "GitHub";
+        String lastName = "User";
+        if (name != null && !name.trim().isEmpty()) {
+            String trimmed = name.trim();
+            int lastSpaceIndex = trimmed.lastIndexOf(' ');
+            if (lastSpaceIndex > 0) {
+                firstName = trimmed.substring(0, lastSpaceIndex).trim();
+                lastName = trimmed.substring(lastSpaceIndex + 1).trim();
+            } else {
+                firstName = trimmed;
+                lastName = "User";
+            }
+        } else if (login != null && !login.trim().isEmpty()) {
+            firstName = login.trim();
+            lastName = "User";
+        }
+
+        return authRepository.upsertGithubUser(
+                githubUser.getId(),
+                githubUser.getEmail(),
+                firstName,
+                lastName,
+                githubUser.getAvatarUrl()
+        );
+    }
+
     public Optional<User> createUser(String email, String password, String firstName, String lastName, String phone, String gender) {
         return authRepository.createUser(email, password, firstName, lastName, phone, gender);
     }
@@ -92,5 +146,31 @@ public class AuthService {
             throw new IllegalArgumentException("Email này đã được đăng ký");
         }
         return authRepository.verifySignupCode(email, code);
+    }
+
+    public LocalDateTime sendResetPasswordCode(String email) throws MessagingException {
+        if (!hasEmailExist(email)) {
+            throw new IllegalArgumentException("Email này chưa được đăng ký trong hệ thống");
+        }
+
+        String code = String.format("%06d", RANDOM.nextInt(1_000_000));
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
+        authRepository.createResetPasswordVerificationCode(email, code, expiresAt);
+        emailService.sendResetPasswordCode(email, code);
+        return expiresAt;
+    }
+
+    public boolean verifyResetPasswordCode(String email, String code) {
+        if (!hasEmailExist(email)) {
+            throw new IllegalArgumentException("Email này chưa được đăng ký trong hệ thống");
+        }
+        return authRepository.verifyResetPasswordCode(email, code);
+    }
+
+    public boolean resetPassword(String email, String newPassword) {
+        if (!hasEmailExist(email)) {
+            throw new IllegalArgumentException("Email này chưa được đăng ký trong hệ thống");
+        }
+        return authRepository.resetPassword(email, newPassword);
     }
 }

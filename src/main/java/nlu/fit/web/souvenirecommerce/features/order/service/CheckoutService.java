@@ -2,8 +2,8 @@ package nlu.fit.web.souvenirecommerce.features.order.service;
 
 import nlu.fit.web.souvenirecommerce.model.enums.OrderStatusCode;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
-import nlu.fit.web.souvenirecommerce.features.cart.model.Cart;
-import nlu.fit.web.souvenirecommerce.features.cart.model.CartItem;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
+import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutRequest;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutResult;
@@ -37,10 +37,12 @@ public class CheckoutService {
     private final AddressService addressService = new AddressService();
     private final PaymentGatewayRegistry paymentGatewayRegistry = new PaymentGatewayRegistry();
     private final GhnService ghnService = new GhnService();
-    public CheckoutResult checkout(User user, Cart cart, CheckoutRequest request) {
+
+    public CheckoutResult checkout(User user, CartEntity cart, CheckoutRequest request) {
         return checkout(user, cart, request, null);
     }
-    public CheckoutResult checkout(User user, Cart cart, CheckoutRequest request, PaymentContext paymentContext) {
+
+    public CheckoutResult checkout(User user, CartEntity cart, CheckoutRequest request, PaymentContext paymentContext) {
         validateUser(user);
         validateCart(cart);
         PaymentMethod paymentMethod = request.getPaymentMethod() == null ? PaymentMethod.COD : request.getPaymentMethod();
@@ -61,12 +63,12 @@ public class CheckoutService {
                 .build();
 
         BigDecimal totalAmount = BigDecimal.ZERO;
-        for (CartItem cartItem : cart.getItems()) {
+        for (CartItemEntity cartItem : cart.getItems()) {
             Product product = productRepository.findById(cartItem.getProduct().getId())
                     .orElseThrow(() -> new CheckoutException("Sản phẩm không tồn tại"));
             validateStock(product, cartItem.getQuantity());
 
-            BigDecimal price = BigDecimal.valueOf(cartItem.getPrice());
+            BigDecimal price = BigDecimal.valueOf(cartItem.getUnitPrice());
             order.addItem(OrderItem.builder()
                     .product(product)
                     .quantity(cartItem.getQuantity())
@@ -163,9 +165,7 @@ public class CheckoutService {
                 return ghnService.calculateFee(address.getGhnDistrictId(), address.getGhnWardCode());
             }
         } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
         }
 
         if (request.getShippingFee() != null && request.getShippingFee() >= 0) {
@@ -183,9 +183,7 @@ public class CheckoutService {
             order.setGhnFinishDate(result.finishDate());
             order.setGhnUpdatedAt(result.updatedAt());
         } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             order.setGhnStatus("create_failed");
             order.setGhnUpdatedAt(LocalDateTime.now());
         }
@@ -208,16 +206,14 @@ public class CheckoutService {
         }
     }
 
-    private void validateCart(Cart cart) {
+    private void validateCart(CartEntity cart) {
         if (cart == null || cart.totalQuantity() <= 0) {
             throw new CheckoutException("Giỏ hàng đang trống");
         }
     }
 
     private void validateStock(Product product, int requestedQuantity) {
-        if (requestedQuantity <= 0) {
-            throw new CheckoutException("Số lượng sản phẩm không hợp lệ");
-        }
+        if (requestedQuantity <= 0) throw new CheckoutException("Số lượng sản phẩm không hợp lệ");
         if (product.getStockQuantity() < requestedQuantity) {
             throw new CheckoutException("Sản phẩm " + product.getName() + " không đủ tồn kho");
         }
