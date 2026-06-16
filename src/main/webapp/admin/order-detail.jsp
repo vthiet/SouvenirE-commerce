@@ -31,6 +31,16 @@
 
         <main class="dashboard-content">
             <div class="container-fluid px-3 px-lg-4 py-4 admin-page order-detail-page">
+                <c:if test="${not empty param.success}">
+                    <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
+                        <i class="fas fa-check-circle"></i> Thao tác xử lý đơn hàng thành công!
+                    </div>
+                </c:if>
+                <c:if test="${not empty param.error}">
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
+                        <i class="fas fa-exclamation-triangle"></i> Lỗi: <c:out value="${param.error}"/>
+                    </div>
+                </c:if>
                 <section class="admin-page-hero order-detail-hero">
                     <div class="hero-copy">
                         <a href="${ctx}/admin/orders" class="detail-back-link">
@@ -88,10 +98,52 @@
                                 In đơn hàng
                             </button>
                             <c:if test="${canUpdateOrder}">
-                                <button type="button" class="btn btn-primary order-action-btn" onclick="showUpdateStatusModal(${orderView.id}, '${orderView.status}')">
-                                    <i class="fas fa-pen-to-square"></i>
-                                    Cập nhật trạng thái
-                                </button>
+                                <c:choose>
+                                    <c:when test="${orderView.status == 'Chờ xác nhận'}">
+                                        <form method="post" action="${ctx}/admin/order-detail" style="display:inline;">
+                                            <input type="hidden" name="orderId" value="${orderView.id}">
+                                            <input type="hidden" name="action" value="confirm">
+                                            <button type="submit" class="btn btn-success order-action-btn">
+                                                <i class="fas fa-check"></i> Nhận đơn
+                                            </button>
+                                        </form>
+                                        <button type="button" class="btn btn-danger order-action-btn" onclick="showCancelModal(${orderView.id})">
+                                            <i class="fas fa-times"></i> Từ chối đơn
+                                        </button>
+                                    </c:when>
+                                    <c:when test="${orderView.status == 'Đang xử lý'}">
+                                        <form method="post" action="${ctx}/admin/order-detail" style="display:inline;">
+                                            <input type="hidden" name="orderId" value="${orderView.id}">
+                                            <input type="hidden" name="action" value="ship">
+                                            <button type="submit" class="btn btn-primary order-action-btn">
+                                                <i class="fas fa-shipping-fast"></i> Bắt đầu giao hàng
+                                            </button>
+                                        </form>
+                                        <button type="button" class="btn btn-danger order-action-btn" onclick="showCancelModal(${orderView.id})">
+                                            <i class="fas fa-times"></i> Hủy đơn
+                                        </button>
+                                    </c:when>
+                                    <c:when test="${orderView.status == 'Đang giao'}">
+                                        <form method="post" action="${ctx}/admin/order-detail" style="display:inline;">
+                                            <input type="hidden" name="orderId" value="${orderView.id}">
+                                            <input type="hidden" name="action" value="complete">
+                                            <button type="submit" class="btn btn-success order-action-btn">
+                                                <i class="fas fa-check-circle"></i> Hoàn thành đơn hàng
+                                            </button>
+                                        </form>
+                                        <button type="button" class="btn btn-danger order-action-btn" onclick="showCancelModal(${orderView.id})">
+                                            <i class="fas fa-times"></i> Hủy đơn (Giao thất bại)
+                                        </button>
+                                        <a href="${ctx}/admin/order-detail?id=${orderView.id}&action=syncGhn" class="btn btn-info order-action-btn text-white">
+                                            <i class="fas fa-sync"></i> Đồng bộ GHN
+                                        </a>
+                                    </c:when>
+                                    <c:when test="${orderView.status == 'Chờ thanh toán'}">
+                                        <button type="button" class="btn btn-danger order-action-btn" onclick="showCancelModal(${orderView.id})">
+                                            <i class="fas fa-times"></i> Hủy đơn
+                                        </button>
+                                    </c:when>
+                                </c:choose>
                             </c:if>
                         </div>
                     </div>
@@ -221,6 +273,37 @@
                                 </div>
                             </div>
                         </article>
+
+                        <article class="card admin-panel-card order-section-card" style="margin-top: 24px;">
+                            <div class="card-header order-section-header">
+                                <div>
+                                    <h3>Lịch sử xử lý đơn hàng</h3>
+                                    <p class="orders-card-subtitle">Nhật ký chi tiết các bước vận hành hệ thống.</p>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="order-history-timeline" style="margin-left: 20px; border-left: 2px solid #e9ecef; padding-left: 20px; position: relative;">
+                                    <c:forEach items="${historyList}" var="history">
+                                        <div class="history-item" style="margin-bottom: 20px; position: relative;">
+                                            <span class="history-badge" style="position: absolute; left: -31px; top: 2px; width: 20px; height: 20px; border-radius: 50%; background-color: #0d6efd; border: 4px solid #fff;"></span>
+                                            <div style="font-size: 0.85rem; color: #6c757d;">
+                                                <fmt:formatDate value="${java.sql.Timestamp.valueOf(history.createdAt)}" pattern="dd/MM/yyyy HH:mm:ss"/> 
+                                                &middot; Thực hiện bởi: <strong><c:out value="${history.performedBy}"/></strong>
+                                            </div>
+                                            <div style="font-weight: 600; color: #212529; margin-top: 2px;">
+                                                Trạng thái: <span class="badge bg-secondary"><c:out value="${history.status}"/></span>
+                                            </div>
+                                            <div style="margin-top: 4px; color: #495057;">
+                                                <c:out value="${history.description}"/>
+                                            </div>
+                                        </div>
+                                    </c:forEach>
+                                    <c:if test="${empty historyList}">
+                                        <p class="text-muted">Chưa có nhật ký xử lý cho đơn hàng này.</p>
+                                    </c:if>
+                                </div>
+                            </div>
+                        </article>
                     </div>
 
                     <aside class="order-detail-aside">
@@ -305,69 +388,56 @@
     </div>
 </div>
 
-<div id="updateStatusModal" class="modal orders-modal" aria-hidden="true">
+<div id="cancelOrderModal" class="modal orders-modal" aria-hidden="true">
     <div class="modal-content orders-modal-content">
-        <div class="modal-header orders-modal-header">
+        <div class="modal-header orders-modal-header text-danger">
             <div>
-                <span class="orders-modal-kicker">Order action</span>
-                <h3>Cập nhật trạng thái đơn hàng</h3>
+                <span class="orders-modal-kicker text-danger">Hành động hủy</span>
+                <h3>Xác nhận hủy đơn hàng</h3>
             </div>
-            <button type="button" class="close-btn" onclick="closeUpdateStatusModal()" aria-label="Đóng">&times;</button>
+            <button type="button" class="close-btn" onclick="closeCancelModal()" aria-label="Đóng">&times;</button>
         </div>
-        <form id="updateStatusForm" method="post" action="${ctx}/admin/orders">
-            <input type="hidden" name="action" value="updateStatus">
-            <input type="hidden" name="orderId" id="updateOrderId">
+        <form method="post" action="${ctx}/admin/order-detail">
+            <input type="hidden" name="action" value="cancel">
+            <input type="hidden" name="orderId" id="cancelOrderId">
             <div class="modal-body orders-modal-body">
-                <div class="form-group">
-                    <label>Trạng thái hiện tại</label>
-                    <p id="currentStatus" class="orders-current-status"></p>
-                </div>
-                <div class="form-group">
-                    <label>Chọn trạng thái mới</label>
-                    <select name="status" id="newStatus" class="form-control" required>
-                        <option value="">-- Chọn trạng thái --</option>
-                        <option value="Chờ xác nhận">Chờ xác nhận</option>
-                        <option value="Đang xử lý">Đang xử lý</option>
-                        <option value="Đang giao">Đang giao</option>
-                        <option value="Hoàn thành">Hoàn thành</option>
-                        <option value="Đã hủy">Đã hủy</option>
-                    </select>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="cancelReason" style="font-weight:600; margin-bottom: 5px;">Lý do hủy đơn hàng <span class="text-danger">*</span></label>
+                    <textarea name="reason" id="cancelReason" class="form-control" placeholder="Nhập lý do hủy đơn hàng (Khách yêu cầu, Hết hàng, Giao hàng thất bại...)" required rows="3"></textarea>
                 </div>
             </div>
             <div class="modal-footer orders-modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeUpdateStatusModal()">Hủy</button>
-                <button type="submit" class="btn btn-primary">Cập nhật</button>
+                <button type="button" class="btn btn-secondary" onclick="closeCancelModal()">Quay lại</button>
+                <button type="submit" class="btn btn-danger">Xác nhận hủy</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-    function showUpdateStatusModal(orderId, currentStatus) {
-        document.getElementById('updateOrderId').value = orderId;
-        document.getElementById('currentStatus').textContent = currentStatus;
-        document.getElementById('newStatus').value = currentStatus;
-        document.getElementById('updateStatusModal').classList.add('show');
-        document.getElementById('updateStatusModal').setAttribute('aria-hidden', 'false');
+    function showCancelModal(orderId) {
+        document.getElementById('cancelOrderId').value = orderId;
+        document.getElementById('cancelOrderModal').classList.add('show');
+        document.getElementById('cancelOrderModal').setAttribute('aria-hidden', 'false');
     }
 
-    function closeUpdateStatusModal() {
-        const modal = document.getElementById('updateStatusModal');
+    function closeCancelModal() {
+        const modal = document.getElementById('cancelOrderModal');
         modal.classList.remove('show');
         modal.setAttribute('aria-hidden', 'true');
-        document.getElementById('updateStatusForm').reset();
+        document.getElementById('cancelReason').value = '';
     }
 
     window.addEventListener('click', function(event) {
-        const modal = document.getElementById('updateStatusModal');
-        if (event.target === modal) {
-            closeUpdateStatusModal();
+        const cancelModal = document.getElementById('cancelOrderModal');
+        if (event.target === cancelModal) {
+            closeCancelModal();
         }
     });
 
     window.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
-            closeUpdateStatusModal();
+            closeCancelModal();
         }
     });
 </script>

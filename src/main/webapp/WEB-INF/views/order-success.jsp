@@ -16,7 +16,7 @@
 </head>
 <body>
 <div class="page-container">
-    <jsp:include page="/views/common/header-renew.jsp"/>
+    <jsp:include page="/WEB-INF/layout/header.jsp"/>
     <main id="main-content" class="payment-page">
         <section class="payment-panel payment-result payment-result--success">
             <div class="payment-result__icon">
@@ -40,7 +40,7 @@
             </div>
         </section>
     </main>
-    <jsp:include page="/views/common/footer.jsp"/>
+    <jsp:include page="/WEB-INF/layout/footer.jsp"/>
 </div>
 </body>
 </html>

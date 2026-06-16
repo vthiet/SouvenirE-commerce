@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.shipping;
+package nlu.fit.web.souvenirecommerce.features.shipping.controller;
 
 import com.google.gson.JsonObject;
 import jakarta.servlet.ServletException;
@@ -6,6 +6,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import nlu.fit.web.souvenirecommerce.features.shipping.service.GhnService;
 import nlu.fit.web.souvenirecommerce.features.user.address.AddressService;
 import nlu.fit.web.souvenirecommerce.model.entity.Address;
 import nlu.fit.web.souvenirecommerce.model.entity.User;

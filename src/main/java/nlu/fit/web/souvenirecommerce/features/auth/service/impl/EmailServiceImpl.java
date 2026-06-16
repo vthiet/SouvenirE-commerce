@@ -55,6 +55,17 @@ public class EmailServiceImpl implements IEmailService {
         EmailUtil.send(userEmail, subject, htmlContent, type);
     }
 
+    public void sendChangePasswordCode(String userEmail, String otp) throws MessagingException {
+        String htmlContent = "<h1>Mã xác thực đổi mật khẩu INOLA</h1>" +
+                "<p>Vui lòng nhập mã xác thực sau để tiến hành đổi mật khẩu của bạn:</p>" +
+                "<p style='font-size:28px;font-weight:700;letter-spacing:6px'>" + otp + "</p>" +
+                "<p>Mã có hiệu lực trong 10 phút. Nếu bạn không thực hiện hành động này, vui lòng bỏ qua email.</p>";
+
+        String subject = "Mã xác thực đổi mật khẩu INOLA";
+        String type = EmailType.HTML.getMimeType();
+        EmailUtil.send(userEmail, subject, htmlContent, type);
+    }
+
     @Override
     public void send(String to, String subject, String content, String type) throws MessagingException {
         EmailUtil.send(to, subject, content, type);

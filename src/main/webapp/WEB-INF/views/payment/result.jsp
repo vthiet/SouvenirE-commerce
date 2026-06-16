@@ -17,7 +17,7 @@
 </head>
 <body>
 <div class="page-container">
-    <jsp:include page="/views/common/header-renew.jsp"/>
+    <jsp:include page="/WEB-INF/layout/header.jsp"/>
     <main id="main-content" class="payment-page">
         <section class="payment-panel payment-result payment-result--${paymentStatus eq 'SUCCESS' ? 'success' : paymentStatus eq 'FAILED' ? 'failed' : 'invalid'}">
             <div class="payment-result__icon">
@@ -51,7 +51,7 @@
                        href="${pageContext.request.contextPath}/payment/vnpay-create?orderId=${order.id}">
                         <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
                         Thanh toán lại
-                    </a>
+                     </a>
                 </c:if>
                 <a class="payment-action ${paymentStatus eq 'SUCCESS' ? 'payment-action--primary' : ''}"
                    href="${pageContext.request.contextPath}/user/orders">
@@ -61,7 +61,7 @@
             </div>
         </section>
     </main>
-    <jsp:include page="/views/common/footer.jsp"/>
+    <jsp:include page="/WEB-INF/layout/footer.jsp"/>
 </div>
 </body>
 </html>

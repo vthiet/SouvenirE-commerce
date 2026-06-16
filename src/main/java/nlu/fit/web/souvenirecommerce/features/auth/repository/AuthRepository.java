@@ -397,6 +397,45 @@ public class AuthRepository extends AbsBaseRepository<Long, User> {
         return true;
     }
 
+    public void createChangePasswordVerificationCode(String email, String code, LocalDateTime expiresAt) {
+        VerificationCode verificationCode = VerificationCode.builder()
+                .email(email.trim().toLowerCase())
+                .code(code)
+                .purpose(VerificationCodePurpose.CHANGE_PASSWORD)
+                .expiresAt(expiresAt)
+                .build();
+        getSession().persist(verificationCode);
+    }
+
+    public boolean verifyChangePasswordCode(String email, String code) {
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<VerificationCode> verificationCode = getSession().createQuery("""
+                        select vc from VerificationCode vc
+                        where lower(vc.email) = lower(:email)
+                          and vc.code = :code
+                          and vc.purpose = :purpose
+                          and vc.verifiedAt is null
+                          and vc.expiresAt >= :now
+                        order by vc.createdAt desc
+                        """, VerificationCode.class)
+                .setParameter("email", email.trim().toLowerCase())
+                .setParameter("code", code)
+                .setParameter("purpose", VerificationCodePurpose.CHANGE_PASSWORD)
+                .setParameter("now", now)
+                .setMaxResults(1)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .uniqueResultOptional();
+
+        if (verificationCode.isEmpty()) {
+            return false;
+        }
+
+        verificationCode.get().setVerifiedAt(now);
+        getSession().merge(verificationCode.get());
+        return true;
+    }
+
     public boolean resetPassword(String email, String newPassword) {
         Optional<User> userOpt = findByUserEmail(email);
         if (userOpt.isEmpty()) {

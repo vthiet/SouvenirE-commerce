@@ -1,9 +1,10 @@
-package nlu.fit.web.souvenirecommerce.features.shipping;
+package nlu.fit.web.souvenirecommerce.features.shipping.service;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import nlu.fit.web.souvenirecommerce.common.utils.ApplicationLoader;
+import nlu.fit.web.souvenirecommerce.features.shipping.ShippingProvider;
 import nlu.fit.web.souvenirecommerce.model.entity.Address;
 import nlu.fit.web.souvenirecommerce.model.entity.Order;
 import nlu.fit.web.souvenirecommerce.model.entity.OrderItem;
@@ -18,9 +19,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.List;
 
-public class GhnService {
+public class GhnService implements ShippingProvider {
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
@@ -84,9 +84,23 @@ public class GhnService {
         return BigDecimal.valueOf(fee - (fee % 10));
     }
 
-    public GhnOrderResult createOrder(Order order) throws IOException, InterruptedException {
+    @Override
+    public String getName() {
+        return "GHN";
+    }
+
+    @Override
+    public BigDecimal calculateFee(Address address) throws IOException, InterruptedException {
+        if (address == null) {
+            return BigDecimal.valueOf(30000);
+        }
+        return calculateFee(address.getGhnDistrictId(), address.getGhnWardCode());
+    }
+
+    @Override
+    public ShippingOrderResult createOrder(Order order) throws IOException, InterruptedException {
         if (simulation) {
-            return new GhnOrderResult(
+            return new ShippingOrderResult(
                     "SIM-" + order.getOrderCode(),
                     "ready_to_pick",
                     LocalDateTime.now().plusDays(3),
@@ -148,7 +162,7 @@ public class GhnService {
         body.add("items", items);
 
         JsonObject data = post("/v2/shipping-order/create", body).getAsJsonObject("data");
-        return new GhnOrderResult(
+        return new ShippingOrderResult(
                 stringValue(data, "order_code"),
                 "ready_to_pick",
                 parseDateTime(data, "expected_delivery_time"),
@@ -157,18 +171,19 @@ public class GhnService {
         );
     }
 
-    public GhnOrderResult getOrderDetail(String orderCode, String currentStatus) throws IOException, InterruptedException {
+    @Override
+    public ShippingOrderResult getOrderDetail(String orderCode, String currentStatus) throws IOException, InterruptedException {
         if (simulation) {
             String nextStatus = nextSimulationStatus(currentStatus);
             LocalDateTime finishDate = "delivered".equals(nextStatus) ? LocalDateTime.now() : null;
-            return new GhnOrderResult(orderCode, nextStatus, LocalDateTime.now().plusDays(3), finishDate, LocalDateTime.now());
+            return new ShippingOrderResult(orderCode, nextStatus, LocalDateTime.now().plusDays(3), finishDate, LocalDateTime.now());
         }
         requireLiveShop();
 
         JsonObject body = new JsonObject();
         body.addProperty("order_code", orderCode);
         JsonObject data = post("/v2/shipping-order/detail", body).getAsJsonObject("data");
-        return new GhnOrderResult(
+        return new ShippingOrderResult(
                 stringValue(data, "order_code"),
                 stringValue(data, "status"),
                 parseDateTime(data, "leadtime"),
@@ -338,7 +353,5 @@ public class GhnService {
         return value == null || value.isBlank() || value.startsWith("YOUR_") ? fallback : value.trim();
     }
 
-    public record GhnOrderResult(String orderCode, String status, LocalDateTime leadtime,
-                                 LocalDateTime finishDate, LocalDateTime updatedAt) {
-    }
+
 }
