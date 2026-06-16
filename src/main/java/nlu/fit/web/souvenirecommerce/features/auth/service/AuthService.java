@@ -147,4 +147,30 @@ public class AuthService {
         }
         return authRepository.verifySignupCode(email, code);
     }
+
+    public LocalDateTime sendResetPasswordCode(String email) throws MessagingException {
+        if (!hasEmailExist(email)) {
+            throw new IllegalArgumentException("Email này chưa được đăng ký trong hệ thống");
+        }
+
+        String code = String.format("%06d", RANDOM.nextInt(1_000_000));
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
+        authRepository.createResetPasswordVerificationCode(email, code, expiresAt);
+        emailService.sendResetPasswordCode(email, code);
+        return expiresAt;
+    }
+
+    public boolean verifyResetPasswordCode(String email, String code) {
+        if (!hasEmailExist(email)) {
+            throw new IllegalArgumentException("Email này chưa được đăng ký trong hệ thống");
+        }
+        return authRepository.verifyResetPasswordCode(email, code);
+    }
+
+    public boolean resetPassword(String email, String newPassword) {
+        if (!hasEmailExist(email)) {
+            throw new IllegalArgumentException("Email này chưa được đăng ký trong hệ thống");
+        }
+        return authRepository.resetPassword(email, newPassword);
+    }
 }
