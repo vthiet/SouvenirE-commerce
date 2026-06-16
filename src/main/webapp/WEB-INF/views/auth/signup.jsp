@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng ký - INOLA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/auth/signup.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/auth/signup.css?v=2">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <jsp:include page="/WEB-INF/layout/dark-mode.jsp"/>
 </head>

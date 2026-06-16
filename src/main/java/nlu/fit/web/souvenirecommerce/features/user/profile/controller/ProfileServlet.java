@@ -6,6 +6,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import nlu.fit.web.souvenirecommerce.model.enums.Gender;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.user.profile.service.ProfileService;
 import nlu.fit.web.souvenirecommerce.common.utils.CloudinaryUtil;
 
@@ -83,6 +84,14 @@ public class ProfileServlet extends HttpServlet {
             }
         } catch (Exception e) {
             Logger.getLogger(ProfileServlet.class.getName()).log(Level.SEVERE, "Error updating profile", e);
+            AuditLogService.failure(
+                    ProfileServlet.class,
+                    currentUser,
+                    "ACCOUNT",
+                    "PROFILE_ACTION_FAILED",
+                    "PROFILE",
+                    AuditLogService.describe("action", action, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
+            );
             session.setAttribute("profileMessage", "Có lỗi xảy ra khi cập nhật hồ sơ: " + e.getMessage());
             session.setAttribute("profileMessageType", "error");
             response.sendRedirect(request.getContextPath() + "/user/profile");
@@ -157,6 +166,14 @@ public class ProfileServlet extends HttpServlet {
 
         session.setAttribute("profileMessage", "Cập nhật hồ sơ thành công!");
         session.setAttribute("profileMessageType", "success");
+        AuditLogService.success(
+                ProfileServlet.class,
+                currentUser,
+                "ACCOUNT",
+                "PROFILE_UPDATED",
+                "PROFILE",
+                AuditLogService.describe("fields", "firstName,lastName,phone,gender,dob")
+        );
          response.sendRedirect(request.getContextPath() + "/user/profile");
      }
 
@@ -253,10 +270,26 @@ public class ProfileServlet extends HttpServlet {
 
             session.setAttribute("profileMessage", "Cập nhật ảnh đại diện thành công!");
             session.setAttribute("profileMessageType", "success");
+            AuditLogService.success(
+                    ProfileServlet.class,
+                    currentUser,
+                    "ACCOUNT",
+                    "AVATAR_CHANGED",
+                    "PROFILE",
+                    AuditLogService.describe("publicId", currentUser.getAvatarPublicId(), "source", "profile-page")
+            );
 
             Logger.getLogger(ProfileServlet.class.getName()).info("Avatar updated successfully for user: " + currentUser.getId());
         } catch (IOException e) {
             Logger.getLogger(ProfileServlet.class.getName()).log(Level.SEVERE, "Error uploading avatar", e);
+            AuditLogService.failure(
+                    ProfileServlet.class,
+                    currentUser,
+                    "ACCOUNT",
+                    "AVATAR_CHANGE_FAILED",
+                    "PROFILE",
+                    AuditLogService.describe("reason", e.getClass().getSimpleName(), "message", e.getMessage())
+            );
             session.setAttribute("profileMessage", "Lỗi tải lên hình ảnh: " + e.getMessage());
             session.setAttribute("profileMessageType", "error");
         }

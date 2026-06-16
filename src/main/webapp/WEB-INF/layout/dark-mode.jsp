@@ -40,6 +40,7 @@
         --muted-text: #839181;
         --main-border: #34463d;
         --soft-border: #26342e;
+        --border-strong: #465a50;
         --primary-color: #58c98d;
         --primary-hover-color: #7addaa;
         --accent-color: #e0ad5c;
@@ -47,6 +48,14 @@
         --success-color: #7ae3a7;
         --focus-outline: 0 0 0 3px rgba(88, 201, 141, 0.24);
         --card-shadow: 0 12px 34px rgba(0, 0, 0, 0.34);
+        --brand-primary-soft: #1a3026;
+        --brand-accent-soft: #2c2313;
+        --success-bg: #10241a;
+        --success-border: #1f4d33;
+        --warning-bg: #2d2310;
+        --warning-border: #6a4e17;
+        --danger-bg: #2a1413;
+        --danger-border: #6a2f2a;
 
         --surface-page: var(--page-background);
         --surface-default: var(--card-background);

@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import nlu.fit.web.souvenirecommerce.model.entity.Ward;
 
@@ -49,12 +50,50 @@ public class AddressController extends HttpServlet {
 
                 case "/default" -> {
                     Long id = parseLong(request.getParameter("id"));
-                    addressService.setDefaultAddress(user.getId(), id);
+                    boolean updated = addressService.setDefaultAddress(user.getId(), id);
+                    if (updated) {
+                        AuditLogService.success(
+                                AddressController.class,
+                                user,
+                                "ADDRESS",
+                                "ADDRESS_DEFAULT_CHANGED",
+                                "ADDRESS",
+                                AuditLogService.describe("addressId", id)
+                        );
+                    } else {
+                        AuditLogService.failure(
+                                AddressController.class,
+                                user,
+                                "ADDRESS",
+                                "ADDRESS_DEFAULT_CHANGED",
+                                "ADDRESS",
+                                AuditLogService.describe("addressId", id, "reason", "update_failed")
+                        );
+                    }
                 }
 
                 case "/delete" -> {
                     Long id = parseLong(request.getParameter("id"));
-                    addressService.deleteAddress(user.getId(), id);
+                    boolean deleted = addressService.deleteAddress(user.getId(), id);
+                    if (deleted) {
+                        AuditLogService.success(
+                                AddressController.class,
+                                user,
+                                "ADDRESS",
+                                "ADDRESS_DELETED",
+                                "ADDRESS",
+                                AuditLogService.describe("addressId", id)
+                        );
+                    } else {
+                        AuditLogService.failure(
+                                AddressController.class,
+                                user,
+                                "ADDRESS",
+                                "ADDRESS_DELETED",
+                                "ADDRESS",
+                                AuditLogService.describe("addressId", id, "reason", "delete_failed")
+                        );
+                    }
                 }
 
                 default -> {
@@ -97,11 +136,27 @@ public class AddressController extends HttpServlet {
 
                         boolean added = addressService.addAddress(user, detail, provinceCode, wardCode);
                         if (!added) {
+                            AuditLogService.failure(
+                                    AddressController.class,
+                                    user,
+                                    "ADDRESS",
+                                    "ADDRESS_ADDED",
+                                    "ADDRESS",
+                                    AuditLogService.describe("reason", "invalid_address_data")
+                            );
                             session.setAttribute("profileMessage", "Vui lòng chọn đầy đủ tỉnh/thành phố, phường/xã và nhập địa chỉ chi tiết");
                             session.setAttribute("profileMessageType", "error");
                             response.sendRedirect(request.getContextPath() + "/user/address/add");
                             return;
                         }
+                        AuditLogService.success(
+                                AddressController.class,
+                                user,
+                                "ADDRESS",
+                                "ADDRESS_ADDED",
+                                "ADDRESS",
+                                AuditLogService.describe("provinceCode", provinceCode, "wardCode", wardCode)
+                        );
                         session.setAttribute("profileMessage", "Thêm địa chỉ thành công!");
                         session.setAttribute("profileMessageType", "success");
                     }

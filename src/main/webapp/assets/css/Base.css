@@ -119,18 +119,19 @@ p {
 
 .product-card {
     min-width: 0;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
+    background: var(--surface-default);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
     overflow: hidden;
     position: relative;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
 .product-card:hover,
 .product-card:focus-within {
-    box-shadow: 0 8px 24px rgba(31, 41, 51, 0.12);
+    box-shadow: var(--shadow-md);
     transform: translateY(-2px);
+    border-color: var(--border-strong);
 }
 
 .product-card__link,
@@ -148,7 +149,7 @@ p {
     width: 100%;
     aspect-ratio: 1 / 1;
     overflow: hidden;
-    background: #f7f7f7;
+    background: var(--surface-muted);
 }
 
 .product-card__media img {
@@ -163,8 +164,8 @@ p {
     left: 0;
     z-index: 2;
     padding: 4px 9px;
-    background: #e9230c;
-    color: #ffffff;
+    background: var(--danger);
+    color: var(--text-on-primary);
     font-size: 12px;
     font-weight: 800;
     line-height: 1;
@@ -175,13 +176,13 @@ p {
     flex: 1;
     flex-direction: column;
     padding: 12px;
-    background: #ffffff;
+    background: var(--surface-default);
 }
 
 .product-card__name {
     min-height: 46px;
     margin: 0 0 10px;
-    color: #1f2933;
+    color: var(--text-strong);
     font-size: 16px;
     font-weight: 500;
     line-height: 1.4;
@@ -200,14 +201,14 @@ p {
 }
 
 .current-price {
-    color: #ff1f00;
+    color: var(--danger);
     font-size: 17px;
     font-weight: 800;
     line-height: 1.2;
 }
 
 .old-price {
-    color: #888888;
+    color: var(--text-subtle);
     font-size: 13px;
     font-weight: 400;
     text-decoration: line-through;
@@ -215,8 +216,8 @@ p {
 
 .discount-tag {
     padding: 2px 8px;
-    color: #ff1f00;
-    border: 1px solid #ff1f00;
+    color: var(--danger);
+    border: 1px solid var(--danger);
     border-radius: 4px;
     font-size: 12px;
     font-weight: 500;
@@ -228,7 +229,7 @@ p {
     align-items: center;
     justify-content: space-between;
     margin-top: auto;
-    color: #444444;
+    color: var(--text-soft);
     font-size: 13px;
 }
 
@@ -237,21 +238,21 @@ p {
     align-items: center;
     gap: 4px;
     padding: 3px 7px;
-    color: #111111;
-    background: #ffffff;
-    border: 1px solid #dddddd;
+    color: var(--text-strong);
+    background: var(--surface-default);
+    border: 1px solid var(--border-default);
     border-radius: 4px;
     font-size: 13px;
     white-space: nowrap;
 }
 
 .rating i {
-    color: #111111;
+    color: var(--rating);
     font-size: 12px;
 }
 
 .review-count {
-    color: #777777;
+    color: var(--text-subtle);
 }
 /* Button  */
 .btn {

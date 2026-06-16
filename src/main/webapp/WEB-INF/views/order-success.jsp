@@ -6,10 +6,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đặt hàng thành công - INOLA</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/theme.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/Base.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/layout/header.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/layout/footer.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/theme.css?v=2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/Base.css?v=2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/layout/header.css?v=11">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/layout/footer.css?v=2">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/Payment.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <jsp:include page="/WEB-INF/layout/dark-mode.jsp"/>

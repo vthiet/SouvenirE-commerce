@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.model.enums.Gender;
 import nlu.fit.web.souvenirecommerce.common.utils.EmailUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
@@ -104,6 +105,14 @@ public class SignupServlet extends HttpServlet {
             }
 
             log.info("Đăng ký thành công: email={}", email);
+            AuditLogService.success(
+                    SignupServlet.class,
+                    email,
+                    "AUTH",
+                    "SIGNUP",
+                    "ACCOUNT",
+                    AuditLogService.describe("phone", phone, "gender", gender)
+            );
             writeJson(resp, jsonResponse, "success", "Tạo tài khoản thành công");
         } catch (Exception e) {
             rollbackCurrentTransaction();

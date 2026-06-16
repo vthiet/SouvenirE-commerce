@@ -5,10 +5,13 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.legacy.dao.CategoryDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.ProductDAO;
 import nlu.fit.web.souvenirecommerce.model.entity.Product;
 import nlu.fit.web.souvenirecommerce.model.entity.Category;
+import nlu.fit.web.souvenirecommerce.model.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +87,7 @@ public class AdminProductController extends HttpServlet {
         log.debug("Admin products action received: {}", action);
 
         try {
+            User currentUser = getCurrentAdminUser(req);
             if ("add".equals(action)) {
                 Product product = new Product();
                 Long categoryId = Long.parseLong(req.getParameter("categoryId"));
@@ -109,10 +113,32 @@ public class AdminProductController extends HttpServlet {
 
                 if (productDAO.insertProduct(product)) {
                     log.info("Admin product created: name={}", product.getName());
+                    AuditLogService.success(
+                            AdminProductController.class,
+                            currentUser,
+                            "PRODUCT",
+                            "PRODUCT_CREATED",
+                            "PRODUCT",
+                            AuditLogService.describe(
+                                    "name", product.getName(),
+                                    "categoryId", categoryId,
+                                    "price", product.getOriginalPrice(),
+                                    "stock", product.getStockQuantity(),
+                                    "discountPercent", product.getDiscountPercent()
+                            )
+                    );
                     req.setAttribute("message", "Thêm sản phẩm thành công!");
                     req.setAttribute("messageType", "success");
                 } else {
                     log.warn("Admin product creation failed: name={}", product.getName());
+                    AuditLogService.failure(
+                            AdminProductController.class,
+                            currentUser,
+                            "PRODUCT",
+                            "PRODUCT_CREATED",
+                            "PRODUCT",
+                            AuditLogService.describe("name", product.getName(), "reason", "insert_failed")
+                    );
                     req.setAttribute("message", "Thêm sản phẩm thất bại!");
                     req.setAttribute("messageType", "error");
                 }
@@ -142,10 +168,33 @@ public class AdminProductController extends HttpServlet {
 
                 if (productDAO.updateProduct(product)) {
                     log.info("Admin product updated: id={}", product.getId());
+                    AuditLogService.success(
+                            AdminProductController.class,
+                            currentUser,
+                            "PRODUCT",
+                            "PRODUCT_UPDATED",
+                            "PRODUCT",
+                            AuditLogService.describe(
+                                    "productId", product.getId(),
+                                    "name", product.getName(),
+                                    "categoryId", category.getId(),
+                                    "price", product.getOriginalPrice(),
+                                    "stock", product.getStockQuantity(),
+                                    "discountPercent", product.getDiscountPercent()
+                            )
+                    );
                     req.setAttribute("message", "Cập nhật sản phẩm thành công!");
                     req.setAttribute("messageType", "success");
                 } else {
                     log.warn("Admin product update failed: id={}", product.getId());
+                    AuditLogService.failure(
+                            AdminProductController.class,
+                            currentUser,
+                            "PRODUCT",
+                            "PRODUCT_UPDATED",
+                            "PRODUCT",
+                            AuditLogService.describe("productId", product.getId(), "reason", "update_failed")
+                    );
                     req.setAttribute("message", "Cập nhật sản phẩm thất bại!");
                     req.setAttribute("messageType", "error");
                 }
@@ -155,21 +204,62 @@ public class AdminProductController extends HttpServlet {
 
                 if (productDAO.deleteProduct(id)) {
                     log.info("Admin product deleted: id={}", id);
+                    AuditLogService.success(
+                            AdminProductController.class,
+                            currentUser,
+                            "PRODUCT",
+                            "PRODUCT_DELETED",
+                            "PRODUCT",
+                            AuditLogService.describe("productId", id)
+                    );
                     req.setAttribute("message", "Xóa sản phẩm thành công!");
                     req.setAttribute("messageType", "success");
                 } else {
                     log.warn("Admin product deletion failed: id={}", id);
+                    AuditLogService.failure(
+                            AdminProductController.class,
+                            currentUser,
+                            "PRODUCT",
+                            "PRODUCT_DELETED",
+                            "PRODUCT",
+                            AuditLogService.describe("productId", id, "reason", "delete_failed")
+                    );
                     req.setAttribute("message", "Xóa sản phẩm thất bại!");
                     req.setAttribute("messageType", "error");
                 }
             }
         } catch (Exception e) {
             log.error("Admin product action failed: {}", action, e);
+            AuditLogService.failure(
+                    AdminProductController.class,
+                    getCurrentAdminUser(req),
+                    "PRODUCT",
+                    "PRODUCT_ACTION_FAILED",
+                    "PRODUCT",
+                    AuditLogService.describe("action", action, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
+            );
             req.setAttribute("message", "Có lỗi xảy ra: " + e.getMessage());
             req.setAttribute("messageType", "error");
         }
 
         // Redirect to avoid form resubmission
         resp.sendRedirect(req.getContextPath() + "/admin/products");
+    }
+
+    private User getCurrentAdminUser(HttpServletRequest req) {
+        HttpSession session = req.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        Object user = session.getAttribute("user");
+        if (user instanceof User) {
+            return (User) user;
+        }
+        user = session.getAttribute("userInSession");
+        if (user instanceof User) {
+            return (User) user;
+        }
+        user = session.getAttribute("currentUser");
+        return user instanceof User ? (User) user : null;
     }
 }

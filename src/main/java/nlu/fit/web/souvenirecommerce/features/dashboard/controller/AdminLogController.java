@@ -10,13 +10,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -25,6 +29,7 @@ import java.util.stream.Stream;
 public class AdminLogController extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(AdminLogController.class);
+    private static final String AUDIT_PREFIX = "AUDIT|";
     private static final Pattern LOG_PATTERN = Pattern.compile(
             "^(?<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) \\[(?<thread>[^\\]]*)\\] (?<level>\\w+) \\[(?<logger>[^\\]]*)\\] - \\[(?<requestId>[^\\]]*)\\] \\[(?<user>[^\\]]*)\\] - (?<message>.*)$"
     );
@@ -32,6 +37,7 @@ public class AdminLogController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String level = normalize(request.getParameter("level"));
+        String entryType = normalize(request.getParameter("entryType"));
         String query = normalize(request.getParameter("q"));
         int limit = parseLimit(request.getParameter("limit"));
 
@@ -39,7 +45,7 @@ public class AdminLogController extends HttpServlet {
         List<AdminLogEntry> entries = new ArrayList<>();
 
         for (Path logFile : logFiles) {
-            readLogFile(logFile, level, query, entries, limit);
+            readLogFile(logFile, level, entryType, query, entries, limit);
             if (entries.size() >= limit) {
                 break;
             }
@@ -47,6 +53,7 @@ public class AdminLogController extends HttpServlet {
 
         request.setAttribute("entries", entries);
         request.setAttribute("selectedLevel", level);
+        request.setAttribute("selectedEntryType", entryType);
         request.setAttribute("query", query);
         request.setAttribute("limit", limit);
         request.setAttribute("logFiles", logFiles);
@@ -54,7 +61,7 @@ public class AdminLogController extends HttpServlet {
         request.getRequestDispatcher("/admin/logs.jsp").forward(request, response);
     }
 
-    private void readLogFile(Path file, String level, String query, List<AdminLogEntry> entries, int limit) {
+    private void readLogFile(Path file, String level, String entryType, String query, List<AdminLogEntry> entries, int limit) {
         if (!Files.exists(file)) {
             return;
         }
@@ -66,7 +73,7 @@ public class AdminLogController extends HttpServlet {
                 if (entry == null) {
                     continue;
                 }
-                if (!matchesLevel(entry, level) || !matchesQuery(entry, query)) {
+                if (!matchesLevel(entry, level) || !matchesType(entry, entryType) || !matchesQuery(entry, query)) {
                     continue;
                 }
                 entries.add(entry);
@@ -83,6 +90,10 @@ public class AdminLogController extends HttpServlet {
         return level.isEmpty() || level.equalsIgnoreCase(entry.getLevel());
     }
 
+    private boolean matchesType(AdminLogEntry entry, String entryType) {
+        return entryType.isEmpty() || entryType.equalsIgnoreCase(entry.getEntryType());
+    }
+
     private boolean matchesQuery(AdminLogEntry entry, String query) {
         if (query.isEmpty()) {
             return true;
@@ -94,6 +105,13 @@ public class AdminLogController extends HttpServlet {
                 || contains(entry.getLogger(), needle)
                 || contains(entry.getRequestId(), needle)
                 || contains(entry.getUser(), needle)
+                || contains(entry.getEntryType(), needle)
+                || contains(entry.getCategory(), needle)
+                || contains(entry.getAction(), needle)
+                || contains(entry.getEntity(), needle)
+                || contains(entry.getStatus(), needle)
+                || contains(entry.getDetails(), needle)
+                || contains(entry.getDisplayMessage(), needle)
                 || contains(entry.getMessage(), needle)
                 || contains(entry.getRawLine(), needle);
     }
@@ -107,6 +125,28 @@ public class AdminLogController extends HttpServlet {
         if (!matcher.matches()) {
             return null;
         }
+        String message = matcher.group("message");
+        AuditPayload payload = parseAuditPayload(message);
+        if (payload == null) {
+            return new AdminLogEntry(
+                    matcher.group("timestamp"),
+                    matcher.group("thread"),
+                    matcher.group("level"),
+                    matcher.group("logger"),
+                    matcher.group("requestId"),
+                    matcher.group("user"),
+                    message,
+                    line,
+                    "SYSTEM",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    message
+            );
+        }
+
         return new AdminLogEntry(
                 matcher.group("timestamp"),
                 matcher.group("thread"),
@@ -114,9 +154,92 @@ public class AdminLogController extends HttpServlet {
                 matcher.group("logger"),
                 matcher.group("requestId"),
                 matcher.group("user"),
-                matcher.group("message"),
-                line
+                message,
+                line,
+                payload.entryType(),
+                payload.category(),
+                payload.action(),
+                payload.entity(),
+                payload.status(),
+                payload.details(),
+                payload.displayMessage()
         );
+    }
+
+    private AuditPayload parseAuditPayload(String message) {
+        if (message == null || !message.startsWith(AUDIT_PREFIX)) {
+            return null;
+        }
+
+        String payload = message.substring(AUDIT_PREFIX.length());
+        if (payload.startsWith("|")) {
+            payload = payload.substring(1);
+        }
+
+        Map<String, String> fields = new LinkedHashMap<>();
+        for (String token : payload.split("\\|")) {
+            if (token.isBlank()) {
+                continue;
+            }
+
+            int separatorIndex = token.indexOf('=');
+            if (separatorIndex <= 0) {
+                continue;
+            }
+
+            String key = token.substring(0, separatorIndex).trim().toLowerCase(Locale.ROOT);
+            String value = decode(token.substring(separatorIndex + 1).trim());
+            fields.put(key, value);
+        }
+
+        if (fields.isEmpty()) {
+            return null;
+        }
+
+        String action = fields.getOrDefault("action", "");
+        String entity = fields.getOrDefault("entity", "");
+        String status = fields.getOrDefault("status", "");
+        String details = fields.getOrDefault("details", "");
+        String displayMessage = buildDisplayMessage(action, entity, status, details);
+        return new AuditPayload(
+                "ACTIVITY",
+                fields.getOrDefault("category", "ACTIVITY"),
+                action,
+                entity,
+                status,
+                details,
+                displayMessage
+        );
+    }
+
+    private String buildDisplayMessage(String action, String entity, String status, String details) {
+        StringBuilder builder = new StringBuilder();
+        if (!action.isBlank()) {
+            builder.append(action);
+        }
+        if (!entity.isBlank()) {
+            if (builder.length() > 0) {
+                builder.append(" | ");
+            }
+            builder.append(entity);
+        }
+        if (!status.isBlank()) {
+            if (builder.length() > 0) {
+                builder.append(" | ");
+            }
+            builder.append(status);
+        }
+        if (!details.isBlank()) {
+            if (builder.length() > 0) {
+                builder.append(" - ");
+            }
+            builder.append(details);
+        }
+        return builder.length() == 0 ? details : builder.toString();
+    }
+
+    private String decode(String value) {
+        return URLDecoder.decode(value, StandardCharsets.UTF_8);
     }
 
     private List<Path> resolveLogFiles() {
@@ -173,5 +296,8 @@ public class AdminLogController extends HttpServlet {
         } catch (Exception e) {
             return 100;
         }
+    }
+
+    private record AuditPayload(String entryType, String category, String action, String entity, String status, String details, String displayMessage) {
     }
 }
