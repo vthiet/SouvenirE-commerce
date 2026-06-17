@@ -70,13 +70,13 @@
                     <p><fmt:formatNumber value="${requestScope.order.shippingFee}" pattern="#,###"/>₫</p>
                 </div>
                 <div class="info-item">
-                    <label>Mã vận đơn GHN</label>
-                    <p>
-                        <c:choose>
-                            <c:when test="${not empty requestScope.order.ghnOrderCode}">${requestScope.order.ghnOrderCode}</c:when>
-                            <c:otherwise>Chưa tạo</c:otherwise>
-                        </c:choose>
-                    </p>
+                    <label>Mã vận đơn</label>
+                    <span>
+                            <c:choose>
+                                <c:when test="${not empty requestScope.order.shippingOrders}">${requestScope.order.activeShippingOrder.trackingCode}</c:when>
+                                <c:otherwise>Chưa có</c:otherwise>
+                            </c:choose>
+                    </span>
                 </div>
                 <div class="info-item">
                     <label>Trạng thái GHN</label>
@@ -95,15 +95,14 @@
                     </p>
                 </div>
                 <div class="info-item">
-                    <label>Cập nhật GHN</label>
-                    <p>
-                        <c:choose>
-                            <c:when test="${not empty requestScope.order.ghnUpdatedAt}">
-                                <fmt:formatDate value="${requestScope.order.ghnUpdatedAt}" pattern="dd/MM/yyyy HH:mm"/>
-                            </c:when>
-                            <c:otherwise>Chưa có dữ liệu</c:otherwise>
-                        </c:choose>
-                    </p>
+                    <label>Cập nhật vận chuyển</label>
+                    <span>
+                            <c:choose>
+                                <c:when test="${not empty requestScope.order.activeShippingOrder.carrierUpdatedAt}">
+                                <fmt:formatDate value="${requestScope.order.activeShippingOrder.carrierUpdatedAt}" pattern="dd/MM/yyyy HH:mm"/></c:when>
+                                <c:otherwise>Chưa có</c:otherwise>
+                            </c:choose>
+                    </span>
                 </div>
             </div>
             <div class="order-detail-total">

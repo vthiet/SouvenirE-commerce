@@ -9,8 +9,10 @@ import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
-import nlu.fit.web.souvenirecommerce.legacy.model.Order;
+import nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository;
+import nlu.fit.web.souvenirecommerce.features.order.service.OrderService;
+import nlu.fit.web.souvenirecommerce.model.entity.Order;
+import nlu.fit.web.souvenirecommerce.model.enums.OrderStatusCode;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
@@ -20,7 +22,8 @@ import java.util.List;
 public class AdminOrderController extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(AdminOrderController.class);
-    private final OrderDAO orderDAO = new OrderDAO();
+    private final OrderRepository orderRepository = new OrderRepository();
+    private final OrderService orderService = new OrderService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -57,11 +60,11 @@ public class AdminOrderController extends HttpServlet {
         int totalOrders;
 
         if (statusFilter != null && !statusFilter.isEmpty() && !"all".equals(statusFilter)) {
-            orders = orderDAO.getOrdersByStatus(statusFilter, page, pageSize);
-            totalOrders = orderDAO.getOrderCountByStatus(statusFilter);
+            orders = orderRepository.getOrdersByStatus(statusFilter, page, pageSize);
+            totalOrders = orderRepository.getOrderCountByStatus(statusFilter);
         } else {
-            orders = orderDAO.getOrdersPaginated(page, pageSize);
-            totalOrders = orderDAO.getTotalOrders();
+            orders = orderRepository.getOrdersPaginated(page, pageSize);
+            totalOrders = orderRepository.getTotalOrders();
         }
 
         int totalPages = (int) Math.ceil((double) totalOrders / pageSize);
@@ -70,10 +73,10 @@ public class AdminOrderController extends HttpServlet {
                 page, orders.size(), statusFilter == null || statusFilter.isBlank() ? "all" : statusFilter);
 
         // Get status counts for stats cards
-        int pendingCount = orderDAO.getOrderCountByStatus("Chờ xác nhận");
-        int processingCount = orderDAO.getOrderCountByStatus("Đang xử lý");
-        int shippingCount = orderDAO.getOrderCountByStatus("Đang giao");
-        int completedCount = orderDAO.getOrderCountByStatus("Hoàn thành");
+        int pendingCount = orderRepository.getOrderCountByStatus("Chờ xác nhận");
+        int processingCount = orderRepository.getOrderCountByStatus("Đang xử lý");
+        int shippingCount = orderRepository.getOrderCountByStatus("Đang giao");
+        int completedCount = orderRepository.getOrderCountByStatus("Hoàn thành");
 
         // Set attributes
         request.setAttribute("orders", orders);
@@ -151,11 +154,35 @@ public class AdminOrderController extends HttpServlet {
         }
 
         String newStatus = request.getParameter("status");
+        String performedBy = currentUser != null ? currentUser.getEmail() : "Admin";
 
         log.info("Updating order status. orderId={}, newStatus={}", orderId, newStatus);
-        boolean success = orderDAO.updateOrderStatus(orderId, newStatus);
 
-        if (success) {
+        try {
+            OrderStatusCode code = null;
+            for (OrderStatusCode c : OrderStatusCode.values()) {
+                if (c.getDescription().equalsIgnoreCase(newStatus)) {
+                    code = c;
+                    break;
+                }
+            }
+            if (code == null) {
+                throw new IllegalArgumentException("Trạng thái không hợp lệ: " + newStatus);
+            }
+
+            Order order = orderService.getOrderById((long) orderId);
+            if (code == OrderStatusCode.PENDING) {
+                orderService.confirmOrder((long) orderId, performedBy);
+            } else if (code == OrderStatusCode.SHIPPING) {
+                orderService.startShipping((long) orderId, performedBy);
+            } else if (code == OrderStatusCode.COMPLETED) {
+                orderService.completeOrder((long) orderId, performedBy);
+            } else if (code == OrderStatusCode.CANCELLED) {
+                orderService.cancelOrder((long) orderId, performedBy, "Hủy bởi quản trị viên");
+            } else {
+                orderService.updateStatus(order, code, performedBy, "Cập nhật trạng thái bởi quản trị viên");
+            }
+
             log.info("Order status updated successfully. orderId={}, newStatus={}", orderId, newStatus);
             AuditLogService.success(
                     AdminOrderController.class,
@@ -166,15 +193,15 @@ public class AdminOrderController extends HttpServlet {
                     AuditLogService.describe("orderId", orderId, "newStatus", newStatus)
             );
             response.sendRedirect(request.getContextPath() + "/admin/orders?success=true");
-        } else {
-            log.warn("Order status update failed. orderId={}, newStatus={}", orderId, newStatus);
+        } catch (Exception e) {
+            log.error("Order status update failed. orderId={}, newStatus={}", orderId, newStatus, e);
             AuditLogService.failure(
                     AdminOrderController.class,
                     currentUser,
                     "ORDER",
                     "ORDER_STATUS_UPDATED",
                     "ORDER",
-                    AuditLogService.describe("orderId", orderId, "newStatus", newStatus, "reason", "update_failed")
+                    AuditLogService.describe("orderId", orderId, "newStatus", newStatus, "reason", e.getMessage())
             );
             response.sendRedirect(request.getContextPath() + "/admin/orders?error=true");
         }

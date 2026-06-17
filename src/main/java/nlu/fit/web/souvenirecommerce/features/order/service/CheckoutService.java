@@ -8,10 +8,10 @@ import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutRequest;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutResult;
-import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentContext;
-import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentPreparation;
-import nlu.fit.web.souvenirecommerce.features.order.payment.PaymentGateway;
-import nlu.fit.web.souvenirecommerce.features.order.payment.PaymentGatewayRegistry;
+import nlu.fit.web.souvenirecommerce.features.payment.dto.PaymentContext;
+import nlu.fit.web.souvenirecommerce.features.payment.dto.PaymentPreparation;
+import nlu.fit.web.souvenirecommerce.features.payment.gateway.PaymentGateway;
+import nlu.fit.web.souvenirecommerce.features.payment.gateway.PaymentGatewayRegistry;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderStatusRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.ProductRepository;
@@ -61,6 +61,7 @@ public class CheckoutService {
                 .orderDate(LocalDateTime.now())
                 .status(status)
                 .note(trimToNull(request.getNote()))
+                .preferredCarrierCode(trimToNull(request.getPreferredCarrierCode()))
                 .totalAmount(BigDecimal.ZERO)
                 .build();
 
@@ -93,7 +94,7 @@ public class CheckoutService {
         PaymentGateway gateway = paymentGatewayRegistry.get(paymentMethod);
         PaymentPreparation paymentPreparation = gateway.prepare(savedOrder, paymentContext);
         PaymentTransaction paymentTransaction = PaymentTransaction.builder()
-                .order(savedOrder)
+                .orderId(savedOrder.getId())
                 .method(paymentMethod)
                 .provider(paymentPreparation.getProvider())
                 .status(paymentPreparation.getStatus())
@@ -102,8 +103,7 @@ public class CheckoutService {
                 .paymentUrl(paymentPreparation.getPaymentUrl())
                 .qrPayload(paymentPreparation.getQrPayload())
                 .build();
-        savedOrder.setPaymentTransaction(paymentTransaction);
-        orderRepository.update(savedOrder);
+        new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().save(paymentTransaction);
 
         orderService.logHistory(
                 savedOrder,
@@ -126,6 +126,20 @@ public class CheckoutService {
                         "itemCount", cart.totalQuantity(),
                         "totalAmount", savedOrder.getTotalAmount(),
                         "paymentUrl", paymentPreparation.getPaymentUrl() == null ? "" : paymentPreparation.getPaymentUrl()
+                )
+        );
+
+        OrderStatusCode initialStatusCode = paymentMethod == PaymentMethod.COD
+                ? OrderStatusCode.WAIT_CONFIRM
+                : OrderStatusCode.PENDING_PAYMENT;
+
+        nlu.fit.web.souvenirecommerce.common.event.EventBus.publish(
+                new nlu.fit.web.souvenirecommerce.features.notification.event.OrderStatusChangedEvent(
+                        this,
+                        savedOrder,
+                        null,
+                        initialStatusCode,
+                        paymentMethod == PaymentMethod.COD ? "Đơn hàng được đặt thành công (COD)." : "Chờ khách hàng thanh toán qua VNPay."
                 )
         );
 
@@ -159,15 +173,15 @@ public class CheckoutService {
             throw new CheckoutException("Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ giao hàng");
         }
 
-        if (request.getGhnProvinceId() != null || request.getGhnDistrictId() != null || !isBlank(request.getGhnWardCode())) {
-            return addressService.createGhnAddress(
+        if (request.getCarrierProvinceId() != null || request.getCarrierDistrictId() != null || !isBlank(request.getCarrierWardCode())) {
+            return addressService.createCarrierAddress(
                             user,
                             request.getReceiverName(),
                             request.getReceiverPhone(),
                             request.getAddressDetail(),
-                            request.getGhnProvinceId(),
-                            request.getGhnDistrictId(),
-                            request.getGhnWardCode(),
+                            request.getCarrierProvinceId(),
+                            request.getCarrierDistrictId(),
+                            request.getCarrierWardCode(),
                             request.getProvinceName(),
                             request.getDistrictName(),
                             request.getWardName())
@@ -187,7 +201,18 @@ public class CheckoutService {
     private BigDecimal resolveShippingFee(Address address, CheckoutRequest request) {
         try {
             if (address != null) {
-                return shippingService.getActiveProvider().calculateFee(address);
+                String carrierCode = request.getPreferredCarrierCode();
+                nlu.fit.web.souvenirecommerce.features.shipping.ShippingProvider provider;
+                if (carrierCode != null && !carrierCode.trim().isEmpty()) {
+                    try {
+                        provider = nlu.fit.web.souvenirecommerce.features.shipping.ShippingProviderRegistry.getByCode(carrierCode);
+                    } catch (IllegalArgumentException e) {
+                        provider = shippingService.getActiveProvider();
+                    }
+                } else {
+                    provider = shippingService.getActiveProvider();
+                }
+                return provider.calculateFee(address);
             }
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();

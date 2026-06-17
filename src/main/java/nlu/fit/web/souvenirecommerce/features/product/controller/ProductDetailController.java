@@ -10,7 +10,8 @@ import nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository;
 import nlu.fit.web.souvenirecommerce.features.product.dto.ProductDetailDTO;
 import nlu.fit.web.souvenirecommerce.features.product.service.ProductService;
 import nlu.fit.web.souvenirecommerce.features.product.service.ReviewService;
-import nlu.fit.web.souvenirecommerce.features.shipping.service.GhnService;
+import nlu.fit.web.souvenirecommerce.features.shipping.ShippingProvider;
+import nlu.fit.web.souvenirecommerce.features.shipping.ShippingProviderRegistry;
 import nlu.fit.web.souvenirecommerce.features.user.address.AddressService;
 import nlu.fit.web.souvenirecommerce.model.entity.Address;
 
@@ -28,7 +29,6 @@ public class ProductDetailController extends HttpServlet {
     private ProductService productService;
     private ReviewService reviewService;
     private AddressService addressService;
-    private GhnService ghnService;
     private OrderRepository orderRepository;
 
     @Override
@@ -36,7 +36,6 @@ public class ProductDetailController extends HttpServlet {
         productService = new ProductService();
         reviewService = new ReviewService();
         addressService = new AddressService();
-        ghnService = new GhnService();
         orderRepository = new OrderRepository();
     }
 
@@ -152,13 +151,14 @@ public class ProductDetailController extends HttpServlet {
 
             request.setAttribute("shippingAddressText", formatAddress(address));
 
-            if (address.getGhnDistrictId() == null
-                    || address.getGhnWardCode() == null
-                    || address.getGhnWardCode().isBlank()) {
+            if (address.getCarrierDistrictId() == null
+                    || address.getCarrierWardCode() == null
+                    || address.getCarrierWardCode().isBlank()) {
                 return;
             }
 
-            BigDecimal shippingFee = ghnService.calculateFee(address.getGhnDistrictId(), address.getGhnWardCode());
+            ShippingProvider provider = ShippingProviderRegistry.getDefault();
+            BigDecimal shippingFee = provider.calculateFee(address);
             request.setAttribute("shippingFeeAmount", shippingFee);
         } catch (Exception ignored) {
             request.setAttribute("shippingFeeUnavailable", true);

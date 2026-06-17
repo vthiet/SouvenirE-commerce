@@ -12,7 +12,6 @@ import nlu.fit.web.souvenirecommerce.features.dashboard.dto.PurchaseOrderImportF
 import nlu.fit.web.souvenirecommerce.features.dashboard.dto.PurchaseOrderSummaryDTO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.ProductDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.PurchaseOrderDAO;
-import nlu.fit.web.souvenirecommerce.model.entity.Product;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import nlu.fit.web.souvenirecommerce.model.enums.PurchaseOrderStatus;
 import org.slf4j.Logger;
@@ -21,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet(urlPatterns = {"/admin/purchase-order-detail", "/admin/purchase-order-detail/"})
+@WebServlet(urlPatterns = { "/admin/purchase-order-detail", "/admin/purchase-order-detail/" })
 public class AdminPurchaseOrderDetailController extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(AdminPurchaseOrderDetailController.class);
@@ -129,9 +128,7 @@ public class AdminPurchaseOrderDetailController extends HttpServlet {
                         AuditLogService.describe(
                                 "purchaseOrderId", purchaseOrderId,
                                 "poCode", cancelled != null ? cancelled.getPoCode() : existingOrder.getPoCode(),
-                                "status", "CANCELLED"
-                        )
-                );
+                                "status", "CANCELLED"));
                 flash(request.getSession(), "Đã hủy phiếu nhập " + existingOrder.getPoCode() + ".", "success");
                 response.sendRedirect(buildDetailRedirectUrl(request, purchaseOrderId));
             } catch (Exception e) {
@@ -146,9 +143,7 @@ public class AdminPurchaseOrderDetailController extends HttpServlet {
                                 "poCode", existingOrder.getPoCode(),
                                 "action", action,
                                 "reason", e.getClass().getSimpleName(),
-                                "message", e.getMessage()
-                        )
-                );
+                                "message", e.getMessage()));
                 flash(request.getSession(), "Không thể hủy phiếu nhập: " + e.getMessage(), "error");
                 response.sendRedirect(buildDetailRedirectUrl(request, purchaseOrderId));
             }
@@ -157,13 +152,13 @@ public class AdminPurchaseOrderDetailController extends HttpServlet {
 
         try {
             PurchaseOrderImportForm submittedForm = PurchaseOrderRequestMapper.parse(request);
-            PurchaseOrderStatus targetStatus = PurchaseOrderRequestMapper.resolveUpdateTargetStatus(action, currentStatus);
+            PurchaseOrderStatus targetStatus = PurchaseOrderRequestMapper.resolveUpdateTargetStatus(action,
+                    currentStatus);
             PurchaseOrderSummaryDTO updated = purchaseOrderDAO.updatePurchaseOrder(
                     purchaseOrderId,
                     submittedForm,
                     currentUser,
-                    targetStatus
-            );
+                    targetStatus);
 
             AuditLogService.success(
                     AdminPurchaseOrderDetailController.class,
@@ -177,17 +172,14 @@ public class AdminPurchaseOrderDetailController extends HttpServlet {
                             "status", updated.getStatus(),
                             "itemCount", updated.getItemCount(),
                             "totalQuantity", updated.getTotalQuantity(),
-                            "totalAmount", updated.getTotalAmount()
-                    )
-            );
+                            "totalAmount", updated.getTotalAmount()));
 
             flash(
                     request.getSession(),
                     targetStatus.isDraft()
                             ? "Đã lưu nháp phiếu nhập " + updated.getPoCode() + "."
                             : "Đã cập nhật phiếu nhập " + updated.getPoCode() + ".",
-                    "success"
-            );
+                    "success");
             response.sendRedirect(buildDetailRedirectUrl(request, purchaseOrderId));
         } catch (IllegalArgumentException e) {
             AuditLogService.failure(
@@ -200,9 +192,7 @@ public class AdminPurchaseOrderDetailController extends HttpServlet {
                             "purchaseOrderId", purchaseOrderId,
                             "poCode", existingOrder.getPoCode(),
                             "action", action,
-                            "reason", e.getMessage()
-                    )
-            );
+                            "reason", e.getMessage()));
             renderEditMode(request, response, existingOrder, submittedSnapshot, e.getMessage(), "error");
         } catch (Exception e) {
             AuditLogService.failure(
@@ -216,19 +206,18 @@ public class AdminPurchaseOrderDetailController extends HttpServlet {
                             "poCode", existingOrder.getPoCode(),
                             "action", action,
                             "reason", e.getClass().getSimpleName(),
-                            "message", e.getMessage()
-                    )
-            );
-            renderEditMode(request, response, existingOrder, submittedSnapshot, "Có lỗi xảy ra: " + e.getMessage(), "error");
+                            "message", e.getMessage()));
+            renderEditMode(request, response, existingOrder, submittedSnapshot, "Có lỗi xảy ra: " + e.getMessage(),
+                    "error");
         }
     }
 
     private void renderEditMode(HttpServletRequest request,
-                                HttpServletResponse response,
-                                PurchaseOrderSummaryDTO existingOrder,
-                                PurchaseOrderImportForm submittedForm,
-                                String message,
-                                String messageType) throws ServletException, IOException {
+            HttpServletResponse response,
+            PurchaseOrderSummaryDTO existingOrder,
+            PurchaseOrderImportForm submittedForm,
+            String message,
+            String messageType) throws ServletException, IOException {
         PurchaseOrderStatus status = PurchaseOrderStatus.fromCode(existingOrder.getStatus());
         if (status.isCancelled()) {
             response.sendError(HttpServletResponse.SC_CONFLICT, "Phiếu nhập đã bị hủy nên không thể chỉnh sửa.");
@@ -242,7 +231,8 @@ public class AdminPurchaseOrderDetailController extends HttpServlet {
         request.setAttribute("canUpdatePurchaseOrder", true);
         request.setAttribute("canCancelPurchaseOrder", true);
         request.setAttribute("availableProducts", productDAO.getAllProducts());
-        request.setAttribute("purchaseOrderForm", submittedForm != null ? submittedForm : PurchaseOrderRequestMapper.fromOrder(existingOrder));
+        request.setAttribute("purchaseOrderForm",
+                submittedForm != null ? submittedForm : PurchaseOrderRequestMapper.fromOrder(existingOrder));
         request.setAttribute("message", message);
         request.setAttribute("messageType", messageType);
         request.setAttribute("submittedAction", request.getParameter("action"));

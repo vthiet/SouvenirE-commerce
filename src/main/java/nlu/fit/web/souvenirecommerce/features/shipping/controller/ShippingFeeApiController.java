@@ -6,7 +6,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import nlu.fit.web.souvenirecommerce.features.shipping.service.GhnService;
+import nlu.fit.web.souvenirecommerce.features.shipping.ShippingProvider;
+import nlu.fit.web.souvenirecommerce.features.shipping.ShippingProviderRegistry;
 import nlu.fit.web.souvenirecommerce.features.user.address.AddressService;
 import nlu.fit.web.souvenirecommerce.model.entity.Address;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
@@ -14,10 +15,21 @@ import nlu.fit.web.souvenirecommerce.model.entity.User;
 import java.io.IOException;
 import java.math.BigDecimal;
 
-@WebServlet("/api/shipping-fee")
+/**
+ * Calculates the shipping fee for a given delivery address using the active provider.
+ *
+ * <p>URL: {@code GET /api/shipping/fee}
+ *
+ * <p>Parameters (one of the two groups must be provided):
+ * <ul>
+ *   <li>Saved address: {@code addressId}</li>
+ *   <li>Inline address: {@code districtId} + {@code wardCode}</li>
+ * </ul>
+ */
+@WebServlet("/api/shipping/fee")
 public class ShippingFeeApiController extends HttpServlet {
+
     private final AddressService addressService = new AddressService();
-    private final GhnService ghnService = new GhnService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -42,33 +54,50 @@ public class ShippingFeeApiController extends HttpServlet {
                 writeError(response, "ADDRESS_NOT_FOUND");
                 return;
             }
-            districtId = address.getGhnDistrictId();
-            wardCode = address.getGhnWardCode();
+            districtId = address.getCarrierDistrictId();
+            wardCode = address.getCarrierWardCode();
         }
 
         if (districtId == null || wardCode == null || wardCode.isBlank()) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            writeError(response, "INVALID_GHN_ADDRESS");
+            writeError(response, "INVALID_CARRIER_ADDRESS");
             return;
         }
 
+        String carrierCode = request.getParameter("carrier");
+        ShippingProvider provider;
+        if (carrierCode != null && !carrierCode.isBlank()) {
+            try {
+                provider = ShippingProviderRegistry.getByCode(carrierCode);
+            } catch (IllegalArgumentException e) {
+                provider = ShippingProviderRegistry.getDefault();
+            }
+        } else {
+            provider = ShippingProviderRegistry.getDefault();
+        }
         try {
-            BigDecimal shippingFee = ghnService.calculateFee(districtId, wardCode);
+            // Build a minimal address object so the provider can calculate the fee
+            Address addr = new Address();
+            addr.setCarrierDistrictId(districtId);
+            addr.setCarrierWardCode(wardCode);
+
+            BigDecimal shippingFee = provider.calculateFee(addr);
             JsonObject json = new JsonObject();
             json.addProperty("success", true);
             json.addProperty("shippingFee", shippingFee);
-            json.addProperty("source", ghnService.isSimulation() ? "SIMULATION" : "GHN");
+            json.addProperty("carrier", provider.getCode());
+            json.addProperty("carrierName", provider.getName());
             response.getWriter().write(json.toString());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            writeError(response, "GHN_INTERRUPTED");
+            writeError(response, "SHIPPING_INTERRUPTED");
         } catch (IOException e) {
             response.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
             JsonObject json = new JsonObject();
             json.addProperty("success", false);
             json.addProperty("shippingFee", 30000);
-            json.addProperty("source", "FALLBACK");
+            json.addProperty("carrier", "FALLBACK");
             json.addProperty("error", e.getMessage());
             response.getWriter().write(json.toString());
         }

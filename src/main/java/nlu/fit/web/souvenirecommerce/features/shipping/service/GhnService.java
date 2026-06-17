@@ -20,7 +20,13 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
+/**
+ * GHN (Giao Hàng Nhanh) implementation of {@link ShippingProvider}.
+ * All GHN-specific logic lives here; the rest of the application only knows
+ * about the generic {@link ShippingProvider} interface.
+ */
 public class GhnService implements ShippingProvider {
+
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
@@ -30,29 +36,64 @@ public class GhnService implements ShippingProvider {
     private final String shopId = property("ghn.shop_id", "");
     private final boolean simulation = !"live".equalsIgnoreCase(property("ghn.mode", "simulation"));
 
+    // -------------------------------------------------------------------------
+    // ShippingProvider identity
+    // -------------------------------------------------------------------------
+
+    @Override
+    public String getCode() {
+        return "GHN";
+    }
+
+    @Override
+    public String getName() {
+        return "Giao Hàng Nhanh";
+    }
+
     public boolean isSimulation() {
         return simulation;
     }
 
-    public String getProvinces() throws IOException, InterruptedException {
-        if (simulation) {
-            return simulationProvinces();
+    // -------------------------------------------------------------------------
+    // Location data (provinces / districts / wards)
+    // -------------------------------------------------------------------------
+
+    @Override
+    public String getLocations(String type, String parentId) throws IOException, InterruptedException {
+        if ("province".equals(type)) {
+            return simulation ? simulationProvinces() : get("/master-data/province", null);
         }
-        return get("/master-data/province", null);
+        if ("district".equals(type)) {
+            Integer provinceId = parseIntOrNull(parentId);
+            if (provinceId == null) {
+                throw new IOException("parentId (provinceId) is required for type=district");
+            }
+            return simulation
+                    ? simulationDistricts(provinceId)
+                    : get("/master-data/district", "province_id=" + provinceId);
+        }
+        if ("ward".equals(type)) {
+            Integer districtId = parseIntOrNull(parentId);
+            if (districtId == null) {
+                throw new IOException("parentId (districtId) is required for type=ward");
+            }
+            return simulation
+                    ? simulationWards(districtId)
+                    : get("/master-data/ward", "district_id=" + districtId);
+        }
+        throw new IOException("Unknown location type: " + type);
     }
 
-    public String getDistricts(int provinceId) throws IOException, InterruptedException {
-        if (simulation) {
-            return simulationDistricts(provinceId);
-        }
-        return get("/master-data/district", "province_id=" + provinceId);
-    }
+    // -------------------------------------------------------------------------
+    // Fee calculation
+    // -------------------------------------------------------------------------
 
-    public String getWards(int districtId) throws IOException, InterruptedException {
-        if (simulation) {
-            return simulationWards(districtId);
+    @Override
+    public BigDecimal calculateFee(Address address) throws IOException, InterruptedException {
+        if (address == null) {
+            return BigDecimal.valueOf(30000);
         }
-        return get("/master-data/ward", "district_id=" + districtId);
+        return calculateFee(address.getCarrierDistrictId(), address.getCarrierWardCode());
     }
 
     public BigDecimal calculateFee(Integer toDistrictId, String toWardCode) throws IOException, InterruptedException {
@@ -61,7 +102,7 @@ public class GhnService implements ShippingProvider {
         }
         requireLiveShop();
         if (toDistrictId == null || toWardCode == null || toWardCode.isBlank()) {
-            throw new IOException("Địa chỉ nhận hàng chưa có mã GHN.");
+            throw new IOException("Địa chỉ nhận hàng chưa có mã đơn vị vận chuyển.");
         }
 
         int fromDistrictId = Integer.parseInt(property("ghn.from_district_id", "1442"));
@@ -84,23 +125,14 @@ public class GhnService implements ShippingProvider {
         return BigDecimal.valueOf(fee - (fee % 10));
     }
 
-    @Override
-    public String getName() {
-        return "GHN";
-    }
+    // -------------------------------------------------------------------------
+    // Shipment lifecycle
+    // -------------------------------------------------------------------------
 
     @Override
-    public BigDecimal calculateFee(Address address) throws IOException, InterruptedException {
-        if (address == null) {
-            return BigDecimal.valueOf(30000);
-        }
-        return calculateFee(address.getGhnDistrictId(), address.getGhnWardCode());
-    }
-
-    @Override
-    public ShippingOrderResult createOrder(Order order) throws IOException, InterruptedException {
+    public ShipmentResult createShipment(Order order) throws IOException, InterruptedException {
         if (simulation) {
-            return new ShippingOrderResult(
+            return new ShipmentResult(
                     "SIM-" + order.getOrderCode(),
                     "ready_to_pick",
                     LocalDateTime.now().plusDays(3),
@@ -111,13 +143,13 @@ public class GhnService implements ShippingProvider {
         requireLiveShop();
 
         Address address = order.getAddress();
-        if (address == null || address.getGhnDistrictId() == null || address.getGhnWardCode() == null
-                || address.getGhnWardCode().isBlank()) {
-            throw new IOException("Địa chỉ nhận hàng chưa có mã quận/huyện hoặc phường/xã GHN.");
+        if (address == null || address.getCarrierDistrictId() == null
+                || address.getCarrierWardCode() == null || address.getCarrierWardCode().isBlank()) {
+            throw new IOException("Địa chỉ nhận hàng chưa có mã quận/huyện hoặc phường/xã của đơn vị vận chuyển.");
         }
 
         int fromDistrictId = Integer.parseInt(property("ghn.from_district_id", "1442"));
-        int serviceId = getAvailableServiceId(fromDistrictId, address.getGhnDistrictId());
+        int serviceId = getAvailableServiceId(fromDistrictId, address.getCarrierDistrictId());
 
         JsonObject body = new JsonObject();
         body.addProperty("payment_type_id", 1);
@@ -132,10 +164,11 @@ public class GhnService implements ShippingProvider {
         body.addProperty("to_name", address.getReceiverName());
         body.addProperty("to_phone", address.getReceiverPhone());
         body.addProperty("to_address", address.getAddressDetail());
-        body.addProperty("to_ward_code", address.getGhnWardCode());
-        body.addProperty("to_district_id", address.getGhnDistrictId());
-        body.addProperty("cod_amount", order.getPaymentTransaction() != null
-                && order.getPaymentTransaction().getMethod() == PaymentMethod.COD
+        body.addProperty("to_ward_code", address.getCarrierWardCode());
+        body.addProperty("to_district_id", address.getCarrierDistrictId());
+        nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx = new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().findByOrderId(order.getId()).orElse(null);
+        body.addProperty("cod_amount", ptx != null
+                && ptx.getMethod() == PaymentMethod.COD
                 ? order.getTotalAmount().intValue()
                 : 0);
         body.addProperty("content", "Đơn hàng " + order.getOrderCode());
@@ -162,7 +195,7 @@ public class GhnService implements ShippingProvider {
         body.add("items", items);
 
         JsonObject data = post("/v2/shipping-order/create", body).getAsJsonObject("data");
-        return new ShippingOrderResult(
+        return new ShipmentResult(
                 stringValue(data, "order_code"),
                 "ready_to_pick",
                 parseDateTime(data, "expected_delivery_time"),
@@ -172,18 +205,24 @@ public class GhnService implements ShippingProvider {
     }
 
     @Override
-    public ShippingOrderResult getOrderDetail(String orderCode, String currentStatus) throws IOException, InterruptedException {
+    public ShipmentResult getShipmentStatus(String trackingCode, String currentStatus)
+            throws IOException, InterruptedException {
         if (simulation) {
             String nextStatus = nextSimulationStatus(currentStatus);
             LocalDateTime finishDate = "delivered".equals(nextStatus) ? LocalDateTime.now() : null;
-            return new ShippingOrderResult(orderCode, nextStatus, LocalDateTime.now().plusDays(3), finishDate, LocalDateTime.now());
+            return new ShipmentResult(
+                    trackingCode, nextStatus,
+                    LocalDateTime.now().plusDays(3),
+                    finishDate,
+                    LocalDateTime.now()
+            );
         }
         requireLiveShop();
 
         JsonObject body = new JsonObject();
-        body.addProperty("order_code", orderCode);
+        body.addProperty("order_code", trackingCode);
         JsonObject data = post("/v2/shipping-order/detail", body).getAsJsonObject("data");
-        return new ShippingOrderResult(
+        return new ShipmentResult(
                 stringValue(data, "order_code"),
                 stringValue(data, "status"),
                 parseDateTime(data, "leadtime"),
@@ -191,6 +230,10 @@ public class GhnService implements ShippingProvider {
                 parseDateTime(data, "updated_date")
         );
     }
+
+    // -------------------------------------------------------------------------
+    // Internal helpers
+    // -------------------------------------------------------------------------
 
     private BigDecimal calculateSimulationFee(Integer toDistrictId) {
         if (toDistrictId == null) {
@@ -210,12 +253,11 @@ public class GhnService implements ShippingProvider {
         if (!configuredServiceId.isBlank()) {
             return Integer.parseInt(configuredServiceId);
         }
-
         String response = get("/v2/shipping-order/available-services",
                 "shop_id=" + shopId + "&from_district=" + fromDistrictId + "&to_district=" + toDistrictId);
         JsonArray services = JsonParser.parseString(response).getAsJsonObject().getAsJsonArray("data");
         if (services == null || services.isEmpty()) {
-            throw new IOException("GHN service not found");
+            throw new IOException("GHN: no available service found for the given districts");
         }
         return services.get(0).getAsJsonObject().get("service_id").getAsInt();
     }
@@ -259,6 +301,10 @@ public class GhnService implements ShippingProvider {
         }
         return response.body();
     }
+
+    // -------------------------------------------------------------------------
+    // Simulation data
+    // -------------------------------------------------------------------------
 
     private String simulationProvinces() {
         return """
@@ -348,10 +394,19 @@ public class GhnService implements ShippingProvider {
         }
     }
 
+    private Integer parseIntOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private String property(String key, String fallback) {
         String value = ApplicationLoader.get(key);
         return value == null || value.isBlank() || value.startsWith("YOUR_") ? fallback : value.trim();
     }
-
-
 }
