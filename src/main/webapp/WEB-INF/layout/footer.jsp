@@ -109,12 +109,6 @@
                              alt="VNPAY">
                     </span>
                 </c:if>
-
-                <c:if test="${settings.payment_cod == 'true'}">
-                    <span class="payment-label">
-                        <fmt:message key="footer.cod"/>
-                    </span>
-                </c:if>
             </div>
 
             <h2 class="footer-subtitle"><fmt:message key="footer.shipping"/></h2>
