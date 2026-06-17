@@ -14,9 +14,9 @@ import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutRequest;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutResult;
-import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentContext;
+import nlu.fit.web.souvenirecommerce.features.payment.dto.PaymentContext;
 import nlu.fit.web.souvenirecommerce.features.order.service.CheckoutService;
-import nlu.fit.web.souvenirecommerce.features.payment.VnPayUtil;
+import nlu.fit.web.souvenirecommerce.features.payment.model.VnPayUtil;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
 

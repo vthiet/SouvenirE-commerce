@@ -44,11 +44,20 @@ public class OrderService {
     }
 
     public Order updateStatus(Order order, OrderStatusCode statusCode, String performedBy, String description) {
+        OrderStatusCode oldStatusCode = OrderStatusCode.fromDescription(order.getStatusDescription());
+
         OrderStatus status = resolveStatus(statusCode);
         order.setStatus(status);
         orderRepository.update(order);
 
         logHistory(order, statusCode.getDescription(), description, performedBy);
+
+        nlu.fit.web.souvenirecommerce.common.event.EventBus.publish(
+                new nlu.fit.web.souvenirecommerce.features.notification.event.OrderStatusChangedEvent(
+                        this, order, oldStatusCode, statusCode, description
+                )
+        );
+
         return order;
     }
 
@@ -125,10 +134,10 @@ public class OrderService {
         }
 
         // Update payment transaction status if exists
-        nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx1 = new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().findByOrderId(orderId).orElse(null);
+        nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx1 = new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().findByOrderId(orderId).orElse(null);
         if (ptx1 != null) {
             ptx1.setStatus(nlu.fit.web.souvenirecommerce.model.enums.PaymentStatus.FAILED);
-            new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().update(ptx1);
+            new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().update(ptx1);
         }
 
         return updateStatus(order, OrderStatusCode.CANCELLED, performedBy, "Hủy đơn hàng. Lý do: " + reason);
@@ -202,7 +211,7 @@ public class OrderService {
 
             String payStatus = "PENDING";
             String repayUrl = null;
-            nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx2 = new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().findByOrderId(o.getId()).orElse(null);
+            nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx2 = new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().findByOrderId(o.getId()).orElse(null);
             if (ptx2 != null) {
                 payStatus = ptx2.getStatus().name();
                 repayUrl = ptx2.getPaymentUrl();

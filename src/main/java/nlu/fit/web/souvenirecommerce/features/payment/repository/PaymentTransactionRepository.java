@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.order.repository;
+package nlu.fit.web.souvenirecommerce.features.payment.repository;
 
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseRepository;
 import nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction;

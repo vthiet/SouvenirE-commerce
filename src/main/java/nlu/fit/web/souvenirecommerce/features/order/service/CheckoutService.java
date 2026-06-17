@@ -8,10 +8,10 @@ import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutRequest;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutResult;
-import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentContext;
-import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentPreparation;
-import nlu.fit.web.souvenirecommerce.features.order.payment.PaymentGateway;
-import nlu.fit.web.souvenirecommerce.features.order.payment.PaymentGatewayRegistry;
+import nlu.fit.web.souvenirecommerce.features.payment.dto.PaymentContext;
+import nlu.fit.web.souvenirecommerce.features.payment.dto.PaymentPreparation;
+import nlu.fit.web.souvenirecommerce.features.payment.gateway.PaymentGateway;
+import nlu.fit.web.souvenirecommerce.features.payment.gateway.PaymentGatewayRegistry;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderStatusRepository;
 import nlu.fit.web.souvenirecommerce.features.order.repository.ProductRepository;
@@ -103,7 +103,7 @@ public class CheckoutService {
                 .paymentUrl(paymentPreparation.getPaymentUrl())
                 .qrPayload(paymentPreparation.getQrPayload())
                 .build();
-        new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().save(paymentTransaction);
+        new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().save(paymentTransaction);
 
         orderService.logHistory(
                 savedOrder,
@@ -126,6 +126,20 @@ public class CheckoutService {
                         "itemCount", cart.totalQuantity(),
                         "totalAmount", savedOrder.getTotalAmount(),
                         "paymentUrl", paymentPreparation.getPaymentUrl() == null ? "" : paymentPreparation.getPaymentUrl()
+                )
+        );
+
+        OrderStatusCode initialStatusCode = paymentMethod == PaymentMethod.COD
+                ? OrderStatusCode.WAIT_CONFIRM
+                : OrderStatusCode.PENDING_PAYMENT;
+
+        nlu.fit.web.souvenirecommerce.common.event.EventBus.publish(
+                new nlu.fit.web.souvenirecommerce.features.notification.event.OrderStatusChangedEvent(
+                        this,
+                        savedOrder,
+                        null,
+                        initialStatusCode,
+                        paymentMethod == PaymentMethod.COD ? "Đơn hàng được đặt thành công (COD)." : "Chờ khách hàng thanh toán qua VNPay."
                 )
         );
 

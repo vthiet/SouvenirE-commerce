@@ -13,7 +13,8 @@ public class PaymentAdapterFactory {
 
     static {
         adapters.put(PaymentProvider.VNPAY, new VnPayAdapter());
-        // Can register other adapters like MOMO, STRIPE here in the future
+        // MOMO
+        // ...
     }
 
     public static PaymentProviderAdapter getAdapter(PaymentProvider provider) {

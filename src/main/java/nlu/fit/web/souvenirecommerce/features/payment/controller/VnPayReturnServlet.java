@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.payment;
+package nlu.fit.web.souvenirecommerce.features.payment.controller;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -6,6 +6,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
+import nlu.fit.web.souvenirecommerce.features.payment.model.PaymentCallbackResult;
+import nlu.fit.web.souvenirecommerce.features.payment.model.VnPayUtil;
+import nlu.fit.web.souvenirecommerce.features.payment.service.PaymentProcessingService;
+import nlu.fit.web.souvenirecommerce.features.payment.service.VnPayService;
 
 import java.io.IOException;
 import java.util.Map;
@@ -33,7 +37,7 @@ public class VnPayReturnServlet extends HttpServlet {
         Long transactionId = adapter.getTransactionId(fields);
         nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction transaction = null;
         if (transactionId != null) {
-            transaction = new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().findById(transactionId).orElse(null);
+            transaction = new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().findById(transactionId).orElse(null);
         }
 
         // We only use Return URL for UI redirection, not to update status. 

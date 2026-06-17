@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.order.payment;
+package nlu.fit.web.souvenirecommerce.features.payment.gateway;
 
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;

@@ -1,7 +1,7 @@
 package nlu.fit.web.souvenirecommerce.features.payment.adapter;
 
-import nlu.fit.web.souvenirecommerce.features.payment.VnPayService;
-import nlu.fit.web.souvenirecommerce.features.payment.VnPayUtil;
+import nlu.fit.web.souvenirecommerce.features.payment.service.VnPayService;
+import nlu.fit.web.souvenirecommerce.features.payment.model.VnPayUtil;
 import nlu.fit.web.souvenirecommerce.features.payment.port.PaymentProviderAdapter;
 
 import java.math.BigDecimal;
@@ -17,7 +17,6 @@ public class VnPayAdapter implements PaymentProviderAdapter {
 
     @Override
     public String createPaymentUrl(Long transactionId, Long orderId, BigDecimal amount, String clientIp, String returnUrl) {
-        // VNPay amount is in VND, and the service multiplies it by 100 inside, but we pass transactionId instead of orderId for vnp_TxnRef
         return vnPayService.createPaymentUrl(transactionId, amount.longValue(), clientIp, returnUrl);
     }
 

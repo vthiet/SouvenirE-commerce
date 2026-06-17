@@ -1,9 +1,10 @@
-package nlu.fit.web.souvenirecommerce.features.payment;
+package nlu.fit.web.souvenirecommerce.features.payment.service;
 
 import nlu.fit.web.souvenirecommerce.common.event.EventBus;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
-import nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository;
+import nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository;
+import nlu.fit.web.souvenirecommerce.features.payment.model.PaymentCallbackResult;
 import nlu.fit.web.souvenirecommerce.features.payment.event.PaymentCreatedEvent;
 import nlu.fit.web.souvenirecommerce.features.payment.event.PaymentFailedEvent;
 import nlu.fit.web.souvenirecommerce.features.payment.event.PaymentPendingEvent;

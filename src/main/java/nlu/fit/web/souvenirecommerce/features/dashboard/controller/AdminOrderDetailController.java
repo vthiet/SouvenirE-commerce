@@ -195,7 +195,7 @@ public class AdminOrderDetailController extends HttpServlet {
         Date leadtime = shipment != null ? toDate(shipment.getLeadtime()) : null;
         Date finishDate = shipment != null ? toDate(shipment.getFinishDate()) : null;
 
-        nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx = new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().findByOrderId(order.getId()).orElse(null);
+        nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx = new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().findByOrderId(order.getId()).orElse(null);
 
         return new OrderDetailView(
                 order.getId().intValue(),

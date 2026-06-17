@@ -1,10 +1,10 @@
-package nlu.fit.web.souvenirecommerce.features.order.payment;
+package nlu.fit.web.souvenirecommerce.features.payment.gateway;
 
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentProvider;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentStatus;
-import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentContext;
-import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentPreparation;
+import nlu.fit.web.souvenirecommerce.features.payment.dto.PaymentContext;
+import nlu.fit.web.souvenirecommerce.features.payment.dto.PaymentPreparation;
 import nlu.fit.web.souvenirecommerce.model.entity.Order;
 
 public class CodPaymentGateway implements PaymentGateway {
