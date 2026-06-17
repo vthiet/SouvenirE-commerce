@@ -29,8 +29,21 @@ public final class AuthorizationPolicy {
             return resolveCrudPermission(request, "product", "read");
         }
 
-        if ("/admin/stock-imports".equals(servletPath)) {
+        if ("/admin/stock-imports".equals(servletPath) || "/admin/stock-imports/".equals(servletPath)) {
             return resolveCrudPermission(request, "product", "update");
+        }
+
+        if ("/admin/purchase-order-detail".equals(servletPath) || "/admin/purchase-order-detail/".equals(servletPath)) {
+            if ("POST".equalsIgnoreCase(request.getMethod())) {
+                String action = safeLower(request.getParameter("action"));
+                String mappedAction = switch (action) {
+                    case "delete", "remove", "cancel" -> "delete";
+                    case "save", "update", "finalize", "finalise", "savedraft", "draft" -> "update";
+                    default -> "update";
+                };
+                return new RequiredPermission("product", mappedAction, true);
+            }
+            return new RequiredPermission("product", "read", true);
         }
 
         if ("/admin/categories".equals(servletPath)) {

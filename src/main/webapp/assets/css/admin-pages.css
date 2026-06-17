@@ -1475,7 +1475,8 @@
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 1050;
+  /* Keep admin modals above Bootstrap's backdrop and fixed chrome. */
+  z-index: 2000;
   background: rgba(15, 23, 42, 0.58);
   align-items: center;
   justify-content: center;
@@ -1486,17 +1487,121 @@
   display: flex;
 }
 
+.modal-backdrop {
+  z-index: 1990;
+}
+
 .modal-content {
   width: 100%;
-  max-width: 640px;
   background: var(--admin-page-surface);
   border-radius: 20px;
-  overflow: hidden;
   box-shadow: 0 28px 90px rgba(15, 23, 42, 0.18);
+  position: relative;
+  z-index: 2001;
+  pointer-events: auto;
 }
 
 .modal-content form {
   padding: 1.25rem;
+}
+
+.stock-import-modal-dialog {
+  max-width: 1320px;
+  width: calc(100vw - 1.5rem);
+}
+
+.stock-import-modal-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stock-import-modal-content form {
+  padding: 0;
+}
+
+.stock-import-modal-body {
+  padding: 1.25rem;
+}
+
+.stock-import-modal-footer {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.stock-import-form-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.stock-import-summary-column {
+  position: sticky;
+  top: 0.75rem;
+}
+
+.stock-import-card {
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.stock-import-summary-card {
+  height: fit-content;
+}
+
+.stock-import-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.stock-import-items-card {
+  grid-column: 1 / -1;
+}
+
+.stock-import-items-card .card-header,
+.stock-import-items-card .card-body {
+  padding-inline: 1rem;
+}
+
+.purchase-order-item-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.purchase-order-item-product,
+.purchase-order-item-side {
+  min-width: 0;
+}
+
+.purchase-order-item-side {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.purchase-order-item-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.purchase-order-item-meta-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.purchase-order-item-stock {
+  min-width: 0;
+}
+
+.purchase-order-item-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto;
 }
 
 .modal-header,
@@ -1618,6 +1723,49 @@
 
 .admin-modal-panel-accent {
   background: var(--admin-page-surface);
+}
+
+@media (max-width: 1199.98px) {
+  .stock-import-modal-dialog {
+    max-width: calc(100vw - 1rem);
+  }
+
+  .stock-import-form-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-import-summary-column {
+    position: static;
+  }
+
+  .stock-import-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stock-import-items-card {
+    grid-column: auto;
+  }
+
+  .purchase-order-item-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-order-item-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-order-item-meta-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .purchase-order-item-actions {
+    justify-content: flex-start;
+  }
+
+  .purchase-order-item-actions .btn {
+    width: 100%;
+  }
 }
 
 .admin-grid-two {
