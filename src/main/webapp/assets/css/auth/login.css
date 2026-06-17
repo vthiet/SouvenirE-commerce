@@ -45,16 +45,6 @@ body.auth-page {
     backdrop-filter: blur(10px);
 }
 
-.auth-language-switcher__label {
-    padding-left: 8px;
-    color: var(--auth-muted);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    white-space: nowrap;
-}
-
 .auth-language-switcher__options {
     display: inline-flex;
     align-items: center;
@@ -344,10 +334,6 @@ body.auth-page {
         gap: 4px;
         top: 12px;
         left: 12px;
-    }
-
-    .auth-language-switcher__label {
-        display: none;
     }
 
     .auth-language-switcher__option {

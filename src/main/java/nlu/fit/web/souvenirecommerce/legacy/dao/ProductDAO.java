@@ -19,11 +19,8 @@ public class ProductDAO {
         p.id,
         p.category_id,
         p.name,
-        p.name_en,
         p.description,
-        p.description_en,
         p.short_description,
-        p.short_description_en,
         p.original_price,
         p.image_url,
         p.stock_quantity,
@@ -46,11 +43,8 @@ public class ProductDAO {
             p.id,
             p.category_id,
             p.name,
-            p.name_en,
             p.description,
-            p.description_en,
             p.short_description,
-            p.short_description_en,
             p.original_price,
             p.image_url,
             p.stock_quantity,
@@ -67,11 +61,8 @@ public class ProductDAO {
             p.id,
             p.category_id,
             p.name,
-            p.name_en,
             p.description,
-            p.description_en,
             p.short_description,
-            p.short_description_en,
             p.original_price,
             p.image_url,
             p.stock_quantity,
@@ -350,7 +341,11 @@ public class ProductDAO {
             SELECT * FROM (
                 """ + BASE_SELECT + """
             ) t
-            WHERE """ + buildProductSearchExpression("t") + """
+            WHERE (
+                LOWER(t.name) LIKE LOWER(?)
+                OR LOWER(t.description) LIKE LOWER(?)
+                OR LOWER(t.short_description) LIKE LOWER(?)
+            )
         """);
 
         if (minPrice != null) sql.append(" AND t.original_price >= ?");
@@ -374,7 +369,10 @@ public class ProductDAO {
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
             int idx = 1;
-            idx = bindProductSearchPattern(ps, idx, keyword);
+            String searchPattern = "%" + (keyword == null ? "" : keyword.trim()) + "%";
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx++, searchPattern);
             if (minPrice != null) ps.setInt(idx++, minPrice);
             if (maxPrice != null) ps.setInt(idx++, maxPrice);
             if (rating != null) ps.setInt(idx++, rating);
@@ -403,7 +401,11 @@ public class ProductDAO {
             SELECT COUNT(*) FROM (
                 SELECT p.id
                 FROM products p
-                WHERE """ + buildProductSearchExpression("p") + """
+                WHERE (
+                    LOWER(p.name) LIKE LOWER(?)
+                    OR LOWER(p.description) LIKE LOWER(?)
+                    OR LOWER(p.short_description) LIKE LOWER(?)
+                )
         """);
 
         if (minPrice != null) sql.append(" AND p.original_price >= ?");
@@ -419,7 +421,10 @@ public class ProductDAO {
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
             int idx = 1;
-            idx = bindProductSearchPattern(ps, idx, keyword);
+            String searchPattern = "%" + (keyword == null ? "" : keyword.trim()) + "%";
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx++, searchPattern);
             if (minPrice != null) ps.setInt(idx++, minPrice);
             if (maxPrice != null) ps.setInt(idx++, maxPrice);
             if (rating != null) ps.setInt(idx, rating);
@@ -514,7 +519,11 @@ public class ProductDAO {
             SELECT * FROM (
                 """ + BASE_SELECT + """
             ) t
-            WHERE """ + buildProductSearchExpression("t") + """
+            WHERE (
+                LOWER(t.name) LIKE LOWER(?)
+                OR LOWER(t.description) LIKE LOWER(?)
+                OR LOWER(t.short_description) LIKE LOWER(?)
+            )
             ORDER BY t.total_sold DESC, t.avg_rating DESC
             LIMIT ?
         """;
@@ -522,7 +531,10 @@ public class ProductDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             int idx = 1;
-            idx = bindProductSearchPattern(ps, idx, keyword);
+            String searchPattern = "%" + (keyword == null ? "" : keyword.trim()) + "%";
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx++, searchPattern);
             ps.setInt(idx, limit);
 
             ResultSet rs = ps.executeQuery();
@@ -545,11 +557,8 @@ public class ProductDAO {
             p.setCategory(category);
         }
         p.setName(rs.getString("name"));
-        p.setNameEn(rs.getString("name_en"));
         p.setDescription(rs.getString("description"));
-        p.setDescriptionEn(rs.getString("description_en"));
         p.setShortDescription(rs.getString("short_description"));
-        p.setShortDescriptionEn(rs.getString("short_description_en"));
         p.setOriginalPrice(rs.getDouble("original_price"));
         p.setImage(rs.getString("image_url"));
         p.setStockQuantity(rs.getInt("stock_quantity"));
@@ -592,11 +601,8 @@ public class ProductDAO {
                 p.id,
                 p.category_id,
                 p.name,
-                p.name_en,
                 p.description,
-                p.description_en,
                 p.short_description,
-                p.short_description_en,
                 p.original_price,
                 p.image_url,
                 p.stock_quantity,
@@ -611,11 +617,8 @@ public class ProductDAO {
                 p.id,
                 p.category_id,
                 p.name,
-                p.name_en,
                 p.description,
-                p.description_en,
                 p.short_description,
-                p.short_description_en,
                 p.original_price,
                 p.image_url,
                 p.stock_quantity,
@@ -720,25 +723,21 @@ public class ProductDAO {
     public boolean insertProduct(Product product, Category category) {
         String sql = """
         INSERT INTO products (
-            category_id, name, name_en, description, description_en, short_description, short_description_en,
-            original_price, image_url, stock_quantity, total_sold, avg_rating, review_count
+            category_id, name, description, original_price,
+            image_url, stock_quantity, total_sold, avg_rating, review_count
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0)
+        VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0)
     """;
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setObject(1, category != null ? category.getId() : null);
-            ps.setString(2, product.getRawName());
-            ps.setString(3, product.getNameEn());
-            ps.setString(4, product.getRawDescription());
-            ps.setString(5, product.getDescriptionEn());
-            ps.setString(6, product.getRawShortDescription());
-            ps.setString(7, product.getShortDescriptionEn());
-            ps.setDouble(8, product.getOriginalPrice());
-            ps.setString(9, product.getImage());
-            ps.setInt(10, product.getStockQuantity());
+            ps.setString(2, product.getName());
+            ps.setString(3, product.getDescription());
+            ps.setDouble(4, product.getOriginalPrice());
+            ps.setString(5, product.getImage());
+            ps.setInt(6, product.getStockQuantity());
 
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -750,8 +749,7 @@ public class ProductDAO {
     public boolean updateProduct(Product product) {
         String sql = """
         UPDATE products
-        SET category_id = ?, name = ?, name_en = ?, description = ?, description_en = ?,
-            short_description = ?, short_description_en = ?,
+        SET category_id = ?, name = ?, description = ?,
             original_price = ?, image_url = ?, stock_quantity = ?
         WHERE id = ?
     """;
@@ -760,16 +758,12 @@ public class ProductDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setObject(1, product.getCategory() != null ? product.getCategory().getId() : null);
-            ps.setString(2, product.getRawName());
-            ps.setString(3, product.getNameEn());
-            ps.setString(4, product.getRawDescription());
-            ps.setString(5, product.getDescriptionEn());
-            ps.setString(6, product.getRawShortDescription());
-            ps.setString(7, product.getShortDescriptionEn());
-            ps.setDouble(8, product.getOriginalPrice());
-            ps.setString(9, product.getImage());
-            ps.setInt(10, product.getStockQuantity());
-            ps.setLong(11, product.getId());
+            ps.setString(2, product.getName());
+            ps.setString(3, product.getDescription());
+            ps.setDouble(4, product.getOriginalPrice());
+            ps.setString(5, product.getImage());
+            ps.setInt(6, product.getStockQuantity());
+            ps.setLong(7, product.getId());
 
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -798,18 +792,17 @@ public class ProductDAO {
 
         String sql = SEARCH_SELECT + """
         WHERE (
-            """ + buildProductSearchExpression("p") + """
+            LOWER(p.name) LIKE LOWER(?)
+            OR LOWER(p.description) LIKE LOWER(?)
+            OR LOWER(p.short_description) LIKE LOWER(?)
         )
            OR LOWER(c.category_name) LIKE LOWER(?)
         GROUP BY
             p.id,
             p.category_id,
             p.name,
-            p.name_en,
             p.description,
-            p.description_en,
             p.short_description,
-            p.short_description_en,
             p.original_price,
             p.image_url,
             p.stock_quantity,
@@ -824,8 +817,11 @@ public class ProductDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             int idx = 1;
-            idx = bindProductSearchPattern(ps, idx, keyword);
-            ps.setString(idx, "%" + keyword + "%");
+            String searchPattern = "%" + (keyword == null ? "" : keyword.trim()) + "%";
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx++, searchPattern);
+            ps.setString(idx, searchPattern);
 
             ResultSet rs = ps.executeQuery();
 
@@ -847,28 +843,6 @@ public class ProductDAO {
             }
             sql.append("?");
         }
-    }
-
-    private String buildProductSearchExpression(String alias) {
-        return """
-            (
-                LOWER(%1$s.name) LIKE LOWER(?)
-                OR LOWER(%1$s.name_en) LIKE LOWER(?)
-                OR LOWER(%1$s.description) LIKE LOWER(?)
-                OR LOWER(%1$s.description_en) LIKE LOWER(?)
-                OR LOWER(%1$s.short_description) LIKE LOWER(?)
-                OR LOWER(%1$s.short_description_en) LIKE LOWER(?)
-            )
-        """.formatted(alias);
-    }
-
-    private int bindProductSearchPattern(PreparedStatement ps, int startIndex, String keyword) throws Exception {
-        String searchPattern = "%" + (keyword == null ? "" : keyword.trim()) + "%";
-        int idx = startIndex;
-        for (int i = 0; i < 6; i++) {
-            ps.setString(idx++, searchPattern);
-        }
-        return idx;
     }
 
     private int bindCategoryIds(PreparedStatement ps, List<Long> categoryIds, int startIndex) throws Exception {

@@ -369,10 +369,6 @@
             <div class="header-language-switcher"
                  role="group"
                  aria-label="<fmt:message key='language.label'/>">
-                <span class="header-language-switcher__label">
-                    <fmt:message key="language.label"/>
-                </span>
-
                 <div class="header-language-switcher__options">
                     <a class="header-language-switcher__option ${requestScope.siteLanguage == 'vi' ? 'is-active' : ''}"
                        href="${languageViUrl}">

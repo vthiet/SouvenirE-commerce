@@ -52,10 +52,6 @@
 <div class="auth-language-switcher"
      role="group"
      aria-label="<fmt:message key='language.label'/>">
-    <span class="auth-language-switcher__label">
-        <fmt:message key="language.label"/>
-    </span>
-
     <div class="auth-language-switcher__options">
         <a class="auth-language-switcher__option ${requestScope.siteLanguage == 'vi' ? 'is-active' : ''}"
            href="${languageViUrl}">
