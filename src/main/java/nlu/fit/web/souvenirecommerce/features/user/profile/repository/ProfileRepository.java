@@ -34,35 +34,10 @@ public class ProfileRepository extends AbsBaseRepository<Long, User> {
         return Optional.ofNullable(getSession().find(Province.class, provinceCode));
     }
 
-    public Optional<Province> findProvinceByGhnProvinceId(Integer ghnProvinceId) {
-        if (ghnProvinceId == null) {
-            return Optional.empty();
-        }
-        return getSession()
-                .createQuery("from Province p where p.ghnProvinceId = :ghnProvinceId", Province.class)
-                .setParameter("ghnProvinceId", ghnProvinceId)
-                .uniqueResultOptional();
-    }
-
     public Optional<Ward> findWardByCode(Integer wardCode) {
         if (wardCode == null) {
             return Optional.empty();
         }
         return Optional.ofNullable(getSession().find(Ward.class, wardCode));
-    }
-
-    public Optional<Ward> findWardByGhnDistrictIdAndWardCode(Integer ghnDistrictId, String ghnWardCode) {
-        if (ghnDistrictId == null || ghnWardCode == null || ghnWardCode.isBlank()) {
-            return Optional.empty();
-        }
-        return getSession()
-                .createQuery("""
-                        from Ward w
-                        where w.ghnDistrictId = :ghnDistrictId
-                          and w.ghnWardCode = :ghnWardCode
-                        """, Ward.class)
-                .setParameter("ghnDistrictId", ghnDistrictId)
-                .setParameter("ghnWardCode", ghnWardCode.trim())
-                .uniqueResultOptional();
     }
 }

@@ -59,21 +59,9 @@
 
                 <c:if test="${not empty param.success}">
                     <div class="alert alert-success">Cập nhật trạng thái đơn hàng thành công.</div>
-                    <c:if test="${not empty param.ghnOrderCode}">
-                        <div class="alert alert-info" style="margin-top: 12px;">
-                            Đơn GHN đã được tạo thành công. Mã vận đơn:
-                            <strong><c:out value="${param.ghnOrderCode}"/></strong>
-                        </div>
-                    </c:if>
                 </c:if>
                 <c:if test="${not empty param.error}">
-                    <div class="alert alert-danger">
-                        <strong>Lỗi:</strong>
-                        <c:choose>
-                            <c:when test="${param.error eq 'true'}">Không thể cập nhật trạng thái đơn hàng.</c:when>
-                            <c:otherwise><c:out value="${param.error}"/></c:otherwise>
-                        </c:choose>
-                    </div>
+                    <div class="alert alert-danger">Cập nhật trạng thái đơn hàng thất bại. Vui lòng thử lại.</div>
                 </c:if>
 
                 <section class="stats-grid orders-stats">

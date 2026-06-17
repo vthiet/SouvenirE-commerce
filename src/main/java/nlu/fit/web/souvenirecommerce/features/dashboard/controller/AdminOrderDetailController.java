@@ -89,15 +89,12 @@ public class AdminOrderDetailController extends HttpServlet {
         OrderDetailView orderView = buildOrderView(order);
         List<OrderItemView> orderItemViews = buildOrderItemViews(order.getItems());
         List<OrderHistory> historyList = orderService.getOrderHistory(orderId);
-        List<String> shippingValidationErrors = orderService.validateGhnShippingData(order);
 
         log.info("Opened dedicated admin order detail for orderId={}", orderId);
 
         request.setAttribute("orderView", orderView);
         request.setAttribute("orderItemViews", orderItemViews);
         request.setAttribute("historyList", historyList);
-        request.setAttribute("shippingValidationErrors", shippingValidationErrors);
-        request.setAttribute("canStartShipping", shippingValidationErrors.isEmpty());
         request.getRequestDispatcher("/admin/order-detail.jsp").forward(request, response);
     }
 

@@ -38,11 +38,7 @@
                 </c:if>
                 <c:if test="${not empty param.error}">
                     <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-bottom: 20px;">
-                        <i class="fas fa-exclamation-triangle"></i> Lỗi:
-                        <c:choose>
-                            <c:when test="${param.error eq 'true'}">Không thể xử lý đơn hàng.</c:when>
-                            <c:otherwise><c:out value="${param.error}"/></c:otherwise>
-                        </c:choose>
+                        <i class="fas fa-exclamation-triangle"></i> Lỗi: <c:out value="${param.error}"/>
                     </div>
                 </c:if>
                 <section class="admin-page-hero order-detail-hero">
@@ -96,17 +92,6 @@
                         </c:choose>
                         <div class="hero-surface-note">Cập nhật trạng thái ngay từ đây nếu cần.</div>
 
-                        <c:if test="${not empty shippingValidationErrors and (orderView.status == 'Đang xử lý' or orderView.status == 'Chờ xác nhận')}">
-                            <div class="alert alert-warning" style="margin-top: 16px; text-align: left;">
-                                <strong><i class="fas fa-triangle-exclamation"></i> Dữ liệu giao hàng chưa sẵn sàng</strong>
-                                <ul style="margin: 10px 0 0; padding-left: 20px;">
-                                    <c:forEach items="${shippingValidationErrors}" var="shippingError">
-                                        <li><c:out value="${shippingError}"/></li>
-                                    </c:forEach>
-                                </ul>
-                            </div>
-                        </c:if>
-
                         <div class="order-detail-actions">
                             <button type="button" class="btn btn-outline-light order-action-btn" onclick="window.print()">
                                 <i class="fas fa-print"></i>
@@ -127,22 +112,13 @@
                                         </button>
                                     </c:when>
                                     <c:when test="${orderView.status == 'Đang xử lý'}">
-                                        <c:choose>
-                                            <c:when test="${canStartShipping}">
-                                                <form method="post" action="${ctx}/admin/order-detail" style="display:inline;">
-                                                    <input type="hidden" name="orderId" value="${orderView.id}">
-                                                    <input type="hidden" name="action" value="ship">
-                                                    <button type="submit" class="btn btn-primary order-action-btn">
-                                                        <i class="fas fa-shipping-fast"></i> Bắt đầu giao hàng
-                                                    </button>
-                                                </form>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <button type="button" class="btn btn-primary order-action-btn" disabled title="Thiếu dữ liệu giao hàng hợp lệ">
-                                                    <i class="fas fa-shipping-fast"></i> Bắt đầu giao hàng
-                                                </button>
-                                            </c:otherwise>
-                                        </c:choose>
+                                        <form method="post" action="${ctx}/admin/order-detail" style="display:inline;">
+                                            <input type="hidden" name="orderId" value="${orderView.id}">
+                                            <input type="hidden" name="action" value="ship">
+                                            <button type="submit" class="btn btn-primary order-action-btn">
+                                                <i class="fas fa-shipping-fast"></i> Bắt đầu giao hàng
+                                            </button>
+                                        </form>
                                         <button type="button" class="btn btn-danger order-action-btn" onclick="showCancelModal(${orderView.id})">
                                             <i class="fas fa-times"></i> Hủy đơn
                                         </button>

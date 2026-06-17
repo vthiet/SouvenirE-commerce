@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
-import nlu.fit.web.souvenirecommerce.features.order.service.OrderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository;
@@ -23,8 +22,8 @@ import java.util.List;
 public class AdminOrderController extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(AdminOrderController.class);
-    private final OrderDAO orderDAO = new OrderDAO();
-    private final OrderService shippingOrderService = new OrderService();
+    private final OrderRepository orderRepository = new OrderRepository();
+    private final OrderService orderService = new OrderService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -155,38 +154,9 @@ public class AdminOrderController extends HttpServlet {
         }
 
         String newStatus = request.getParameter("status");
-        if (newStatus == null || newStatus.isBlank()) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing status");
-            return;
-        }
-
-        Order currentOrder = orderDAO.getOrderById(orderId);
-        if (currentOrder != null && newStatus.equals(currentOrder.getStatus())) {
-            String redirectUrl = request.getContextPath() + "/admin/orders?success=true";
-            if ("Đang giao".equals(newStatus) && currentOrder.getGhnOrderCode() != null && !currentOrder.getGhnOrderCode().isBlank()) {
-                redirectUrl += "&ghnOrderCode=" + java.net.URLEncoder.encode(currentOrder.getGhnOrderCode(), "UTF-8");
-            }
-            response.sendRedirect(redirectUrl);
-            return;
-        }
-
-        log.info("Updating order status. orderId={}, newStatus={}", orderId, newStatus);
-        String auditAction = "ORDER_STATUS_UPDATED";
-        String redirectUrl = request.getContextPath() + "/admin/orders?success=true";
-        boolean success;
         String performedBy = currentUser != null ? currentUser.getEmail() : "Admin";
 
-        if ("Đang giao".equals(newStatus)) {
-            nlu.fit.web.souvenirecommerce.model.entity.Order shippingOrder =
-                    shippingOrderService.startShipping((long) orderId, performedBy);
-            success = true;
-            auditAction = "ORDER_SHIPPED";
-            if (shippingOrder.getGhnOrderCode() != null && !shippingOrder.getGhnOrderCode().isBlank()) {
-                redirectUrl += "&ghnOrderCode=" + java.net.URLEncoder.encode(shippingOrder.getGhnOrderCode(), "UTF-8");
-            }
-        } else {
-            success = orderDAO.updateOrderStatus(orderId, newStatus);
-        }
+        log.info("Updating order status. orderId={}, newStatus={}", orderId, newStatus);
 
         try {
             OrderStatusCode code = null;
@@ -218,13 +188,13 @@ public class AdminOrderController extends HttpServlet {
                     AdminOrderController.class,
                     currentUser,
                     "ORDER",
-                    auditAction,
+                    "ORDER_STATUS_UPDATED",
                     "ORDER",
                     AuditLogService.describe("orderId", orderId, "newStatus", newStatus)
             );
-            response.sendRedirect(redirectUrl);
-        } else {
-            log.warn("Order status update failed. orderId={}, newStatus={}", orderId, newStatus);
+            response.sendRedirect(request.getContextPath() + "/admin/orders?success=true");
+        } catch (Exception e) {
+            log.error("Order status update failed. orderId={}, newStatus={}", orderId, newStatus, e);
             AuditLogService.failure(
                     AdminOrderController.class,
                     currentUser,
@@ -233,8 +203,7 @@ public class AdminOrderController extends HttpServlet {
                     "ORDER",
                     AuditLogService.describe("orderId", orderId, "newStatus", newStatus, "reason", e.getMessage())
             );
-            String errorMessage = "Không thể cập nhật trạng thái đơn hàng.";
-            response.sendRedirect(request.getContextPath() + "/admin/orders?error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
+            response.sendRedirect(request.getContextPath() + "/admin/orders?error=true");
         }
     }
 

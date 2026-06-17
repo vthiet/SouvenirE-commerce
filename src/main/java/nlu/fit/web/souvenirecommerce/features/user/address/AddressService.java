@@ -52,8 +52,6 @@ public class AddressService {
             return Optional.empty();
         }
         String provinceName = displayName(selectedProvince.getFullName(), selectedProvince.getName());
-        String districtName = firstNotBlank(selectedWard.getGhnDistrictName(), "");
-        String wardName = displayName(selectedWard.getFullName(), selectedWard.getName());
 
         Address address = Address.builder()
                 .user(user)
@@ -62,11 +60,8 @@ public class AddressService {
                 .addressDetail(addressDetail.trim())
                 .province(provinceName)
                 .city(provinceName)
-                .district(districtName)
-                .ward(wardName)
-                .ghnProvinceId(selectedProvince.getGhnProvinceId())
-                .ghnDistrictId(selectedWard.getGhnDistrictId())
-                .ghnWardCode(selectedWard.getGhnWardCode())
+                .district("")
+                .ward(displayName(selectedWard.getFullName(), selectedWard.getName()))
                 .provinceEntity(selectedProvince)
                 .wardEntity(selectedWard)
                 .isDefault(addressRepository.countByUserId(user.getId()) == 0)
@@ -90,9 +85,6 @@ public class AddressService {
             return Optional.empty();
         }
 
-        Optional<Province> provinceEntity = profileRepository.findProvinceByGhnProvinceId(provinceId);
-        Optional<Ward> wardEntity = profileRepository.findWardByGhnDistrictIdAndWardCode(districtId, wardCode);
-
         Address address = Address.builder()
                 .user(user)
                 .receiverName(firstNotBlank(receiverName, user.getFullName()))
@@ -102,11 +94,9 @@ public class AddressService {
                 .city(provinceName.trim())
                 .district(districtName.trim())
                 .ward(wardName.trim())
-                .ghnProvinceId(provinceId)
-                .ghnDistrictId(districtId)
-                .ghnWardCode(wardCode.trim())
-                .provinceEntity(provinceEntity.orElse(null))
-                .wardEntity(wardEntity.orElse(null))
+                .carrierProvinceId(provinceId)
+                .carrierDistrictId(districtId)
+                .carrierWardCode(wardCode.trim())
                 .isDefault(addressRepository.countByUserId(user.getId()) == 0)
                 .build();
         return addressRepository.save(address);
@@ -127,24 +117,7 @@ public class AddressService {
         if (userId == null || addressId == null) {
             return false;
         }
-        Optional<Address> address = addressRepository.findByIdAndUserId(addressId, userId);
-        if (address.isEmpty()) {
-            return false;
-        }
-
-        boolean deleted = addressRepository.deleteByIdAndUserId(addressId, userId);
-        if (!deleted) {
-            return false;
-        }
-
-        if (address.get().isDefault()) {
-            List<Address> remainingAddresses = addressRepository.findByUserId(userId);
-            if (!remainingAddresses.isEmpty()) {
-                addressRepository.setDefault(remainingAddresses.get(0).getId(), userId);
-            }
-        }
-
-        return true;
+        return addressRepository.deleteByIdAndUserId(addressId, userId);
     }
 
     private String displayName(String fullName, String name) {

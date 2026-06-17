@@ -14,14 +14,7 @@ public class AddressRepository extends AbsBaseRepository<Long, Address> {
 
     public List<Address> findByUserId(Long userId) {
         return getSession()
-                .createQuery("""
-                        select a
-                        from Address a
-                        left join fetch a.provinceEntity
-                        left join fetch a.wardEntity
-                        where a.user.id = :userId
-                        order by a.isDefault desc, a.id desc
-                        """, Address.class)
+                .createQuery("from Address a where a.user.id = :userId order by a.isDefault desc, a.id desc", Address.class)
                 .setParameter("userId", userId)
                 .getResultList();
     }
@@ -31,13 +24,7 @@ public class AddressRepository extends AbsBaseRepository<Long, Address> {
             return Optional.empty();
         }
         return getSession()
-                .createQuery("""
-                        select a
-                        from Address a
-                        left join fetch a.provinceEntity
-                        left join fetch a.wardEntity
-                        where a.id = :addressId and a.user.id = :userId
-                        """, Address.class)
+                .createQuery("from Address a where a.id = :addressId and a.user.id = :userId", Address.class)
                 .setParameter("addressId", addressId)
                 .setParameter("userId", userId)
                 .uniqueResultOptional();
@@ -52,22 +39,12 @@ public class AddressRepository extends AbsBaseRepository<Long, Address> {
     }
 
     public boolean deleteByIdAndUserId(Long addressId, Long userId) {
-        Address address = getSession()
-                .createQuery("""
-                        select a
-                        from Address a
-                        where a.id = :addressId
-                          and a.user.id = :userId
-                        """, Address.class)
+        int updated = getSession()
+                .createMutationQuery("delete from Address a where a.id = :addressId and a.user.id = :userId")
                 .setParameter("addressId", addressId)
                 .setParameter("userId", userId)
-                .uniqueResult();
-        if (address == null) {
-            return false;
-        }
-
-        getSession().remove(address);
-        return true;
+                .executeUpdate();
+        return updated > 0;
     }
 
     /**
