@@ -151,14 +151,13 @@ public class ProductDetailController extends HttpServlet {
 
             request.setAttribute("shippingAddressText", formatAddress(address));
 
-            if (address.getCarrierDistrictId() == null
-                    || address.getCarrierWardCode() == null
-                    || address.getCarrierWardCode().isBlank()) {
+            Integer districtId = address.getEffectiveGhnDistrictId();
+            String wardCode = address.getEffectiveGhnWardCode();
+            if (districtId == null || wardCode == null || wardCode.isBlank()) {
                 return;
             }
 
-            ShippingProvider provider = ShippingProviderRegistry.getDefault();
-            BigDecimal shippingFee = provider.calculateFee(address);
+            BigDecimal shippingFee = ghnService.calculateFee(districtId, wardCode);
             request.setAttribute("shippingFeeAmount", shippingFee);
         } catch (Exception ignored) {
             request.setAttribute("shippingFeeUnavailable", true);
@@ -182,9 +181,9 @@ public class ProductDetailController extends HttpServlet {
     private String formatAddress(Address address) {
         List<String> parts = new ArrayList<>();
         addPart(parts, address.getAddressDetail());
-        addPart(parts, address.getWard());
-        addPart(parts, address.getDistrict());
-        addPart(parts, address.getProvince());
+        addPart(parts, address.getEffectiveWardName());
+        addPart(parts, address.getEffectiveDistrictName());
+        addPart(parts, address.getEffectiveProvinceName());
         return String.join(", ", parts);
     }
 

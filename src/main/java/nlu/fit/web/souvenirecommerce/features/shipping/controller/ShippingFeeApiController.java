@@ -54,8 +54,8 @@ public class ShippingFeeApiController extends HttpServlet {
                 writeError(response, "ADDRESS_NOT_FOUND");
                 return;
             }
-            districtId = address.getCarrierDistrictId();
-            wardCode = address.getCarrierWardCode();
+            districtId = address.getEffectiveGhnDistrictId();
+            wardCode = address.getEffectiveGhnWardCode();
         }
 
         if (districtId == null || wardCode == null || wardCode.isBlank()) {

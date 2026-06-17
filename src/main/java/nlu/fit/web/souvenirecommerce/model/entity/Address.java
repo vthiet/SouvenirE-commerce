@@ -66,4 +66,82 @@ public class Address extends AbsBaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    public Integer getEffectiveGhnProvinceId() {
+        if (ghnProvinceId != null) {
+            return ghnProvinceId;
+        }
+        return provinceEntity == null ? null : provinceEntity.getGhnProvinceId();
+    }
+
+    public String getEffectiveGhnProvinceName() {
+        if (provinceEntity != null && provinceEntity.getGhnProvinceName() != null && !provinceEntity.getGhnProvinceName().isBlank()) {
+            return provinceEntity.getGhnProvinceName();
+        }
+        return null;
+    }
+
+    public Integer getEffectiveGhnDistrictId() {
+        if (ghnDistrictId != null) {
+            return ghnDistrictId;
+        }
+        return wardEntity == null ? null : wardEntity.getGhnDistrictId();
+    }
+
+    public String getEffectiveGhnWardCode() {
+        if (ghnWardCode != null && !ghnWardCode.isBlank()) {
+            return ghnWardCode;
+        }
+        return wardEntity == null ? null : wardEntity.getGhnWardCode();
+    }
+
+    public String getEffectiveGhnDistrictName() {
+        if (wardEntity != null && wardEntity.getGhnDistrictName() != null && !wardEntity.getGhnDistrictName().isBlank()) {
+            return wardEntity.getGhnDistrictName();
+        }
+        return null;
+    }
+
+    public String getEffectiveGhnWardName() {
+        if (wardEntity != null && wardEntity.getGhnWardName() != null && !wardEntity.getGhnWardName().isBlank()) {
+            return wardEntity.getGhnWardName();
+        }
+        return null;
+    }
+
+    public String getEffectiveProvinceName() {
+        if (province != null && !province.isBlank()) {
+            return province;
+        }
+        if (city != null && !city.isBlank()) {
+            return city;
+        }
+        if (provinceEntity != null) {
+            if (provinceEntity.getFullName() != null && !provinceEntity.getFullName().isBlank()) {
+                return provinceEntity.getFullName();
+            }
+            return provinceEntity.getName();
+        }
+        return null;
+    }
+
+    public String getEffectiveDistrictName() {
+        if (district != null && !district.isBlank()) {
+            return district;
+        }
+        return wardEntity == null ? null : wardEntity.getGhnDistrictName();
+    }
+
+    public String getEffectiveWardName() {
+        if (ward != null && !ward.isBlank()) {
+            return ward;
+        }
+        if (wardEntity != null) {
+            if (wardEntity.getFullName() != null && !wardEntity.getFullName().isBlank()) {
+                return wardEntity.getFullName();
+            }
+            return wardEntity.getName();
+        }
+        return null;
+    }
 }

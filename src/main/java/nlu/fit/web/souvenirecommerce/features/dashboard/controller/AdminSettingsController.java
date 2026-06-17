@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.legacy.dao.SettingsDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
+import nlu.fit.web.souvenirecommerce.features.shipping.service.GhnMappingSyncJob;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,9 @@ public class AdminSettingsController extends HttpServlet {
             session.removeAttribute("message");
             session.removeAttribute("messageType");
         }
+
+        req.setAttribute("ghnMappingSyncRunning", GhnMappingSyncJob.isRunning());
+        req.setAttribute("ghnMappingSyncStatus", GhnMappingSyncJob.getLastStatus());
 
         req.getRequestDispatcher("/admin/settings.jsp").forward(req, resp);
     }
@@ -223,6 +227,32 @@ public class AdminSettingsController extends HttpServlet {
                     );
                     session.setAttribute("message", "Cập nhật cài đặt hệ thống thất bại!");
                     session.setAttribute("messageType", "error");
+                }
+            } else if ("syncGhnMapping".equals(action)) {
+                if (GhnMappingSyncJob.start()) {
+                    log.info("Admin triggered GHN mapping sync: userId={}", currentUser.getId());
+                    AuditLogService.success(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "SYSTEM",
+                            "GHN_MAPPING_SYNC_STARTED",
+                            "ADMIN_SETTINGS",
+                            AuditLogService.describe("status", "started")
+                    );
+                    session.setAttribute("message", "Đã bắt đầu đồng bộ GHN mapping trong nền. Vui lòng chờ vài phút rồi tải lại trang.");
+                    session.setAttribute("messageType", "success");
+                } else {
+                    log.warn("Admin tried to start GHN mapping sync while another run is active: userId={}", currentUser.getId());
+                    AuditLogService.failure(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "SYSTEM",
+                            "GHN_MAPPING_SYNC_STARTED",
+                            "ADMIN_SETTINGS",
+                            AuditLogService.describe("reason", "already_running")
+                    );
+                    session.setAttribute("message", "GHN mapping đang được đồng bộ. Vui lòng thử lại sau.");
+                    session.setAttribute("messageType", "warning");
                 }
             }
         } catch (Exception e) {

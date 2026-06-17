@@ -53,12 +53,14 @@ public class OrderRepository extends AbsBaseRepository<Long, Order> {
                         select a
                         from CustomerOrder o
                         join o.address a
+                        left join fetch a.provinceEntity pe
+                        left join fetch a.wardEntity we
                         where o.user.id = :userId
                         order by
                             case
-                                when a.carrierDistrictId is not null
-                                    and a.carrierWardCode is not null
-                                    and a.carrierWardCode <> ''
+                                when (a.ghnDistrictId is not null or we.ghnDistrictId is not null)
+                                    and ((a.ghnWardCode is not null and a.ghnWardCode <> '')
+                                        or (we.ghnWardCode is not null and we.ghnWardCode <> ''))
                                 then 0
                                 else 1
                             end,

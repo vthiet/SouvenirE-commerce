@@ -164,6 +164,35 @@
                             </button>
                         </c:if>
                     </form>
+
+                    <c:if test="${canUpdateSettings}">
+                        <div class="settings-section">
+                            <h3>Đồng bộ GHN mapping</h3>
+                            <p class="text-muted mb-3">
+                                Cập nhật mã GHN cho tỉnh/thành, quận/huyện và phường/xã trong dữ liệu địa chỉ hiện có.
+                            </p>
+
+                            <c:if test="${ghnMappingSyncRunning}">
+                                <div class="alert alert-info mb-3">
+                                    GHN mapping đang được đồng bộ trong nền. Vui lòng chờ vài phút rồi tải lại trang.
+                                </div>
+                            </c:if>
+
+                            <c:if test="${not empty ghnMappingSyncStatus}">
+                                <div class="alert alert-secondary mb-3">
+                                    <c:out value="${ghnMappingSyncStatus}"/>
+                                </div>
+                            </c:if>
+
+                            <form action="${pageContext.request.contextPath}/admin/settings" method="post"
+                                  onsubmit="return confirm('Bạn có chắc muốn đồng bộ GHN mapping ngay bây giờ không?');">
+                                <input type="hidden" name="action" value="syncGhnMapping">
+                                <button type="submit" class="btn btn-outline-info">
+                                    <i class="fas fa-sync-alt"></i> Đồng bộ GHN mapping
+                                </button>
+                            </form>
+                        </div>
+                    </c:if>
                 </div>
             </div>
         </div>

@@ -25,6 +25,12 @@ public class Province {
     @Column(name = "full_name", length = 255)
     private String fullName;
 
+    @Column(name = "ghn_province_id")
+    private Integer ghnProvinceId;
+
+    @Column(name = "ghn_province_name", length = 255)
+    private String ghnProvinceName;
+
     @OneToMany(mappedBy = "province", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Ward> wards = new ArrayList<>();
 
@@ -53,6 +59,22 @@ public class Province {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public Integer getGhnProvinceId() {
+        return ghnProvinceId;
+    }
+
+    public void setGhnProvinceId(Integer ghnProvinceId) {
+        this.ghnProvinceId = ghnProvinceId;
+    }
+
+    public String getGhnProvinceName() {
+        return ghnProvinceName;
+    }
+
+    public void setGhnProvinceName(String ghnProvinceName) {
+        this.ghnProvinceName = ghnProvinceName;
     }
 
     public List<Ward> getWards() {

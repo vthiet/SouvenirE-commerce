@@ -315,7 +315,7 @@
 .summary-note,
 .orders-card-subtitle,
 .hero-surface-note {
-    color: var(--admin-page-muted);
+    color: var(--admin-page-text);
     font-size: 0.85rem;
 }
 
@@ -337,7 +337,7 @@
 
 .hero-surface .hero-surface-label,
 .hero-surface .hero-surface-note {
-    color: rgba(226, 232, 240, 0.82);
+    color: var(--admin-page-text);
 }
 
 .hero-surface-value {
@@ -629,6 +629,7 @@
     padding-left: 1rem;
     padding-right: 1rem;
     font-weight: 700;
+    color: var(--admin-page-text);
 }
 
 .order-summary-grid {
@@ -906,11 +907,11 @@
 }
 
 .order-detail-page .hero-surface-label {
-    color: rgba(226, 232, 240, 0.78);
+    color: var(--admin-page-text);
 }
 
 .order-detail-page .hero-surface-note {
-    color: rgba(226, 232, 240, 0.78);
+    color: var(--admin-page-text);
 }
 
 .order-detail-page .detail-status-pill {
