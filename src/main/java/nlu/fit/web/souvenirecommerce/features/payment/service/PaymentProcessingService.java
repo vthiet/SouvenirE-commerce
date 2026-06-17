@@ -89,6 +89,9 @@ public class PaymentProcessingService {
 
         PaymentTransaction transaction = paymentRepository.findById(transactionId).orElse(null);
         if (transaction == null) {
+            transaction = paymentRepository.findByOrderId(transactionId).orElse(null);
+        }
+        if (transaction == null) {
             return result(PaymentCallbackResult.Outcome.ORDER_NOT_FOUND, false, null);
         }
 
