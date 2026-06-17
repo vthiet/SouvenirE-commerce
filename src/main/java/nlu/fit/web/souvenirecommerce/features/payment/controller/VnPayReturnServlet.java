@@ -24,8 +24,8 @@ public class VnPayReturnServlet extends HttpServlet {
             throws ServletException, IOException {
         Map<String, String> fields = VnPayUtil.getRequestParams(request);
 
-        nlu.fit.web.souvenirecommerce.features.payment.port.PaymentProviderAdapter adapter = 
-            nlu.fit.web.souvenirecommerce.features.payment.factory.PaymentAdapterFactory.getAdapter(nlu.fit.web.souvenirecommerce.model.enums.PaymentProvider.VNPAY);
+        nlu.fit.web.souvenirecommerce.features.payment.adapter.PaymentProviderAdapter adapter = nlu.fit.web.souvenirecommerce.features.payment.factory.PaymentAdapterFactory
+                .getAdapter(nlu.fit.web.souvenirecommerce.model.enums.PaymentProvider.VNPAY);
 
         if (!adapter.verifySignature(fields)) {
             request.setAttribute("paymentStatus", "INVALID");
@@ -37,23 +37,27 @@ public class VnPayReturnServlet extends HttpServlet {
         Long transactionId = adapter.getTransactionId(fields);
         nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction transaction = null;
         if (transactionId != null) {
-            transaction = new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().findById(transactionId).orElse(null);
+            transaction = new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository()
+                    .findById(transactionId).orElse(null);
         }
 
-        // We only use Return URL for UI redirection, not to update status. 
-        // We display the status based on the current DB state which might be updated by IPN already,
+        // We only use Return URL for UI redirection, not to update status.
+        // We display the status based on the current DB state which might be updated by
+        // IPN already,
         // or we just reflect what VNPay tells us in the URL.
         boolean isSuccess = adapter.isPaymentSuccess(fields);
         request.setAttribute("paymentStatus", isSuccess ? "SUCCESS" : "FAILED");
-        request.setAttribute("paymentMessage", isSuccess 
-            ? I18nUtil.message(request, "payment.server.processed.success") 
-            : I18nUtil.message(request, "payment.server.processed.failed"));
-            
+        request.setAttribute("paymentMessage", isSuccess
+                ? I18nUtil.message(request, "payment.server.processed.success")
+                : I18nUtil.message(request, "payment.server.processed.failed"));
+
         request.setAttribute("paymentTransaction", transaction);
         if (transaction != null) {
-            // Because order is no longer directly linked via @OneToOne (or at least we only have orderId),
+            // Because order is no longer directly linked via @OneToOne (or at least we only
+            // have orderId),
             // We fetch the order from repo.
-            nlu.fit.web.souvenirecommerce.model.entity.Order order = new nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository().findById(transaction.getOrderId()).orElse(null);
+            nlu.fit.web.souvenirecommerce.model.entity.Order order = new nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository()
+                    .findById(transaction.getOrderId()).orElse(null);
             request.setAttribute("order", order);
         }
         forwardResult(request, response);

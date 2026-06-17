@@ -5,6 +5,8 @@ import nlu.fit.web.souvenirecommerce.features.payment.model.VnPayUtil;
 
 import java.net.URI;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +38,7 @@ public class VnPayService {
             throw new IllegalArgumentException("Order id and amount must be valid");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         Map<String, String> params = new HashMap<>();
         params.put("vnp_Version", VERSION);
         params.put("vnp_Command", COMMAND);
