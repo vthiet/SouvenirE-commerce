@@ -166,8 +166,9 @@ public class GhnService implements ShippingProvider {
         body.addProperty("to_address", address.getAddressDetail());
         body.addProperty("to_ward_code", address.getCarrierWardCode());
         body.addProperty("to_district_id", address.getCarrierDistrictId());
-        body.addProperty("cod_amount", order.getPaymentTransaction() != null
-                && order.getPaymentTransaction().getMethod() == PaymentMethod.COD
+        nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx = new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().findByOrderId(order.getId()).orElse(null);
+        body.addProperty("cod_amount", ptx != null
+                && ptx.getMethod() == PaymentMethod.COD
                 ? order.getTotalAmount().intValue()
                 : 0);
         body.addProperty("content", "Đơn hàng " + order.getOrderCode());

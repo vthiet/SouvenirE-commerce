@@ -125,8 +125,10 @@ public class OrderService {
         }
 
         // Update payment transaction status if exists
-        if (order.getPaymentTransaction() != null) {
-            order.getPaymentTransaction().setStatus(nlu.fit.web.souvenirecommerce.model.enums.PaymentStatus.CANCELLED);
+        nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx1 = new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().findByOrderId(orderId).orElse(null);
+        if (ptx1 != null) {
+            ptx1.setStatus(nlu.fit.web.souvenirecommerce.model.enums.PaymentStatus.FAILED);
+            new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().update(ptx1);
         }
 
         return updateStatus(order, OrderStatusCode.CANCELLED, performedBy, "Hủy đơn hàng. Lý do: " + reason);
@@ -200,9 +202,10 @@ public class OrderService {
 
             String payStatus = "PENDING";
             String repayUrl = null;
-            if (o.getPaymentTransaction() != null) {
-                payStatus = o.getPaymentTransaction().getStatus().name();
-                repayUrl = o.getPaymentTransaction().getPaymentUrl();
+            nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx2 = new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().findByOrderId(o.getId()).orElse(null);
+            if (ptx2 != null) {
+                payStatus = ptx2.getStatus().name();
+                repayUrl = ptx2.getPaymentUrl();
             }
             dto.setPaymentStatus(payStatus);
             dto.setRepayUrl(repayUrl);

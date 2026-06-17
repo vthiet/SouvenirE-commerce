@@ -17,7 +17,7 @@ public class CodPaymentGateway implements PaymentGateway {
     public PaymentPreparation prepare(Order order, PaymentContext context) {
         return PaymentPreparation.builder()
                 .provider(PaymentProvider.COD)
-                .status(PaymentStatus.NOT_REQUIRED)
+                .status(PaymentStatus.PENDING)
                 .build();
     }
 }

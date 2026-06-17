@@ -18,10 +18,7 @@ public class PaymentTransactionRepository extends AbsBaseRepository<Long, Paymen
                 .createQuery("""
                         select p
                         from PaymentTransaction p
-                        join fetch p.order o
-                        join fetch o.user
-                        left join fetch o.status
-                        where o.id = :orderId
+                        where p.orderId = :orderId
                         """, PaymentTransaction.class)
                 .setParameter("orderId", orderId)
                 .uniqueResultOptional();

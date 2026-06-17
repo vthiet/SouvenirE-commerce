@@ -18,13 +18,13 @@ public class VnPayIpnServlet extends HttpServlet {
         response.setContentType("application/json;charset=UTF-8");
         Map<String, String> fields = VnPayUtil.getRequestParams(request);
 
-        if (!vnPayService.isConfigured()
-                || !VnPayUtil.verifySignature(fields, vnPayService.getHashSecret())) {
-            writeResponse(response, "97", "Invalid signature");
-            return;
+        PaymentCallbackResult result = paymentService.processWebhook(nlu.fit.web.souvenirecommerce.model.enums.PaymentProvider.VNPAY, fields);
+        
+        if (result.getOutcome() == PaymentCallbackResult.Outcome.INVALID_REQUEST) {
+             writeResponse(response, "97", "Invalid signature or request");
+             return;
         }
-
-        PaymentCallbackResult result = paymentService.processVnPayCallback(fields);
+        
         writeResponse(response, result.getIpnResponseCode(), messageFor(result.getOutcome()));
     }
 

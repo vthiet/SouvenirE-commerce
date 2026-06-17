@@ -195,6 +195,8 @@ public class AdminOrderDetailController extends HttpServlet {
         Date leadtime = shipment != null ? toDate(shipment.getLeadtime()) : null;
         Date finishDate = shipment != null ? toDate(shipment.getFinishDate()) : null;
 
+        nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx = new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().findByOrderId(order.getId()).orElse(null);
+
         return new OrderDetailView(
                 order.getId().intValue(),
                 new java.sql.Timestamp(order.getOrderDate().getTime()),
@@ -204,7 +206,7 @@ public class AdminOrderDetailController extends HttpServlet {
                 customerPhone,
                 shippingAddr,
                 order.getNote(),
-                order.getPaymentTransaction() != null ? order.getPaymentTransaction().getMethod().name() : "COD",
+                ptx != null ? ptx.getMethod().name() : "COD",
                 order.getStatusDescription(),
                 order.getTotalAmount(),
                 safeMoney(order.getShippingFee()),

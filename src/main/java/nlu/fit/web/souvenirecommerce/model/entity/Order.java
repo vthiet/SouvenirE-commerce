@@ -66,9 +66,6 @@ public class Order {
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
 
-    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private PaymentTransaction paymentTransaction;
-
     /** Carrier shipments associated with this order (one per shipping attempt). */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -145,10 +142,6 @@ public class Order {
         return user != null ? user.getEmail() : "";
     }
 
-    @jakarta.persistence.Transient
-    public String getPaymentMethod() {
-        return paymentTransaction != null ? paymentTransaction.getMethod().name() : "COD";
-    }
 
     @jakarta.persistence.Transient
     public String getStatus() {

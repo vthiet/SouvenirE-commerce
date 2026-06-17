@@ -94,7 +94,7 @@ public class CheckoutService {
         PaymentGateway gateway = paymentGatewayRegistry.get(paymentMethod);
         PaymentPreparation paymentPreparation = gateway.prepare(savedOrder, paymentContext);
         PaymentTransaction paymentTransaction = PaymentTransaction.builder()
-                .order(savedOrder)
+                .orderId(savedOrder.getId())
                 .method(paymentMethod)
                 .provider(paymentPreparation.getProvider())
                 .status(paymentPreparation.getStatus())
@@ -103,8 +103,7 @@ public class CheckoutService {
                 .paymentUrl(paymentPreparation.getPaymentUrl())
                 .qrPayload(paymentPreparation.getQrPayload())
                 .build();
-        savedOrder.setPaymentTransaction(paymentTransaction);
-        orderRepository.update(savedOrder);
+        new nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository().save(paymentTransaction);
 
         orderService.logHistory(
                 savedOrder,

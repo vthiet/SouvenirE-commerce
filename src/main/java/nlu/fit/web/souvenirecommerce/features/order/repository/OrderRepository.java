@@ -73,13 +73,13 @@ public class OrderRepository extends AbsBaseRepository<Long, Order> {
     }
 
     public double getTotalRevenue() {
-        Double sum = getSession().createQuery("""
+        java.math.BigDecimal sum = getSession().createQuery("""
                 select sum(o.totalAmount)
                 from CustomerOrder o
                 where o.status.description = 'Hoàn thành'
-                """, Double.class)
+                """, java.math.BigDecimal.class)
                 .uniqueResult();
-        return sum != null ? sum : 0.0;
+        return sum != null ? sum.doubleValue() : 0.0;
     }
 
     public int getTotalOrders() {
@@ -236,7 +236,6 @@ public class OrderRepository extends AbsBaseRepository<Long, Order> {
             select distinct o
             from CustomerOrder o
             left join fetch o.status
-            left join fetch o.paymentTransaction
             left join fetch o.items i
             left join fetch i.product p
             where o.user.id = :userId

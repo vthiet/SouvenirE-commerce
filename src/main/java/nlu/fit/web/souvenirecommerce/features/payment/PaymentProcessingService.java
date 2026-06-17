@@ -1,13 +1,18 @@
 package nlu.fit.web.souvenirecommerce.features.payment;
 
-import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
+import nlu.fit.web.souvenirecommerce.common.event.EventBus;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
-import nlu.fit.web.souvenirecommerce.features.order.repository.OrderStatusRepository;
+import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.repository.PaymentTransactionRepository;
-import nlu.fit.web.souvenirecommerce.model.entity.OrderStatus;
+import nlu.fit.web.souvenirecommerce.features.payment.event.PaymentCreatedEvent;
+import nlu.fit.web.souvenirecommerce.features.payment.event.PaymentFailedEvent;
+import nlu.fit.web.souvenirecommerce.features.payment.event.PaymentPendingEvent;
+import nlu.fit.web.souvenirecommerce.features.payment.event.PaymentSucceededEvent;
+import nlu.fit.web.souvenirecommerce.features.payment.factory.PaymentAdapterFactory;
+import nlu.fit.web.souvenirecommerce.features.payment.port.PaymentProviderAdapter;
 import nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction;
-import nlu.fit.web.souvenirecommerce.model.enums.OrderStatusCode;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
+import nlu.fit.web.souvenirecommerce.model.enums.PaymentProvider;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentStatus;
 
 import java.math.BigDecimal;
@@ -16,128 +21,110 @@ import java.util.Map;
 
 public class PaymentProcessingService {
     private final PaymentTransactionRepository paymentRepository = new PaymentTransactionRepository();
-    private final OrderStatusRepository orderStatusRepository = new OrderStatusRepository();
-    private final VnPayService vnPayService = new VnPayService();
-    private final nlu.fit.web.souvenirecommerce.features.order.service.OrderService orderService = new nlu.fit.web.souvenirecommerce.features.order.service.OrderService();
 
-    public PaymentCallbackResult processVnPayCallback(Map<String, String> fields) {
-        Long orderId = parseLong(fields.get("vnp_TxnRef"));
-        Long amountRaw = parseLong(fields.get("vnp_Amount"));
-        if (orderId == null || amountRaw == null || amountRaw <= 0) {
-            return result(PaymentCallbackResult.Outcome.INVALID_REQUEST, false, null);
+    public PaymentTransaction createPayment(Long orderId, BigDecimal amount, PaymentMethod method, PaymentProvider provider) {
+        PaymentTransaction transaction = PaymentTransaction.builder()
+                .orderId(orderId)
+                .amount(amount)
+                .method(method)
+                .provider(provider)
+                .status(PaymentStatus.CREATED)
+                .build();
+        
+        transaction = paymentRepository.save(transaction)
+                .orElseThrow(() -> new CheckoutException("Không thể tạo giao dịch thanh toán."));
+
+        EventBus.publish(new PaymentCreatedEvent(this, orderId, transaction.getId(), amount, method));
+        return transaction;
+    }
+
+    public String generatePaymentUrl(Long transactionId, String clientIp, String returnUrl) {
+        PaymentTransaction transaction = paymentRepository.findById(transactionId)
+                .orElseThrow(() -> new CheckoutException("Không tìm thấy giao dịch thanh toán."));
+
+        if (transaction.getStatus() == PaymentStatus.SUCCESS || transaction.getStatus() == PaymentStatus.SETTLED) {
+            throw new CheckoutException("Giao dịch đã được thanh toán.");
         }
 
-        PaymentTransaction transaction = paymentRepository.findByOrderId(orderId).orElse(null);
-        if (transaction == null || transaction.getMethod() != PaymentMethod.VNPAY_QR) {
-            return result(PaymentCallbackResult.Outcome.ORDER_NOT_FOUND, false, null);
-        }
+        PaymentProviderAdapter adapter = PaymentAdapterFactory.getAdapter(transaction.getProvider());
+        String url = adapter.createPaymentUrl(transaction.getId(), transaction.getOrderId(), transaction.getAmount(), clientIp, returnUrl);
 
-        BigDecimal callbackAmount = BigDecimal.valueOf(amountRaw, 2);
-        if (transaction.getAmount().compareTo(callbackAmount) != 0) {
-            return result(PaymentCallbackResult.Outcome.INVALID_AMOUNT, false, transaction);
-        }
-        if (transaction.getStatus() == PaymentStatus.PAID) {
-            return result(PaymentCallbackResult.Outcome.ALREADY_PROCESSED, true, transaction);
-        }
-
-        String responseCode = fields.get("vnp_ResponseCode");
-        boolean successful = "00".equals(responseCode)
-                && "00".equals(fields.get("vnp_TransactionStatus"));
-
-        transaction.setResponseCode(responseCode);
-        transaction.setBankCode(fields.get("vnp_BankCode"));
-        transaction.setProviderTransactionRef(fields.get("vnp_TransactionNo"));
-        transaction.setStatus(successful ? PaymentStatus.PAID : PaymentStatus.FAILED);
-        transaction.setPaidAt(successful ? LocalDateTime.now() : null);
+        transaction.setStatus(PaymentStatus.PENDING);
+        transaction.setPaymentUrl(url);
         paymentRepository.update(transaction);
-        if (successful) {
-            AuditLogService.success(
-                    PaymentProcessingService.class,
-                    transaction.getOrder().getUser(),
-                    "ORDER",
-                    "PAYMENT_CONFIRMED",
-                    "PAYMENT",
-                    AuditLogService.describe(
-                            "orderCode", transaction.getOrder().getOrderCode(),
-                            "provider", transaction.getProvider(),
-                            "responseCode", responseCode,
-                            "transactionRef", transaction.getProviderTransactionRef()
-                    )
-            );
-        } else {
-            AuditLogService.failure(
-                    PaymentProcessingService.class,
-                    transaction.getOrder().getUser(),
-                    "ORDER",
-                    "PAYMENT_FAILED",
-                    "PAYMENT",
-                    AuditLogService.describe(
-                            "orderCode", transaction.getOrder().getOrderCode(),
-                            "provider", transaction.getProvider(),
-                            "responseCode", responseCode,
-                            "transactionRef", transaction.getProviderTransactionRef()
-                    )
-            );
-        }
 
-        if (successful) {
-            orderService.updateStatus(transaction.getOrder(), OrderStatusCode.WAIT_CONFIRM, "Hệ thống", "Khách hàng thanh toán thành công qua VNPay.");
-        } else {
-            orderService.cancelOrder(transaction.getOrder().getId(), "Hệ thống", "Thanh toán VNPay thất bại hoặc bị hủy bởi khách hàng.");
-        }
+        EventBus.publish(new PaymentPendingEvent(this, transaction.getOrderId(), transaction.getId()));
 
-        return result(PaymentCallbackResult.Outcome.PROCESSED, successful, transaction);
+        return url;
     }
 
     public String createRetryUrl(Long orderId, Long userId, String clientIp, String returnUrl) {
-        PaymentTransaction transaction = paymentRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new CheckoutException("Không tìm thấy giao dịch thanh toán."));
-
-        if (userId == null || !userId.equals(transaction.getOrder().getUser().getId())) {
-            throw new CheckoutException("Bạn không có quyền thanh toán đơn hàng này.");
-        }
-        if (transaction.getMethod() != PaymentMethod.VNPAY_QR) {
-            throw new CheckoutException("Đơn hàng này không sử dụng VNPay.");
-        }
-        if (transaction.getStatus() == PaymentStatus.PAID) {
-            throw new CheckoutException("Đơn hàng đã được thanh toán.");
+        nlu.fit.web.souvenirecommerce.model.entity.Order order = new nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository().findById(orderId)
+                .orElseThrow(() -> new CheckoutException("Không tìm thấy đơn hàng."));
+        
+        if (!order.getUser().getId().equals(userId)) {
+            throw new CheckoutException("Không có quyền thực hiện.");
         }
 
-        String paymentUrl = vnPayService.createPaymentUrl(
-                orderId,
-                transaction.getAmount().longValueExact(),
-                clientIp,
-                returnUrl);
-        transaction.setStatus(PaymentStatus.PENDING);
-        transaction.setResponseCode(null);
-        transaction.setBankCode(null);
-        transaction.setProviderTransactionRef(null);
-        transaction.setPaidAt(null);
-        transaction.setPaymentUrl(paymentUrl);
-        transaction.getOrder().setStatus(resolveStatus(OrderStatusCode.PENDING_PAYMENT));
-        paymentRepository.update(transaction);
-        AuditLogService.success(
-                PaymentProcessingService.class,
-                transaction.getOrder().getUser(),
-                "ORDER",
-                "PAYMENT_RETRY",
-                "PAYMENT",
-                AuditLogService.describe(
-                        "orderCode", transaction.getOrder().getOrderCode(),
-                        "amount", transaction.getAmount(),
-                        "provider", transaction.getProvider(),
-                        "clientIp", clientIp
-                )
-        );
-        return paymentUrl;
+        PaymentTransaction newTransaction = createPayment(orderId, order.getTotalAmount(), PaymentMethod.VNPAY_QR, PaymentProvider.VNPAY);
+        return generatePaymentUrl(newTransaction.getId(), clientIp, returnUrl);
     }
 
-    private OrderStatus resolveStatus(OrderStatusCode code) {
-        return orderStatusRepository.findByDescription(code.getDescription())
-                .orElseGet(() -> orderStatusRepository.save(OrderStatus.builder()
-                                .description(code.getDescription())
-                                .build())
-                        .orElseThrow(() -> new CheckoutException("Không thể cập nhật trạng thái đơn hàng.")));
+    public PaymentCallbackResult processWebhook(PaymentProvider provider, Map<String, String> params) {
+        PaymentProviderAdapter adapter = PaymentAdapterFactory.getAdapter(provider);
+
+        if (!adapter.verifySignature(params)) {
+            return result(PaymentCallbackResult.Outcome.INVALID_REQUEST, false, null);
+        }
+
+        Long transactionId = adapter.getTransactionId(params);
+        if (transactionId == null) {
+            return result(PaymentCallbackResult.Outcome.INVALID_REQUEST, false, null);
+        }
+
+        PaymentTransaction transaction = paymentRepository.findById(transactionId).orElse(null);
+        if (transaction == null) {
+            return result(PaymentCallbackResult.Outcome.ORDER_NOT_FOUND, false, null);
+        }
+
+        BigDecimal callbackAmount = adapter.getAmount(params);
+        if (callbackAmount == null || transaction.getAmount().compareTo(callbackAmount) != 0) {
+            return result(PaymentCallbackResult.Outcome.INVALID_AMOUNT, false, transaction);
+        }
+
+        if (transaction.getStatus() == PaymentStatus.SUCCESS || transaction.getStatus() == PaymentStatus.SETTLED) {
+            // Idempotency: Ignore if already processed successfully
+            return result(PaymentCallbackResult.Outcome.ALREADY_PROCESSED, true, transaction);
+        }
+
+        boolean isSuccess = adapter.isPaymentSuccess(params);
+        String responseCode = adapter.getResponseCode(params);
+        String providerRef = adapter.getProviderTransactionRef(params);
+        
+        transaction.setResponseCode(responseCode);
+        transaction.setBankCode(adapter.getBankCode(params));
+        transaction.setProviderTransactionRef(providerRef);
+        
+        if (isSuccess) {
+            transaction.setStatus(PaymentStatus.SUCCESS);
+            transaction.setPaidAt(LocalDateTime.now());
+            paymentRepository.update(transaction);
+
+            EventBus.publish(new PaymentSucceededEvent(this, transaction.getOrderId(), transaction.getId(), providerRef));
+            
+            AuditLogService.success(PaymentProcessingService.class, (nlu.fit.web.souvenirecommerce.model.entity.User) null, "PAYMENT", "PAYMENT_SUCCESS", "PAYMENT", 
+                AuditLogService.describe("transactionId", transaction.getId(), "providerRef", providerRef));
+        } else {
+            transaction.setStatus(PaymentStatus.FAILED);
+            paymentRepository.update(transaction);
+
+            EventBus.publish(new PaymentFailedEvent(this, transaction.getOrderId(), transaction.getId(), "Provider responded with fail code: " + responseCode));
+            
+            AuditLogService.failure(PaymentProcessingService.class, (nlu.fit.web.souvenirecommerce.model.entity.User) null, "PAYMENT", "PAYMENT_FAILED", "PAYMENT", 
+                AuditLogService.describe("transactionId", transaction.getId(), "responseCode", responseCode));
+        }
+
+        return result(PaymentCallbackResult.Outcome.PROCESSED, isSuccess, transaction);
     }
 
     private PaymentCallbackResult result(PaymentCallbackResult.Outcome outcome,
@@ -148,13 +135,5 @@ public class PaymentProcessingService {
                 .successful(successful)
                 .transaction(transaction)
                 .build();
-    }
-
-    private Long parseLong(String value) {
-        try {
-            return value == null ? null : Long.valueOf(value);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 }
