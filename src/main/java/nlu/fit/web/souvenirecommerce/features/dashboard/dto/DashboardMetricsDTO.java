@@ -1,6 +1,6 @@
 package nlu.fit.web.souvenirecommerce.features.dashboard.dto;
 
-import nlu.fit.web.souvenirecommerce.legacy.model.Order;
+import nlu.fit.web.souvenirecommerce.model.entity.Order;
 import nlu.fit.web.souvenirecommerce.model.entity.Product;
 
 import java.util.List;

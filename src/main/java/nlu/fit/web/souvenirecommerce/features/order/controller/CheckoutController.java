@@ -11,12 +11,12 @@ import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
-import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
+import nlu.fit.web.souvenirecommerce.features.order.exception.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutRequest;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutResult;
-import nlu.fit.web.souvenirecommerce.features.order.dto.PaymentContext;
+import nlu.fit.web.souvenirecommerce.features.payment.dto.PaymentContext;
 import nlu.fit.web.souvenirecommerce.features.order.service.CheckoutService;
-import nlu.fit.web.souvenirecommerce.features.payment.VnPayUtil;
+import nlu.fit.web.souvenirecommerce.features.payment.model.VnPayUtil;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
 
@@ -214,6 +214,7 @@ public class CheckoutController extends HttpServlet {
         request.setAttribute("savedAddresses", checkoutService.getUserAddresses(user.getId()));
         request.setAttribute("provinceOptions", checkoutService.getProvinces());
         request.setAttribute("vnpayAvailable", checkoutService.isPaymentMethodAvailable(PaymentMethod.VNPAY_QR));
+        request.setAttribute("shippingProviders", nlu.fit.web.souvenirecommerce.features.shipping.ShippingProviderRegistry.all());
     }
 
     // ── Payment context ───────────────────────────────────────────────────────
@@ -241,15 +242,16 @@ public class CheckoutController extends HttpServlet {
                 .addressDetail(request.getParameter("addressDetail"))
                 .provinceCode(parseInteger(request.getParameter("provinceCode")))
                 .wardCode(parseInteger(request.getParameter("wardCode")))
-                .ghnProvinceId(parseInteger(request.getParameter("ghnProvinceId")))
-                .ghnDistrictId(parseInteger(request.getParameter("ghnDistrictId")))
-                .ghnWardCode(request.getParameter("ghnWardCode"))
+                .carrierProvinceId(parseInteger(request.getParameter("carrierProvinceId")))
+                .carrierDistrictId(parseInteger(request.getParameter("carrierDistrictId")))
+                .carrierWardCode(request.getParameter("carrierWardCode"))
                 .provinceName(request.getParameter("provinceName"))
                 .districtName(request.getParameter("districtName"))
                 .wardName(request.getParameter("wardName"))
                 .shippingFee(parseDouble(request.getParameter("shippingFee")))
                 .note(request.getParameter("note"))
                 .paymentMethod(parsePaymentMethod(request.getParameter("paymentMethod")))
+                .preferredCarrierCode(request.getParameter("preferredCarrierCode"))
                 .build();
     }
 

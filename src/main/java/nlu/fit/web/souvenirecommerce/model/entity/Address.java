@@ -50,14 +50,14 @@ public class Address extends AbsBaseEntity {
     @JoinColumn(name = "ward_code")
     private Ward wardEntity;
 
-    @Column(name = "ghn_province_id")
-    private Integer ghnProvinceId;
+    @Column(name = "carrier_province_id")
+    private Integer carrierProvinceId;
 
-    @Column(name = "ghn_district_id")
-    private Integer ghnDistrictId;
+    @Column(name = "carrier_district_id")
+    private Integer carrierDistrictId;
 
-    @Column(name = "ghn_ward_code", length = 20)
-    private String ghnWardCode;
+    @Column(name = "carrier_ward_code", length = 20)
+    private String carrierWardCode;
 
     @Column(name = "is_default", nullable = false)
     private boolean isDefault;

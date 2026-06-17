@@ -22,7 +22,13 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Locale;
 
+/**
+ * GHN (Giao Hàng Nhanh) implementation of {@link ShippingProvider}.
+ * All GHN-specific logic lives here; the rest of the application only knows
+ * about the generic {@link ShippingProvider} interface.
+ */
 public class GhnService implements ShippingProvider {
+
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .version(HttpClient.Version.HTTP_1_1)
@@ -33,6 +39,20 @@ public class GhnService implements ShippingProvider {
     private final String baseUrl = resolveBaseUrl();
     private final String token = property("ghn.token", "");
     private final String shopId = property("ghn.shop_id", "");
+
+    // -------------------------------------------------------------------------
+    // ShippingProvider identity
+    // -------------------------------------------------------------------------
+
+    @Override
+    public String getCode() {
+        return "GHN";
+    }
+
+    @Override
+    public String getName() {
+        return "Giao Hàng Nhanh";
+    }
 
     public boolean isSimulation() {
         return simulation;
@@ -45,16 +65,31 @@ public class GhnService implements ShippingProvider {
         return get("/master-data/province", null, false);
     }
 
-    public String getDistricts(int provinceId) throws IOException, InterruptedException {
-        if (simulation) {
-            return simulationDistricts(provinceId);
+    @Override
+    public String getLocations(String type, String parentId) throws IOException, InterruptedException {
+        if ("province".equals(type)) {
+            return simulation ? simulationProvinces() : get("/master-data/province", null);
+        }
+        if ("district".equals(type)) {
+            Integer provinceId = parseIntOrNull(parentId);
+            if (provinceId == null) {
+                throw new IOException("parentId (provinceId) is required for type=district");
+            }
+            return simulation
+                    ? simulationDistricts(provinceId)
+                    : get("/master-data/district", "province_id=" + provinceId);
         }
         return get("/master-data/district", "province_id=" + provinceId, false);
     }
 
-    public String getWards(int districtId) throws IOException, InterruptedException {
-        if (simulation) {
-            return simulationWards(districtId);
+    // -------------------------------------------------------------------------
+    // Fee calculation
+    // -------------------------------------------------------------------------
+
+    @Override
+    public BigDecimal calculateFee(Address address) throws IOException, InterruptedException {
+        if (address == null) {
+            return BigDecimal.valueOf(30000);
         }
         return get("/master-data/ward", "district_id=" + districtId, false);
     }
@@ -65,7 +100,7 @@ public class GhnService implements ShippingProvider {
         }
         requireApiCredentials();
         if (toDistrictId == null || toWardCode == null || toWardCode.isBlank()) {
-            throw new IOException("Địa chỉ nhận hàng chưa có mã GHN.");
+            throw new IOException("Địa chỉ nhận hàng chưa có mã đơn vị vận chuyển.");
         }
 
         int fromDistrictId = Integer.parseInt(property("ghn.from_district_id", "1442"));
@@ -102,9 +137,9 @@ public class GhnService implements ShippingProvider {
     }
 
     @Override
-    public ShippingOrderResult createOrder(Order order) throws IOException, InterruptedException {
+    public ShipmentResult createShipment(Order order) throws IOException, InterruptedException {
         if (simulation) {
-            return new ShippingOrderResult(
+            return new ShipmentResult(
                     "SIM-" + order.getOrderCode(),
                     "ready_to_pick",
                     LocalDateTime.now().plusDays(3),
@@ -192,11 +227,17 @@ public class GhnService implements ShippingProvider {
     }
 
     @Override
-    public ShippingOrderResult getOrderDetail(String orderCode, String currentStatus) throws IOException, InterruptedException {
+    public ShipmentResult getShipmentStatus(String trackingCode, String currentStatus)
+            throws IOException, InterruptedException {
         if (simulation) {
             String nextStatus = nextSimulationStatus(currentStatus);
             LocalDateTime finishDate = "delivered".equals(nextStatus) ? LocalDateTime.now() : null;
-            return new ShippingOrderResult(orderCode, nextStatus, LocalDateTime.now().plusDays(3), finishDate, LocalDateTime.now());
+            return new ShipmentResult(
+                    trackingCode, nextStatus,
+                    LocalDateTime.now().plusDays(3),
+                    finishDate,
+                    LocalDateTime.now()
+            );
         }
         requireApiCredentials();
 
@@ -211,6 +252,10 @@ public class GhnService implements ShippingProvider {
                 parseDateTime(data, "updated_date")
         );
     }
+
+    // -------------------------------------------------------------------------
+    // Internal helpers
+    // -------------------------------------------------------------------------
 
     private BigDecimal calculateSimulationFee(Integer toDistrictId) {
         if (toDistrictId == null) {
@@ -242,7 +287,7 @@ public class GhnService implements ShippingProvider {
                 ? response.getAsJsonArray("data")
                 : null;
         if (services == null || services.isEmpty()) {
-            throw new IOException("GHN service not found");
+            throw new IOException("GHN: no available service found for the given districts");
         }
 
         if (!configuredServiceId.isBlank()) {
@@ -382,6 +427,10 @@ public class GhnService implements ShippingProvider {
         return "GHN trả về lỗi không xác định.";
     }
 
+    // -------------------------------------------------------------------------
+    // Simulation data
+    // -------------------------------------------------------------------------
+
     private String simulationProvinces() {
         return """
                 {"code":200,"message":"simulation","data":[
@@ -478,6 +527,17 @@ public class GhnService implements ShippingProvider {
             } catch (Exception ignoredAgain) {
                 return null;
             }
+        }
+    }
+
+    private Integer parseIntOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 

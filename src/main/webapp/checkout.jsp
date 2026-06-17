@@ -52,8 +52,8 @@
               method="post"
               id="checkoutForm"
               data-address-form
-              data-locations-url="${pageContext.request.contextPath}/api/ghn/locations"
-              data-shipping-fee-url="${pageContext.request.contextPath}/api/shipping-fee"
+              data-locations-url="${pageContext.request.contextPath}/api/shipping/locations"
+              data-shipping-fee-url="${pageContext.request.contextPath}/api/shipping/fee"
               data-subtotal="${cart.total()}">
             <c:forEach items="${checkoutProductIds}" var="productId">
                 <input type="hidden" name="selectedProductId" value="${productId}">
@@ -128,14 +128,14 @@
                             <div class="payment-form-row">
                                 <div class="payment-field">
                                     <label for="provinceSelect"><fmt:message key="checkout.province"/> <span aria-hidden="true">*</span></label>
-                                    <select name="ghnProvinceId" id="provinceSelect" required>
+                                    <select name="carrierProvinceId" id="provinceSelect" required>
                                         <option value=""><fmt:message key="checkout.choose_province"/></option>
                                     </select>
                                     <input type="hidden" name="provinceName" id="provinceName">
                                 </div>
                                 <div class="payment-field">
                                     <label for="districtSelect"><fmt:message key="checkout.district"/> <span aria-hidden="true">*</span></label>
-                                    <select name="ghnDistrictId" id="districtSelect" required disabled>
+                                    <select name="carrierDistrictId" id="districtSelect" required disabled>
                                         <option value=""><fmt:message key="checkout.choose_district"/></option>
                                     </select>
                                     <input type="hidden" name="districtName" id="districtName">
@@ -145,7 +145,7 @@
                             <div class="payment-form-row">
                                 <div class="payment-field">
                                     <label for="wardSelect"><fmt:message key="checkout.ward"/> <span aria-hidden="true">*</span></label>
-                                    <select name="ghnWardCode" id="wardSelect" required disabled>
+                                    <select name="carrierWardCode" id="wardSelect" required disabled>
                                         <option value=""><fmt:message key="checkout.choose_ward"/></option>
                                     </select>
                                     <input type="hidden" name="wardName" id="wardName">
@@ -161,9 +161,41 @@
                         </div>
                     </section>
 
-                    <section class="payment-panel" aria-labelledby="method-title">
+                    <section class="payment-panel" aria-labelledby="carrier-title">
                         <div class="payment-panel__heading">
                             <span class="payment-step">2</span>
+                            <div>
+                                <h2 id="carrier-title"><fmt:message key="checkout.carrier.title"/></h2>
+                                <p><fmt:message key="checkout.carrier.supporting"/></p>
+                            </div>
+                        </div>
+
+                        <div class="payment-method-list">
+                            <c:forEach items="${shippingProviders}" var="provider" varStatus="vs">
+                                <label class="payment-method carrier-method">
+                                    <input type="radio" name="preferredCarrierCode" value="${provider.code}" ${vs.first ? 'checked' : ''} data-carrier-code="${provider.code}">
+                                    <span class="payment-method__icon">
+                                        <c:choose>
+                                            <c:when test="${provider.code == 'GHN'}">
+                                                <i class="fa-solid fa-truck-fast"></i>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <i class="fa-solid fa-truck-ramp-box"></i>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </span>
+                                    <span class="payment-method__content">
+                                        <strong><c:out value="${provider.name}"/></strong>
+                                    </span>
+                                    <i class="fa-solid fa-circle-check payment-method__check" aria-hidden="true"></i>
+                                </label>
+                            </c:forEach>
+                        </div>
+                    </section>
+
+                    <section class="payment-panel" aria-labelledby="method-title">
+                        <div class="payment-panel__heading">
+                            <span class="payment-step">3</span>
                             <div>
                                 <h2 id="method-title"><fmt:message key="checkout.payment.title"/></h2>
                                 <p><fmt:message key="checkout.payment.supporting"/></p>

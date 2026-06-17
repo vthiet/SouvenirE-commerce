@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import com.mysql.cj.jdbc.AbandonedConnectionCleanupThread;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import nlu.fit.web.souvenirecommerce.core.logging.ProjectLogPaths;
-import nlu.fit.web.souvenirecommerce.features.shipping.service.GhnAutoSyncScheduler;
+import nlu.fit.web.souvenirecommerce.features.shipping.ShippingProviderRegistry;
+import nlu.fit.web.souvenirecommerce.features.shipping.service.GhnService;
+import nlu.fit.web.souvenirecommerce.features.shipping.service.ShippingAutoSyncScheduler;
 import nlu.fit.web.souvenirecommerce.features.user.service.RoleInitializationService;
 import nlu.fit.web.souvenirecommerce.legacy.utils.DBContext;
 import org.hibernate.Session;
@@ -35,10 +37,14 @@ public class DbContextListener implements ServletContextListener {
 
         // Verify required roles exist
         verifyRequiredRoles();
+        // Register shipping providers
+        ShippingProviderRegistry.register(new GhnService());
+        log.info("Registered shipping providers: GHN");
+
         try {
-            GhnAutoSyncScheduler.start();
+            ShippingAutoSyncScheduler.start();
         } catch (Exception e) {
-            log.error("Failed to start GHN auto sync scheduler", e);
+            log.error("Failed to start shipping auto-sync scheduler", e);
         }
         log.info("Application started: contextPath={}", contextPath);
     }
@@ -48,7 +54,7 @@ public class DbContextListener implements ServletContextListener {
         String contextPath = sce.getServletContext().getContextPath();
         log.info("Application stopping: contextPath={}", contextPath);
 
-        GhnAutoSyncScheduler.shutdown();
+        ShippingAutoSyncScheduler.shutdown();
         shutdownHibernate();
         shutdownLegacyJdbc();
         cleanupJdbcDrivers();

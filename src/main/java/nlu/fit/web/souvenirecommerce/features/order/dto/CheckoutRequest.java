@@ -13,13 +13,14 @@ public class CheckoutRequest {
     private final String addressDetail;
     private final Integer provinceCode;
     private final Integer wardCode;
-    private final Integer ghnProvinceId;
-    private final Integer ghnDistrictId;
-    private final String ghnWardCode;
+    private final Integer carrierProvinceId;
+    private final Integer carrierDistrictId;
+    private final String carrierWardCode;
     private final String provinceName;
     private final String districtName;
     private final String wardName;
     private final Double shippingFee;
     private final String note;
     private final PaymentMethod paymentMethod;
+    private final String preferredCarrierCode;
 }
