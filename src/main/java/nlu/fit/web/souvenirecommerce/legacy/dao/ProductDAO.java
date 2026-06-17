@@ -596,6 +596,10 @@ public class ProductDAO {
     }
 
     public List<Product> getLowStockProducts(int threshold) {
+        return getLowStockProducts(threshold, 20);
+    }
+
+    public List<Product> getLowStockProducts(int threshold, int limit) {
         String sql = """
             SELECT
                 p.id,
@@ -626,13 +630,15 @@ public class ProductDAO {
                 p.avg_rating,
                 p.review_count
             ORDER BY p.stock_quantity ASC
-            LIMIT 20
+            LIMIT ?
         """;
         List<Product> list = new ArrayList<>();
+        int effectiveLimit = Math.max(1, limit);
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, threshold);
+            ps.setInt(2, effectiveLimit);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     list.add(mapProduct(rs));
@@ -642,6 +648,26 @@ public class ProductDAO {
             e.printStackTrace();
         }
         return list;
+    }
+
+    public boolean updateProductStock(Long id, int stockQuantity) {
+        String sql = """
+            UPDATE products
+            SET stock_quantity = ?
+            WHERE id = ?
+        """;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, stockQuantity);
+            ps.setLong(2, id);
+
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public List<CategorySalesDTO> getTopCategoriesBySales(int limit) {

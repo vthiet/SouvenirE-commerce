@@ -216,13 +216,16 @@
 }
 
 .home-page .see-more-btn {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+
     width: fit-content;
     margin: 24px auto 0;
+
+    gap: 8px;
     padding: 10px 32px;
+
     background: var(--brand-primary);
     color: var(--text-on-primary);
     border: 1px solid var(--brand-primary);
