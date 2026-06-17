@@ -71,6 +71,10 @@ public class Order {
     @Builder.Default
     private List<ShippingOrder> shippingOrders = new ArrayList<>();
 
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", insertable = false, updatable = false)
+    private List<PaymentTransaction> paymentTransactions;
+
     /**
      * The carrier code the customer selected at checkout.
      * Used as a hint when admin triggers shipping so the right provider is invoked.
@@ -122,6 +126,15 @@ public class Order {
     public String getGhnStatus() {
         ShippingOrder active = getActiveShippingOrder();
         return active != null ? active.getStatus() : null;
+    }
+
+    @jakarta.persistence.Transient
+    public String getPaymentMethod() {
+        if (paymentTransactions != null && !paymentTransactions.isEmpty()) {
+            PaymentTransaction lastTx = paymentTransactions.get(paymentTransactions.size() - 1);
+            return lastTx.getMethod() != null ? lastTx.getMethod().name() : null;
+        }
+        return null;
     }
 
     @jakarta.persistence.Transient
