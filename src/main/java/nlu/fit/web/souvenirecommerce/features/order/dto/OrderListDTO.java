@@ -39,4 +39,24 @@ public class OrderListDTO {
         return items.stream().mapToInt(OrderItemDTO::getQuantity).sum();
     }
 
+    public String getStatusClass() {
+        String text = getStatusText();
+        if (text == null) return "PENDING";
+        return switch (text) {
+            case "Chờ thanh toán" -> "PENDING_PAYMENT";
+            case "Chờ xác nhận" -> "PENDING";
+            case "Đang xử lý", "Đã xác nhận" -> "CONFIRMED";
+            case "Đang giao" -> "SHIPPED";
+            case "Đã giao", "Hoàn thành" -> "DELIVERED";
+            case "Đã hủy" -> "CANCELLED";
+            case "Thanh toán thất bại" -> "PAYMENT_FAILED";
+            default -> "PENDING";
+        };
+    }
+
+    public boolean isRepayable() {
+        return repayUrl != null && !repayUrl.isBlank() &&
+               ("Chờ thanh toán".equals(getStatusText()) || "Thanh toán thất bại".equals(getStatusText()));
+    }
 }
+
