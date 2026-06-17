@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.payment.port;
+package nlu.fit.web.souvenirecommerce.features.payment.adapter;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -10,7 +10,8 @@ public interface PaymentProviderAdapter {
     String createPaymentUrl(Long transactionId, Long orderId, BigDecimal amount, String clientIp, String returnUrl);
 
     /**
-     * Verify the parameters returned by the provider (usually from IPN webhook or Return URL).
+     * Verify the parameters returned by the provider (usually from IPN webhook or
+     * Return URL).
      * Returns true if the signature is valid.
      */
     boolean verifySignature(Map<String, String> params);

@@ -1,14 +1,14 @@
 package nlu.fit.web.souvenirecommerce.features.payment.factory;
 
+import nlu.fit.web.souvenirecommerce.features.payment.adapter.PaymentProviderAdapter;
 import nlu.fit.web.souvenirecommerce.features.payment.adapter.VnPayAdapter;
-import nlu.fit.web.souvenirecommerce.features.payment.port.PaymentProviderAdapter;
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentProvider;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PaymentAdapterFactory {
-    
+
     private static final Map<PaymentProvider, PaymentProviderAdapter> adapters = new ConcurrentHashMap<>();
 
     static {
