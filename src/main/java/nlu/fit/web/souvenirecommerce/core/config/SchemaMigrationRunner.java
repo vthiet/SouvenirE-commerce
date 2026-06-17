@@ -31,6 +31,7 @@ public final class SchemaMigrationRunner {
              Statement statement = connection.createStatement()) {
             migrateUserPasswordColumn(connection, statement);
             ensureUniqueUserPhone(connection, statement);
+            migrateShippingOrders(connection, statement);
             ensureInnoDBStorageEngine(connection, statement);
         } catch (SQLException e) {
             throw new IllegalStateException("Database schema migration failed", e);
@@ -57,6 +58,81 @@ public final class SchemaMigrationRunner {
 
         statement.executeUpdate("alter table users drop column password");
         log.info("Dropped legacy users.password column");
+    }
+
+    /**
+     * Migrates the GHN-specific columns out of the orders/addresses tables into
+     * a dedicated shipping_orders table, making the model provider-agnostic.
+     * Safe to run multiple times (idempotent per step).
+     */
+    private static void migrateShippingOrders(Connection connection, Statement statement) throws SQLException {
+        // 1. Create shipping_orders table if not exists
+        if (!tableExists(connection, "shipping_orders")) {
+            statement.executeUpdate("""
+                    CREATE TABLE shipping_orders (
+                        id                 BIGINT AUTO_INCREMENT PRIMARY KEY,
+                        order_id           BIGINT NOT NULL,
+                        carrier_code       VARCHAR(50) NOT NULL,
+                        tracking_code      VARCHAR(100),
+                        status             VARCHAR(50),
+                        leadtime           DATETIME,
+                        finish_date        DATETIME,
+                        carrier_updated_at DATETIME,
+                        created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT fk_so_order FOREIGN KEY (order_id) REFERENCES orders(id)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """);
+            log.info("Created table shipping_orders");
+        }
+
+        // 2. Migrate existing ghn_order_code data into shipping_orders (only if old columns still exist)
+        boolean hasGhnOrderCode = columnExists(connection, "orders", "ghn_order_code");
+        if (hasGhnOrderCode) {
+            int migrated = statement.executeUpdate("""
+                    INSERT INTO shipping_orders
+                        (order_id, carrier_code, tracking_code, status, leadtime, finish_date, carrier_updated_at, created_at)
+                    SELECT o.id, 'GHN', o.ghn_order_code, o.ghn_status,
+                           o.ghn_leadtime, o.ghn_finish_date, o.ghn_updated_at, NOW()
+                    FROM orders o
+                    WHERE o.ghn_order_code IS NOT NULL
+                      AND o.ghn_order_code <> ''
+                      AND NOT EXISTS (
+                          SELECT 1 FROM shipping_orders so WHERE so.order_id = o.id
+                      )
+                    """);
+            log.info("Migrated {} GHN shipping records into shipping_orders", migrated);
+
+            // 3. Drop ghn_* columns from orders
+            statement.executeUpdate("""
+                    ALTER TABLE orders
+                        DROP COLUMN ghn_order_code,
+                        DROP COLUMN ghn_status,
+                        DROP COLUMN ghn_updated_at,
+                        DROP COLUMN ghn_leadtime,
+                        DROP COLUMN ghn_finish_date
+                    """);
+            log.info("Dropped ghn_* columns from orders table");
+        }
+
+        // 4. Rename ghn_* columns in addresses → carrier_*
+        if (columnExists(connection, "addresses", "ghn_province_id")) {
+            statement.executeUpdate("ALTER TABLE addresses RENAME COLUMN ghn_province_id TO carrier_province_id");
+            log.info("Renamed addresses.ghn_province_id → carrier_province_id");
+        }
+        if (columnExists(connection, "addresses", "ghn_district_id")) {
+            statement.executeUpdate("ALTER TABLE addresses RENAME COLUMN ghn_district_id TO carrier_district_id");
+            log.info("Renamed addresses.ghn_district_id → carrier_district_id");
+        }
+        if (columnExists(connection, "addresses", "ghn_ward_code")) {
+            statement.executeUpdate("ALTER TABLE addresses RENAME COLUMN ghn_ward_code TO carrier_ward_code");
+            log.info("Renamed addresses.ghn_ward_code → carrier_ward_code");
+        }
+
+        // 5. Add preferred_carrier_code to orders if not exists
+        if (!columnExists(connection, "orders", "preferred_carrier_code")) {
+            statement.executeUpdate("ALTER TABLE orders ADD COLUMN preferred_carrier_code VARCHAR(50)");
+            log.info("Added orders.preferred_carrier_code column");
+        }
     }
 
     private static void ensureUniqueUserPhone(Connection connection, Statement statement) throws SQLException {

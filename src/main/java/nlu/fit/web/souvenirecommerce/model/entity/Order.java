@@ -69,20 +69,18 @@ public class Order {
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private PaymentTransaction paymentTransaction;
 
-    @Column(name = "ghn_order_code", length = 50)
-    private String ghnOrderCode;
+    /** Carrier shipments associated with this order (one per shipping attempt). */
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ShippingOrder> shippingOrders = new ArrayList<>();
 
-    @Column(name = "ghn_status", length = 50)
-    private String ghnStatus;
-
-    @Column(name = "ghn_updated_at")
-    private LocalDateTime ghnUpdatedAt;
-
-    @Column(name = "ghn_leadtime")
-    private LocalDateTime ghnLeadtime;
-
-    @Column(name = "ghn_finish_date")
-    private LocalDateTime ghnFinishDate;
+    /**
+     * The carrier code the customer selected at checkout.
+     * Used as a hint when admin triggers shipping so the right provider is invoked.
+     * Examples: "GHN", "GHTK".
+     */
+    @Column(name = "preferred_carrier_code", length = 50)
+    private String preferredCarrierCode;
 
     public void addItem(OrderItem item) {
         if (items == null) {
@@ -90,6 +88,19 @@ public class Order {
         }
         items.add(item);
         item.setOrder(this);
+    }
+
+    /**
+     * Returns the most recently created carrier shipment for this order,
+     * or {@code null} if no shipment has been created yet.
+     */
+    public ShippingOrder getActiveShippingOrder() {
+        if (shippingOrders == null || shippingOrders.isEmpty()) {
+            return null;
+        }
+        return shippingOrders.stream()
+                .max(java.util.Comparator.comparingLong(so -> so.getId() == null ? 0L : so.getId()))
+                .orElse(null);
     }
 
     public String getOrderCode() {
@@ -108,6 +119,40 @@ public class Order {
 
     public String getStatusDescription() {
         return status == null ? "" : status.getDescription();
+    }
+
+    @jakarta.persistence.Transient
+    public String getGhnStatus() {
+        ShippingOrder active = getActiveShippingOrder();
+        return active != null ? active.getStatus() : null;
+    }
+
+    @jakarta.persistence.Transient
+    public Date getOrderDate() {
+        return getCreatedAt();
+    }
+
+    @jakarta.persistence.Transient
+    public String getCustomerName() {
+        if (address != null && address.getReceiverName() != null && !address.getReceiverName().isBlank()) {
+            return address.getReceiverName();
+        }
+        return user != null ? user.getFullName() : "";
+    }
+
+    @jakarta.persistence.Transient
+    public String getCustomerEmail() {
+        return user != null ? user.getEmail() : "";
+    }
+
+    @jakarta.persistence.Transient
+    public String getPaymentMethod() {
+        return paymentTransaction != null ? paymentTransaction.getMethod().name() : "COD";
+    }
+
+    @jakarta.persistence.Transient
+    public String getStatus() {
+        return getStatusDescription();
     }
 
     @PrePersist

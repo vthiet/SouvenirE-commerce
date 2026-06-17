@@ -69,16 +69,16 @@ public class AddressService {
         return addressRepository.save(address);
     }
 
-    public Optional<Address> createGhnAddress(User user,
-                                              String receiverName,
-                                              String receiverPhone,
-                                              String addressDetail,
-                                              Integer provinceId,
-                                              Integer districtId,
-                                              String wardCode,
-                                              String provinceName,
-                                              String districtName,
-                                              String wardName) {
+    public Optional<Address> createCarrierAddress(User user,
+                                                  String receiverName,
+                                                  String receiverPhone,
+                                                  String addressDetail,
+                                                  Integer provinceId,
+                                                  Integer districtId,
+                                                  String wardCode,
+                                                  String provinceName,
+                                                  String districtName,
+                                                  String wardName) {
         if (user == null || user.getId() == null || isBlank(addressDetail)
                 || provinceId == null || districtId == null || isBlank(wardCode)
                 || isBlank(provinceName) || isBlank(districtName) || isBlank(wardName)) {
@@ -94,9 +94,9 @@ public class AddressService {
                 .city(provinceName.trim())
                 .district(districtName.trim())
                 .ward(wardName.trim())
-                .ghnProvinceId(provinceId)
-                .ghnDistrictId(districtId)
-                .ghnWardCode(wardCode.trim())
+                .carrierProvinceId(provinceId)
+                .carrierDistrictId(districtId)
+                .carrierWardCode(wardCode.trim())
                 .isDefault(addressRepository.countByUserId(user.getId()) == 0)
                 .build();
         return addressRepository.save(address);

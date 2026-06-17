@@ -61,6 +61,7 @@ public class CheckoutService {
                 .orderDate(LocalDateTime.now())
                 .status(status)
                 .note(trimToNull(request.getNote()))
+                .preferredCarrierCode(trimToNull(request.getPreferredCarrierCode()))
                 .totalAmount(BigDecimal.ZERO)
                 .build();
 
@@ -159,15 +160,15 @@ public class CheckoutService {
             throw new CheckoutException("Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ giao hàng");
         }
 
-        if (request.getGhnProvinceId() != null || request.getGhnDistrictId() != null || !isBlank(request.getGhnWardCode())) {
-            return addressService.createGhnAddress(
+        if (request.getCarrierProvinceId() != null || request.getCarrierDistrictId() != null || !isBlank(request.getCarrierWardCode())) {
+            return addressService.createCarrierAddress(
                             user,
                             request.getReceiverName(),
                             request.getReceiverPhone(),
                             request.getAddressDetail(),
-                            request.getGhnProvinceId(),
-                            request.getGhnDistrictId(),
-                            request.getGhnWardCode(),
+                            request.getCarrierProvinceId(),
+                            request.getCarrierDistrictId(),
+                            request.getCarrierWardCode(),
                             request.getProvinceName(),
                             request.getDistrictName(),
                             request.getWardName())
@@ -187,7 +188,18 @@ public class CheckoutService {
     private BigDecimal resolveShippingFee(Address address, CheckoutRequest request) {
         try {
             if (address != null) {
-                return shippingService.getActiveProvider().calculateFee(address);
+                String carrierCode = request.getPreferredCarrierCode();
+                nlu.fit.web.souvenirecommerce.features.shipping.ShippingProvider provider;
+                if (carrierCode != null && !carrierCode.trim().isEmpty()) {
+                    try {
+                        provider = nlu.fit.web.souvenirecommerce.features.shipping.ShippingProviderRegistry.getByCode(carrierCode);
+                    } catch (IllegalArgumentException e) {
+                        provider = shippingService.getActiveProvider();
+                    }
+                } else {
+                    provider = shippingService.getActiveProvider();
+                }
+                return provider.calculateFee(address);
             }
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();

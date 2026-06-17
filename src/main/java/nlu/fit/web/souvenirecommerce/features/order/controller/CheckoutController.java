@@ -214,6 +214,7 @@ public class CheckoutController extends HttpServlet {
         request.setAttribute("savedAddresses", checkoutService.getUserAddresses(user.getId()));
         request.setAttribute("provinceOptions", checkoutService.getProvinces());
         request.setAttribute("vnpayAvailable", checkoutService.isPaymentMethodAvailable(PaymentMethod.VNPAY_QR));
+        request.setAttribute("shippingProviders", nlu.fit.web.souvenirecommerce.features.shipping.ShippingProviderRegistry.all());
     }
 
     // ── Payment context ───────────────────────────────────────────────────────
@@ -241,15 +242,16 @@ public class CheckoutController extends HttpServlet {
                 .addressDetail(request.getParameter("addressDetail"))
                 .provinceCode(parseInteger(request.getParameter("provinceCode")))
                 .wardCode(parseInteger(request.getParameter("wardCode")))
-                .ghnProvinceId(parseInteger(request.getParameter("ghnProvinceId")))
-                .ghnDistrictId(parseInteger(request.getParameter("ghnDistrictId")))
-                .ghnWardCode(request.getParameter("ghnWardCode"))
+                .carrierProvinceId(parseInteger(request.getParameter("carrierProvinceId")))
+                .carrierDistrictId(parseInteger(request.getParameter("carrierDistrictId")))
+                .carrierWardCode(request.getParameter("carrierWardCode"))
                 .provinceName(request.getParameter("provinceName"))
                 .districtName(request.getParameter("districtName"))
                 .wardName(request.getParameter("wardName"))
                 .shippingFee(parseDouble(request.getParameter("shippingFee")))
                 .note(request.getParameter("note"))
                 .paymentMethod(parsePaymentMethod(request.getParameter("paymentMethod")))
+                .preferredCarrierCode(request.getParameter("preferredCarrierCode"))
                 .build();
     }
 

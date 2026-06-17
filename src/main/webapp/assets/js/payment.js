@@ -93,12 +93,14 @@
             });
             const data = await response.json();
             if (!response.ok || data.success === false) {
-                setShippingFee(30000, text('shippingSimulation', 'GHN simulation'));
-                return;
+                setShippingFee(30000, text('shippingSimulation', 'Vận chuyển (simulation)'));
+            } else {
+                const carrierLabel = data.carrierName || data.carrier || 'Đơn vị vận chuyển';
+                const source = data.source === 'SIMULATION' ? text('shippingSimulation', carrierLabel + ' simulation') : carrierLabel;
+                setShippingFee(data.shippingFee, source);
             }
-            setShippingFee(data.shippingFee, data.source === 'SIMULATION' ? text('shippingSimulation', 'GHN simulation') : 'GHN');
         } catch (error) {
-            setShippingFee(30000, text('shippingSimulation', 'GHN simulation'));
+            setShippingFee(30000, text('shippingSimulation', 'Vận chuyển (simulation)'));
         }
     }
 
@@ -111,9 +113,12 @@
         });
         newAddressFields?.classList.toggle('is-disabled', usingSavedAddress);
 
+        const carrier = document.querySelector('input[name="preferredCarrierCode"]:checked')?.value || '';
+
         if (usingSavedAddress) {
             calculateShippingFee({
-                addressId: selected.value
+                addressId: selected.value,
+                carrier: carrier
             });
             return;
         }
@@ -121,7 +126,8 @@
         if (wardSelect?.value && districtSelect?.value) {
             calculateShippingFee({
                 districtId: districtSelect.value,
-                wardCode: wardSelect.value
+                wardCode: wardSelect.value,
+                carrier: carrier
             });
         } else {
             setShippingFee(0, '');
@@ -220,6 +226,9 @@
         wardSelect?.addEventListener('change', onWardChange);
     }
     savedAddressRadios.forEach(radio => radio.addEventListener('change', syncAddressMode));
+    document.querySelectorAll('input[name="preferredCarrierCode"]').forEach(radio => {
+        radio.addEventListener('change', syncAddressMode);
+    });
     document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
         radio.addEventListener('change', syncPaymentButton);
     });
