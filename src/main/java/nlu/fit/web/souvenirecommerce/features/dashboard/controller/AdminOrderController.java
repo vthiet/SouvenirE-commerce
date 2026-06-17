@@ -207,7 +207,8 @@ public class AdminOrderController extends HttpServlet {
                     "ORDER",
                     AuditLogService.describe("orderId", orderId, "newStatus", newStatus, "reason", "update_failed")
             );
-            response.sendRedirect(request.getContextPath() + "/admin/orders?error=true");
+            String errorMessage = "Không thể cập nhật trạng thái đơn hàng.";
+            response.sendRedirect(request.getContextPath() + "/admin/orders?error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
         }
     }
 

@@ -18,7 +18,17 @@
              data-location-ward-error="<fmt:message key='payment.location.ward_error'/>"
              data-location-prefix="<fmt:message key='payment.location.prefix'/>"
              data-shipping-pending="<fmt:message key='payment.shipping.pending'/>"
-             data-shipping-simulation="<fmt:message key='payment.shipping.simulation'/>">
+             data-shipping-simulation="<fmt:message key='payment.shipping.simulation'/>"
+             data-address-checking="<fmt:message key='payment.address.checking'/>"
+             data-address-valid="<fmt:message key='payment.address.valid'/>"
+             data-address-saved-valid="<fmt:message key='payment.address.saved_valid'/>"
+             data-address-phone-invalid="<fmt:message key='payment.address.phone_invalid'/>"
+             data-address-missing-province="<fmt:message key='payment.address.missing_province'/>"
+             data-address-missing-district="<fmt:message key='payment.address.missing_district'/>"
+             data-address-missing-ward="<fmt:message key='payment.address.missing_ward'/>"
+             data-address-missing-detail="<fmt:message key='payment.address.missing_detail'/>"
+             data-address-sync-required="<fmt:message key='payment.address.sync_required'/>"
+             data-address-choose-all="<fmt:message key='payment.address.choose_all'/>">
         </div>
 
         <header class="payment-page__header">
@@ -76,8 +86,13 @@
                                         <input type="radio"
                                                name="savedAddressId"
                                                value="${addr.id}"
+                                               data-province-id="${addr.effectiveGhnProvinceId}"
+                                               data-province-name="${addr.effectiveGhnProvinceName}"
                                                data-district-id="${addr.ghnDistrictId}"
-                                               data-ward-code="${addr.ghnWardCode}">
+                                               data-district-name="${addr.effectiveGhnDistrictName}"
+                                               data-ward-code="${addr.ghnWardCode}"
+                                               data-ward-name="${addr.effectiveGhnWardName}"
+                                               data-receiver-phone="${addr.receiverPhone}">
                                         <span class="address-choice__content">
                                             <strong><c:out value="${addr.receiverName}"/> · <c:out value="${addr.receiverPhone}"/></strong>
                                             <span><c:out value="${addr.addressDetail}"/>, <c:out value="${addr.ward}"/>, <c:out value="${addr.district}"/>, <c:out value="${addr.province}"/></span>
@@ -135,6 +150,7 @@
                                     </select>
                                     <input type="hidden" name="wardName" id="wardName">
                                     <small id="wardStatus" class="payment-field__status" aria-live="polite"></small>
+                                    <small id="addressValidationStatus" class="payment-field__status" aria-live="polite"></small>
                                 </div>
                             </div>
                         </div>

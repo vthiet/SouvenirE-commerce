@@ -22,6 +22,18 @@ public class Ward {
     @Column(name = "full_name", length = 255)
     private String fullName;
 
+    @Column(name = "ghn_district_id")
+    private Integer ghnDistrictId;
+
+    @Column(name = "ghn_district_name", length = 255)
+    private String ghnDistrictName;
+
+    @Column(name = "ghn_ward_code", length = 20)
+    private String ghnWardCode;
+
+    @Column(name = "ghn_ward_name", length = 255)
+    private String ghnWardName;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "province_code", nullable = false)
     private Province province;
@@ -51,6 +63,38 @@ public class Ward {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public Integer getGhnDistrictId() {
+        return ghnDistrictId;
+    }
+
+    public void setGhnDistrictId(Integer ghnDistrictId) {
+        this.ghnDistrictId = ghnDistrictId;
+    }
+
+    public String getGhnDistrictName() {
+        return ghnDistrictName;
+    }
+
+    public void setGhnDistrictName(String ghnDistrictName) {
+        this.ghnDistrictName = ghnDistrictName;
+    }
+
+    public String getGhnWardCode() {
+        return ghnWardCode;
+    }
+
+    public void setGhnWardCode(String ghnWardCode) {
+        this.ghnWardCode = ghnWardCode;
+    }
+
+    public String getGhnWardName() {
+        return ghnWardName;
+    }
+
+    public void setGhnWardName(String ghnWardName) {
+        this.ghnWardName = ghnWardName;
     }
 
     public Province getProvince() {

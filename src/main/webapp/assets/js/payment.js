@@ -13,6 +13,9 @@
     const districtNameInput = document.getElementById('districtName');
     const wardNameInput = document.getElementById('wardName');
     const wardStatus = document.getElementById('wardStatus');
+    const addressValidationStatus = document.getElementById('addressValidationStatus');
+    const receiverPhone = document.getElementById('receiverPhone');
+    const addressDetail = document.getElementById('addressDetail');
     const shippingFeeText = document.getElementById('shippingFeeText');
     const shippingFeeInput = document.getElementById('shippingFeeInput');
     const grandTotalText = document.getElementById('grandTotalText');
@@ -22,6 +25,10 @@
     const shippingFeeUrl = form.dataset.shippingFeeUrl;
     const subtotal = Number(form.dataset.subtotal) || 0;
     const hasSelect2 = window.jQuery && jQuery.fn && jQuery.fn.select2;
+    const ghnPhonePattern = /^0(3|5|7|8|9)\d{8}$/;
+
+    let isSubmitting = false;
+    let addressFeedbackTimer = null;
 
     const formatVND = (value) => `${Number(value || 0).toLocaleString('vi-VN')}₫`;
     const text = (key, fallback = '') => checkoutI18n[key] || fallback;
@@ -60,6 +67,17 @@
         wardStatus.classList.add('is-error');
     }
 
+    function setValidationStatus(message, type = 'neutral') {
+        if (!addressValidationStatus) return;
+        addressValidationStatus.textContent = message || '';
+        addressValidationStatus.classList.remove('is-error', 'is-success');
+        if (type === 'error') {
+            addressValidationStatus.classList.add('is-error');
+        } else if (type === 'success') {
+            addressValidationStatus.classList.add('is-success');
+        }
+    }
+
     function selectedText(select) {
         const option = select?.selectedOptions?.[0];
         return option && option.value ? option.textContent.trim() : '';
@@ -71,6 +89,114 @@
         wardNameInput.value = selectedText(wardSelect);
     }
 
+    function normalizePhone(value) {
+        let normalized = (value || '').trim().replace(/[\s\-().]/g, '');
+        if (normalized.startsWith('+84')) {
+            normalized = `0${normalized.slice(3)}`;
+        } else if (normalized.startsWith('84') && normalized.length > 2) {
+            normalized = `0${normalized.slice(2)}`;
+        }
+        return normalized;
+    }
+
+    function isValidGhnPhone(value) {
+        return ghnPhonePattern.test(normalizePhone(value));
+    }
+
+    function getSelectedSavedAddress() {
+        return document.querySelector('input[name="savedAddressId"]:checked');
+    }
+
+    function isUsingSavedAddress() {
+        const selected = getSelectedSavedAddress();
+        return Boolean(selected && selected.value);
+    }
+
+    function validateSavedAddressMeta(selected) {
+        const data = selected?.dataset || {};
+        const missing = [];
+
+        if (!data.provinceId || !data.provinceName) {
+            missing.push(text('addressMissingProvince', 'Thiếu tên tỉnh/thành phố hoặc mã GHN tỉnh'));
+        }
+        if (!data.districtId || !data.districtName) {
+            missing.push(text('addressMissingDistrict', 'Thiếu tên quận/huyện hoặc mã GHN quận'));
+        }
+        if (!data.wardCode || !data.wardName) {
+            missing.push(text('addressMissingWard', 'Thiếu tên phường/xã hoặc mã GHN phường'));
+        }
+        if (!isValidGhnPhone(data.receiverPhone)) {
+            missing.push(text('addressPhoneInvalid', 'Số điện thoại chưa hợp lệ'));
+        }
+
+        if (missing.length > 0) {
+            return { valid: false, message: missing.join(' · ') };
+        }
+
+        return {
+            valid: true,
+            message: text('addressSavedValid', 'Địa chỉ đã lưu có GHN mapping hợp lệ')
+        };
+    }
+
+    function validateNewAddressMeta() {
+        const hasAnyValue = Boolean(
+            provinceSelect?.value ||
+            districtSelect?.value ||
+            wardSelect?.value ||
+            provinceNameInput?.value ||
+            districtNameInput?.value ||
+            wardNameInput?.value ||
+            receiverPhone?.value ||
+            addressDetail?.value
+        );
+        if (!hasAnyValue) {
+            return { valid: false, message: '' };
+        }
+
+        const missing = [];
+
+        if (!provinceSelect?.value || !provinceNameInput?.value) {
+            missing.push(text('addressMissingProvince', 'Thiếu tên tỉnh/thành phố hoặc mã GHN tỉnh'));
+        }
+        if (!districtSelect?.value || !districtNameInput?.value) {
+            missing.push(text('addressMissingDistrict', 'Thiếu tên quận/huyện hoặc mã GHN quận'));
+        }
+        if (!wardSelect?.value || !wardNameInput?.value) {
+            missing.push(text('addressMissingWard', 'Thiếu tên phường/xã hoặc mã GHN phường'));
+        }
+        if (!receiverPhone?.value || !isValidGhnPhone(receiverPhone.value)) {
+            missing.push(text('addressPhoneInvalid', 'Số điện thoại chưa hợp lệ'));
+        }
+        if (!addressDetail?.value) {
+            missing.push(text('addressMissingDetail', 'Thiếu địa chỉ chi tiết'));
+        }
+
+        if (missing.length > 0) {
+            return { valid: false, message: missing.join(' · ') };
+        }
+
+        return {
+            valid: true,
+            message: text('addressValid', 'Địa chỉ GHN hợp lệ')
+        };
+    }
+
+    function updateSubmitState(isValid) {
+        if (submitButton) {
+            submitButton.disabled = isSubmitting || !isValid;
+        }
+    }
+
+    function scheduleRefreshAddressFeedback() {
+        if (addressFeedbackTimer) {
+            clearTimeout(addressFeedbackTimer);
+        }
+        addressFeedbackTimer = setTimeout(() => {
+            refreshAddressFeedback();
+        }, 250);
+    }
+
     function setShippingFee(value, sourceText) {
         const fee = Number(value) || 0;
         shippingFeeInput.value = String(fee);
@@ -79,7 +205,7 @@
     }
 
     async function calculateShippingFee(params) {
-        if (!shippingFeeUrl) return;
+        if (!shippingFeeUrl) return false;
         if (shippingFeeText) shippingFeeText.textContent = text('shippingPending', 'Calculating...');
 
         const url = new URL(shippingFeeUrl, window.location.origin);
@@ -94,38 +220,58 @@
             const data = await response.json();
             if (!response.ok || data.success === false) {
                 setShippingFee(30000, text('shippingSimulation', 'GHN simulation'));
-                return;
+                return false;
             }
             setShippingFee(data.shippingFee, data.source === 'SIMULATION' ? text('shippingSimulation', 'GHN simulation') : 'GHN');
+            return true;
         } catch (error) {
             setShippingFee(30000, text('shippingSimulation', 'GHN simulation'));
+            return false;
         }
     }
 
+    async function refreshAddressFeedback() {
+        const selected = getSelectedSavedAddress();
+        if (selected && selected.value) {
+            const result = validateSavedAddressMeta(selected);
+            setValidationStatus(result.message, result.message ? (result.valid ? 'success' : 'error') : 'neutral');
+            updateSubmitState(result.valid);
+            if (!result.valid) {
+                setShippingFee(0, '');
+                return false;
+            }
+            setValidationStatus(text('addressChecking', 'Đang kiểm tra địa chỉ...'), 'neutral');
+            await calculateShippingFee({
+                addressId: selected.value
+            });
+            setValidationStatus(result.message, 'success');
+            return true;
+        }
+
+        const result = validateNewAddressMeta();
+        setValidationStatus(result.message, result.message ? (result.valid ? 'success' : 'error') : 'neutral');
+        updateSubmitState(result.valid);
+        if (!result.valid) {
+            setShippingFee(0, '');
+            return false;
+        }
+        setValidationStatus(text('addressChecking', 'Đang kiểm tra địa chỉ...'), 'neutral');
+        await calculateShippingFee({
+            districtId: districtSelect.value,
+            wardCode: wardSelect.value
+        });
+        setValidationStatus(result.message, 'success');
+        return true;
+    }
+
     function syncAddressMode() {
-        const selected = document.querySelector('input[name="savedAddressId"]:checked');
-        const usingSavedAddress = Boolean(selected && selected.value);
+        const usingSavedAddress = isUsingSavedAddress();
         addressInputs.forEach(input => {
             input.disabled = usingSavedAddress;
             input.required = !usingSavedAddress;
         });
         newAddressFields?.classList.toggle('is-disabled', usingSavedAddress);
-
-        if (usingSavedAddress) {
-            calculateShippingFee({
-                addressId: selected.value
-            });
-            return;
-        }
-
-        if (wardSelect?.value && districtSelect?.value) {
-            calculateShippingFee({
-                districtId: districtSelect.value,
-                wardCode: wardSelect.value
-            });
-        } else {
-            setShippingFee(0, '');
-        }
+        refreshAddressFeedback();
     }
 
     function syncPaymentButton() {
@@ -150,9 +296,12 @@
         syncSelectedNames();
         setOptions(districtSelect, text('selectDistrict', 'Choose District / County'), [], 'DistrictID', 'DistrictName');
         setOptions(wardSelect, text('selectWard', 'Choose Ward / Commune'), [], 'WardCode', 'WardName');
+        districtNameInput.value = '';
+        wardNameInput.value = '';
         setSelectDisabled(districtSelect, !provinceSelect.value);
         setSelectDisabled(wardSelect, true);
         setShippingFee(0, '');
+        setValidationStatus('', 'neutral');
 
         if (!provinceSelect.value) return;
 
@@ -168,8 +317,10 @@
     async function onDistrictChange() {
         syncSelectedNames();
         setOptions(wardSelect, text('selectWard', 'Choose Ward / Commune'), [], 'WardCode', 'WardName');
+        wardNameInput.value = '';
         setSelectDisabled(wardSelect, !districtSelect.value);
         setShippingFee(0, '');
+        setValidationStatus('', 'neutral');
 
         if (!districtSelect.value) return;
 
@@ -196,12 +347,7 @@
 
     function onWardChange() {
         syncSelectedNames();
-        if (districtSelect.value && wardSelect.value) {
-            calculateShippingFee({
-                districtId: districtSelect.value,
-                wardCode: wardSelect.value
-            });
-        }
+        refreshAddressFeedback();
     }
 
     if (hasSelect2) {
@@ -220,14 +366,48 @@
         wardSelect?.addEventListener('change', onWardChange);
     }
     savedAddressRadios.forEach(radio => radio.addEventListener('change', syncAddressMode));
+    receiverPhone?.addEventListener('blur', refreshAddressFeedback);
+    addressDetail?.addEventListener('blur', refreshAddressFeedback);
+    receiverPhone?.addEventListener('input', () => {
+        if (!isUsingSavedAddress()) {
+            scheduleRefreshAddressFeedback();
+        }
+    });
+    addressDetail?.addEventListener('input', () => {
+        if (!isUsingSavedAddress()) {
+            scheduleRefreshAddressFeedback();
+        }
+    });
     document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
         radio.addEventListener('change', syncPaymentButton);
     });
 
-    form.addEventListener('submit', function () {
+    form.addEventListener('submit', async function (event) {
+        if (isSubmitting) {
+            return;
+        }
+
+        event.preventDefault();
+        isSubmitting = true;
+        if (submitButton) submitButton.disabled = true;
         syncSelectedNames();
+
+        const isValid = await refreshAddressFeedback();
+        if (!isValid) {
+            isSubmitting = false;
+            updateSubmitState(false);
+            return;
+        }
+
+        if (!form.reportValidity()) {
+            isSubmitting = false;
+            updateSubmitState(true);
+            return;
+        }
+
         if (submitButton) submitButton.disabled = true;
         if (submitText) submitText.textContent = text('processing', 'Processing...');
+        form.submit();
     });
 
     loadProvinces();

@@ -67,7 +67,13 @@
                     </c:if>
                 </c:if>
                 <c:if test="${not empty param.error}">
-                    <div class="alert alert-danger">Cập nhật trạng thái đơn hàng thất bại. Vui lòng thử lại.</div>
+                    <div class="alert alert-danger">
+                        <strong>Lỗi:</strong>
+                        <c:choose>
+                            <c:when test="${param.error eq 'true'}">Không thể cập nhật trạng thái đơn hàng.</c:when>
+                            <c:otherwise><c:out value="${param.error}"/></c:otherwise>
+                        </c:choose>
+                    </div>
                 </c:if>
 
                 <section class="stats-grid orders-stats">

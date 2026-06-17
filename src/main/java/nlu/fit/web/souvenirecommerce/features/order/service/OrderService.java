@@ -11,6 +11,7 @@ import nlu.fit.web.souvenirecommerce.model.enums.OrderStatusCode;
 import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class OrderService {
@@ -31,6 +32,60 @@ public class OrderService {
 
     public List<OrderHistory> getOrderHistory(Long orderId) {
         return orderHistoryRepository.findByOrderId(orderId);
+    }
+
+    public List<String> validateGhnShippingData(Long orderId) {
+        return validateGhnShippingData(getOrderById(orderId));
+    }
+
+    public List<String> validateGhnShippingData(Order order) {
+        List<String> errors = new ArrayList<>();
+        if (order == null) {
+            errors.add("Không tìm thấy đơn hàng.");
+            return errors;
+        }
+
+        Address address = order.getAddress();
+        if (address == null) {
+            errors.add("Đơn hàng chưa có địa chỉ giao hàng.");
+            return errors;
+        }
+
+        String recipientName = resolveRecipientName(order);
+        if (isBlank(recipientName)) {
+            errors.add("Thiếu tên người nhận.");
+        }
+
+        String recipientPhone = resolvePreferredPhone(order);
+        if (!isValidGhnPhone(recipientPhone)) {
+            errors.add("Số điện thoại chưa hợp lệ.");
+        }
+
+        if (isBlank(address.getAddressDetail())) {
+            errors.add("Thiếu địa chỉ chi tiết.");
+        }
+
+        if (isBlank(resolveGhnProvinceName(address))) {
+            errors.add("Thiếu tên tỉnh/thành phố GHN.");
+        }
+
+        if (isBlank(resolveGhnDistrictName(address))) {
+            errors.add("Thiếu tên quận/huyện GHN.");
+        }
+
+        if (isBlank(resolveGhnWardName(address))) {
+            errors.add("Thiếu tên phường/xã GHN.");
+        }
+
+        if (resolveGhnDistrictId(address) == null) {
+            errors.add("Thiếu mã quận/huyện GHN.");
+        }
+
+        if (isBlank(resolveGhnWardCode(address))) {
+            errors.add("Thiếu mã phường/xã GHN.");
+        }
+
+        return errors;
     }
 
     public Order updateStatus(Order order, OrderStatusCode statusCode, String performedBy, String description) {
@@ -62,6 +117,12 @@ public class OrderService {
 
         // Lazy create shipping order if not exists
         if (order.getGhnOrderCode() == null || order.getGhnOrderCode().isBlank()) {
+            List<String> validationErrors = validateGhnShippingData(order);
+            if (!validationErrors.isEmpty()) {
+                String validationMessage = String.join(" | ", validationErrors);
+                logHistory(order, currentStatusDesc, "Không thể tạo đơn vận chuyển GHN: " + validationMessage, performedBy);
+                throw new CheckoutException(validationMessage);
+            }
             try {
                 ShippingProvider.ShippingOrderResult result = provider.createOrder(order);
                 applyShippingSnapshot(order, result);
@@ -170,5 +231,165 @@ public class OrderService {
         order.setGhnLeadtime(result.leadtime());
         order.setGhnFinishDate(result.finishDate());
         order.setGhnUpdatedAt(result.updatedAt());
+    }
+
+    private String resolveRecipientName(Order order) {
+        Address address = order == null ? null : order.getAddress();
+        String preferred = address == null ? null : address.getReceiverName();
+        String fallback = order != null && order.getUser() != null ? order.getUser().getFullName() : null;
+        return firstNonBlank(preferred, fallback);
+    }
+
+    private String resolvePreferredPhone(Order order) {
+        Address address = order == null ? null : order.getAddress();
+        String receiverPhone = normalizePhone(address == null ? null : address.getReceiverPhone());
+        if (isValidGhnPhone(receiverPhone)) {
+            return receiverPhone;
+        }
+
+        String userPhone = normalizePhone(order != null && order.getUser() != null ? order.getUser().getPhone() : null);
+        if (isValidGhnPhone(userPhone)) {
+            return userPhone;
+        }
+
+        return receiverPhone != null ? receiverPhone : userPhone;
+    }
+
+    private String resolveProvinceName(Address address) {
+        if (address == null) {
+            return null;
+        }
+        String direct = resolveGhnProvinceName(address);
+        if (!isBlank(direct)) {
+            return direct;
+        }
+        direct = firstNonBlank(address.getProvince(), address.getCity());
+        if (!isBlank(direct)) {
+            return direct;
+        }
+        return null;
+    }
+
+    private String resolveDistrictName(Address address) {
+        if (address == null) {
+            return null;
+        }
+        String direct = resolveGhnDistrictName(address);
+        if (!isBlank(direct)) {
+            return direct;
+        }
+        direct = firstNonBlank(address.getDistrict(), null);
+        if (!isBlank(direct)) {
+            return direct;
+        }
+        return null;
+    }
+
+    private String resolveWardName(Address address) {
+        if (address == null) {
+            return null;
+        }
+        String direct = resolveGhnWardName(address);
+        if (!isBlank(direct)) {
+            return direct;
+        }
+        direct = firstNonBlank(address.getWard(), null);
+        if (!isBlank(direct)) {
+            return direct;
+        }
+        return null;
+    }
+
+    private String resolveGhnProvinceName(Address address) {
+        if (address == null) {
+            return null;
+        }
+        String direct = firstNonBlank(address.getProvince(), address.getCity());
+        if (!isBlank(direct)) {
+            return direct;
+        }
+        if (address.getProvinceEntity() != null) {
+            return firstNonBlank(address.getProvinceEntity().getGhnProvinceName(), null);
+        }
+        return null;
+    }
+
+    private String resolveGhnDistrictName(Address address) {
+        if (address == null) {
+            return null;
+        }
+        String direct = firstNonBlank(address.getDistrict(), null);
+        if (!isBlank(direct)) {
+            return direct;
+        }
+        if (address.getWardEntity() != null) {
+            return firstNonBlank(address.getWardEntity().getGhnDistrictName(), null);
+        }
+        return null;
+    }
+
+    private String resolveGhnWardName(Address address) {
+        if (address == null) {
+            return null;
+        }
+        String direct = firstNonBlank(address.getWard(), null);
+        if (!isBlank(direct)) {
+            return direct;
+        }
+        if (address.getWardEntity() != null) {
+            return firstNonBlank(address.getWardEntity().getGhnWardName(), null);
+        }
+        return null;
+    }
+
+    private Integer resolveGhnDistrictId(Address address) {
+        if (address == null) {
+            return null;
+        }
+        if (address.getGhnDistrictId() != null) {
+            return address.getGhnDistrictId();
+        }
+        return address.getWardEntity() == null ? null : address.getWardEntity().getGhnDistrictId();
+    }
+
+    private String resolveGhnWardCode(Address address) {
+        if (address == null) {
+            return null;
+        }
+        if (address.getGhnWardCode() != null && !address.getGhnWardCode().isBlank()) {
+            return address.getGhnWardCode();
+        }
+        return address.getWardEntity() == null ? null : address.getWardEntity().getGhnWardCode();
+    }
+
+    private String normalizePhone(String phone) {
+        if (phone == null) {
+            return null;
+        }
+        String normalized = phone.trim().replaceAll("[\\s\\-().]", "");
+        if (normalized.startsWith("+84")) {
+            normalized = "0" + normalized.substring(3);
+        } else if (normalized.startsWith("84") && normalized.length() > 2) {
+            normalized = "0" + normalized.substring(2);
+        }
+        return normalized;
+    }
+
+    private boolean isValidGhnPhone(String phone) {
+        return phone != null && phone.matches("^0(3|5|7|8|9)\\d{8}$");
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (!isBlank(first)) {
+            return first.trim();
+        }
+        if (!isBlank(second)) {
+            return second.trim();
+        }
+        return null;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
