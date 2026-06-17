@@ -110,7 +110,7 @@ public class AdminLogEntry {
     }
 
     public String getTypeLabel() {
-        return "ACTIVITY".equalsIgnoreCase(entryType) ? "Activity" : "System";
+        return "ACTIVITY".equalsIgnoreCase(entryType) ? "Hoạt động" : "Hệ thống";
     }
 
     public String getActionLabel() {

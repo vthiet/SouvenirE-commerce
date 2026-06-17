@@ -33,37 +33,37 @@
                     <div class="page-heading-copy">
                         <span class="page-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
                         <div>
-                            <p class="eyebrow mb-1">Overview</p>
-                            <h1 class="h3 mb-1">Dashboard</h1>
-                            <p class="text-muted mb-0">Monitor performance, sales, users, and support from one clean workspace.</p>
+                            <p class="eyebrow mb-1">Tổng quan</p>
+                            <h1 class="h3 mb-1">Bảng điều khiển</h1>
+                            <p class="text-muted mb-0">Theo dõi hiệu suất, doanh số, người dùng và hỗ trợ trong một không gian làm việc gọn gàng.</p>
                         </div>
                     </div>
 
                     <div class="heading-actions">
                         <div class="dashboard-report-wrap">
                             <button type="button" id="reportMenuButton" class="btn btn-outline-secondary btn-sm" onclick="toggleReportMenu(event)" aria-haspopup="true" aria-expanded="false" aria-controls="reportMenu">
-                                <i class="bi bi-download" aria-hidden="true"></i> Export report
+                                <i class="bi bi-download" aria-hidden="true"></i> Xuất báo cáo
                             </button>
                             <div id="reportMenu" role="menu" class="dropdown-menu dashboard-report-menu">
-                                <a class="dropdown-item" href="${ctx}/admin/export-report?type=summary" role="menuitem">Summary report</a>
-                                <a class="dropdown-item" href="${ctx}/admin/export-report?type=products" role="menuitem">Product report</a>
-                                <a class="dropdown-item" href="${ctx}/admin/export-report?type=orders" role="menuitem">Order report</a>
-                                <a class="dropdown-item" href="${ctx}/admin/export-report?type=customers" role="menuitem">Customer report</a>
+                                <a class="dropdown-item" href="${ctx}/admin/export-report?type=summary" role="menuitem">Báo cáo tổng quan</a>
+                                <a class="dropdown-item" href="${ctx}/admin/export-report?type=products" role="menuitem">Báo cáo sản phẩm</a>
+                                <a class="dropdown-item" href="${ctx}/admin/export-report?type=orders" role="menuitem">Báo cáo đơn hàng</a>
+                                <a class="dropdown-item" href="${ctx}/admin/export-report?type=customers" role="menuitem">Báo cáo khách hàng</a>
                             </div>
                         </div>
 
                         <c:if test="${canCreateProduct}">
                             <a class="btn btn-primary btn-sm" href="${ctx}/admin/products?action=add">
-                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Add product
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm sản phẩm
                             </a>
                         </c:if>
                     </div>
                 </div>
 
-                <section class="stats-grid" aria-label="Dashboard metrics">
+                <section class="stats-grid" aria-label="Bảng điều khiển">
                     <article class="metric-card">
                         <div class="metric-top">
-                            <span class="metric-label">Revenue this month</span>
+                            <span class="metric-label">Doanh thu tháng này</span>
                             <span class="metric-icon"><i class="bi bi-currency-dollar" aria-hidden="true"></i></span>
                         </div>
                         <div class="metric-value">
@@ -71,50 +71,50 @@
                         </div>
                         <div class="metric-meta">
                             <span class="text-success">+12.5%</span>
-                            <span>vs last month</span>
+                            <span>so với tháng trước</span>
                         </div>
                     </article>
 
                     <article class="metric-card">
                         <div class="metric-top">
-                            <span class="metric-label">New orders</span>
+                            <span class="metric-label">Đơn hàng mới</span>
                             <span class="metric-icon"><i class="bi bi-bag-check" aria-hidden="true"></i></span>
                         </div>
                         <div class="metric-value">${totalOrders}</div>
                         <div class="metric-meta">
-                            <span class="text-success">Growth</span>
-                            <span>latest month</span>
+                            <span class="text-success">Tăng trưởng</span>
+                            <span>tháng gần nhất</span>
                         </div>
                     </article>
 
                     <article class="metric-card">
                         <div class="metric-top">
-                            <span class="metric-label">Products</span>
+                            <span class="metric-label">Sản phẩm</span>
                             <span class="metric-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
                         </div>
                         <div class="metric-value">${totalProducts}</div>
                         <div class="metric-meta">
-                            <span>Total catalog items</span>
+                            <span>Tổng mặt hàng trong danh mục</span>
                         </div>
                     </article>
 
                     <article class="metric-card">
                         <div class="metric-top">
-                            <span class="metric-label">Customers</span>
+                            <span class="metric-label">Khách hàng</span>
                             <span class="metric-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
                         </div>
                         <div class="metric-value">${totalCustomers}</div>
                         <div class="metric-meta">
-                            <span>Total registered users</span>
+                            <span>Tổng người dùng đã đăng ký</span>
                         </div>
                     </article>
                 </section>
 
                 <div class="tabs">
                     <div class="tabs-list">
-                        <button class="tabs-trigger active" data-tab="overview" type="button">Overview</button>
-                        <button class="tabs-trigger" data-tab="orders" type="button">Recent orders</button>
-                        <button class="tabs-trigger" data-tab="products" type="button">Best sellers</button>
+                        <button class="tabs-trigger active" data-tab="overview" type="button">Tổng quan</button>
+                        <button class="tabs-trigger" data-tab="orders" type="button">Đơn hàng gần đây</button>
+                        <button class="tabs-trigger" data-tab="products" type="button">Sản phẩm bán chạy</button>
                     </div>
 
                     <section class="tabs-content active" id="overview">
@@ -123,8 +123,8 @@
                                 <div class="panel h-100">
                                     <div class="panel-header">
                                         <div>
-                                            <h2 class="section-title"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i><span>Revenue trend</span></h2>
-                                            <p class="text-muted mb-0">Monthly revenue for the latest six months.</p>
+                                            <h2 class="section-title"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i><span>Xu hướng doanh thu</span></h2>
+                                            <p class="text-muted mb-0">Doanh thu theo tháng trong 6 tháng gần nhất.</p>
                                         </div>
                                     </div>
                                     <div class="panel-body">
@@ -137,15 +137,15 @@
                                 <div class="panel h-100">
                                     <div class="panel-header">
                                         <div>
-                                            <h2 class="section-title"><i class="bi bi-clock-history" aria-hidden="true"></i><span>Recent orders</span></h2>
-                                            <p class="text-muted mb-0">Five newest orders.</p>
+                                            <h2 class="section-title"><i class="bi bi-clock-history" aria-hidden="true"></i><span>Đơn hàng gần đây</span></h2>
+                                            <p class="text-muted mb-0">5 đơn hàng mới nhất.</p>
                                         </div>
                                     </div>
                                     <div class="panel-body">
                                         <c:choose>
                                             <c:when test="${empty recentOrders}">
                                                 <div class="text-center py-5 text-muted">
-                                                    <p class="mb-0">No recent orders yet.</p>
+                                                    <p class="mb-0">Chưa có đơn hàng gần đây.</p>
                                                 </div>
                                             </c:when>
                                             <c:otherwise>
@@ -174,8 +174,8 @@
                         <div class="panel">
                             <div class="panel-header">
                                 <div>
-                                    <h2 class="section-title"><i class="bi bi-bag-check" aria-hidden="true"></i><span>Recent orders</span></h2>
-                                    <p class="text-muted mb-0">Latest order activity and status.</p>
+                                    <h2 class="section-title"><i class="bi bi-bag-check" aria-hidden="true"></i><span>Đơn hàng gần đây</span></h2>
+                                    <p class="text-muted mb-0">Hoạt động và trạng thái đơn hàng mới nhất.</p>
                                 </div>
                             </div>
                             <div class="panel-body table-container">
@@ -189,11 +189,11 @@
                                         <table class="data-table">
                                             <thead>
                                             <tr>
-                                                <th scope="col">Order</th>
-                                                <th scope="col">Customer</th>
-                                                <th scope="col">Date</th>
-                                                <th scope="col">Total</th>
-                                                <th scope="col">Status</th>
+                                                <th scope="col">Đơn hàng</th>
+                                                <th scope="col">Khách hàng</th>
+                                                <th scope="col">Ngày</th>
+                                                <th scope="col">Tổng tiền</th>
+                                                <th scope="col">Trạng thái</th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -233,26 +233,26 @@
                         <div class="panel">
                             <div class="panel-header">
                                 <div>
-                                    <h2 class="section-title"><i class="bi bi-stars" aria-hidden="true"></i><span>Best-selling products</span></h2>
-                                    <p class="text-muted mb-0">Top 10 products by sales volume.</p>
+                                    <h2 class="section-title"><i class="bi bi-stars" aria-hidden="true"></i><span>Sản phẩm bán chạy nhất</span></h2>
+                                    <p class="text-muted mb-0">10 sản phẩm có doanh số cao nhất.</p>
                                 </div>
                             </div>
                             <div class="panel-body table-container">
                                 <c:choose>
                                     <c:when test="${empty topProducts}">
                                         <div class="text-center py-5 text-muted">
-                                            <p class="mb-0">No top-selling products available.</p>
+                                            <p class="mb-0">Chưa có sản phẩm bán chạy.</p>
                                         </div>
                                     </c:when>
                                     <c:otherwise>
                                         <table class="data-table">
                                             <thead>
                                             <tr>
-                                                <th scope="col">Product</th>
-                                                <th scope="col">Category</th>
-                                                <th scope="col">Price</th>
-                                                <th scope="col">Sold</th>
-                                                <th scope="col">Stock</th>
+                                                <th scope="col">Sản phẩm</th>
+                                                <th scope="col">Danh mục</th>
+                                                <th scope="col">Giá</th>
+                                                <th scope="col">Đã bán</th>
+                                                <th scope="col">Tồn kho</th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -264,7 +264,7 @@
                                                             <c:when test="${not empty product.category}">
                                                                 <c:out value="${product.category.categoryName}"/>
                                                             </c:when>
-                                                            <c:otherwise>Uncategorized</c:otherwise>
+                                                            <c:otherwise>Chưa phân loại</c:otherwise>
                                                         </c:choose>
                                                     </td>
                                                     <td><fmt:formatNumber value="${product.originalPrice}" type="currency" currencySymbol="₫" maxFractionDigits="0"/></td>

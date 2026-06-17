@@ -195,7 +195,7 @@ public class ExportReportController extends HttpServlet {
         PrintWriter writer = response.getWriter();
         writer.write('\ufeff');
 
-        writer.println("BÁO CÁO ĐỐN HÀNG");
+        writer.println("BÁO CÁO ĐƠN HÀNG");
         writer.println("Ngày xuất: " + new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()));
         writer.println();
         writer.println("ID,Khách hàng,Email,Ngày đặt,Tổng tiền,Trạng thái");
@@ -210,7 +210,7 @@ public class ExportReportController extends HttpServlet {
                     o.getCustomerEmail() != null ? o.getCustomerEmail().replace("\"", "\"\"") : "",
                     o.getOrderDate() != null ? sdf.format(o.getOrderDate()) : "",
                     String.format("%.0f", o.getTotalAmount()),
-                    o.getStatus() != null ? o.getStatus() : "Pending"
+                    o.getStatus() != null ? o.getStatus() : "Chờ xác nhận"
             ));
         }
 
@@ -249,9 +249,9 @@ public class ExportReportController extends HttpServlet {
                     u.getEmail() != null ? u.getEmail().replace("\"", "\"\"") : "",
                     u.getPhone() != null ? u.getPhone() : "",
                     u.getRoles() != null && !u.getRoles().isEmpty()
-                            ? u.getRoles().stream().map(r -> r.getName()).collect(Collectors.joining("|"))
-                            : "Customer",
-                    u.isActive() ? "Active" : "Inactive",
+                            ? u.getRoles().stream().map(r -> localizeRoleName(r.getName())).collect(Collectors.joining("|"))
+                            : "Khách hàng",
+                    u.isActive() ? "Đang hoạt động" : "Không hoạt động",
                     u.getCreatedAt() != null ? u.getCreatedAt().toString() : ""
             ));
         }
@@ -278,5 +278,18 @@ public class ExportReportController extends HttpServlet {
             currentUser = (User) session.getAttribute("userInSession");
         }
         return currentUser;
+    }
+
+    private String localizeRoleName(String roleName) {
+        if (roleName == null || roleName.isBlank()) {
+            return "";
+        }
+
+        return switch (roleName.trim()) {
+            case "Customer" -> "Khách hàng";
+            case "Admin" -> "Quản trị viên";
+            case "Super Admin" -> "Siêu quản trị viên";
+            default -> roleName;
+        };
     }
 }
