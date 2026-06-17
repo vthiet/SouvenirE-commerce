@@ -27,7 +27,7 @@
         --focus-outline: 0 0 0 3px rgba(36, 122, 82, 0.16);
         --card-shadow: 0 8px 24px rgba(31, 41, 51, 0.12);
     }
-
+    
     html[data-theme="dark"] {
         color-scheme: dark;
         --page-background: #101614;
@@ -56,7 +56,7 @@
         --warning-border: #6a4e17;
         --danger-bg: #2a1413;
         --danger-border: #6a2f2a;
-
+        
         --surface-page: var(--page-background);
         --surface-default: var(--card-background);
         --surface-muted: var(--muted-background);
@@ -75,7 +75,7 @@
         --focus-ring: var(--focus-outline);
         --shadow-sm: var(--card-shadow);
         --shadow-md: var(--card-shadow);
-
+        
         --bg-main: var(--page-background);
         --bg-white: var(--card-background);
         --bg-light: var(--muted-background);
@@ -89,7 +89,7 @@
         --border-light: var(--soft-border);
         --border-normal: var(--main-border);
     }
-
+    
     html[data-theme="dark"] body,
     html[data-theme="dark"] .auth-page,
     html[data-theme="dark"] .account-page,
@@ -98,7 +98,7 @@
         background: var(--page-background) !important;
         color: var(--main-text) !important;
     }
-
+    
     html[data-theme="dark"] h1,
     html[data-theme="dark"] h2,
     html[data-theme="dark"] h3,
@@ -110,7 +110,7 @@
     html[data-theme="dark"] .account-heading h1 {
         color: var(--heading-text) !important;
     }
-
+    
     html[data-theme="dark"] p,
     html[data-theme="dark"] span,
     html[data-theme="dark"] label,
@@ -119,7 +119,7 @@
     html[data-theme="dark"] .muted {
         color: inherit;
     }
-
+    
     html[data-theme="dark"] .site-header,
     html[data-theme="dark"] .header-top,
     html[data-theme="dark"] .header-menu-bar,
@@ -146,7 +146,7 @@
         border-color: var(--main-border) !important;
         box-shadow: var(--card-shadow);
     }
-
+    
     html[data-theme="dark"] .card-soft,
     html[data-theme="dark"] .input-wrap,
     html[data-theme="dark"] .order-code,
@@ -161,7 +161,7 @@
         color: var(--main-text) !important;
         border-color: var(--main-border) !important;
     }
-
+    
     html[data-theme="dark"] input,
     html[data-theme="dark"] select,
     html[data-theme="dark"] textarea {
@@ -169,18 +169,18 @@
         color: var(--main-text) !important;
         border-color: var(--main-border) !important;
     }
-
+    
     html[data-theme="dark"] input::placeholder,
     html[data-theme="dark"] textarea::placeholder {
         color: var(--muted-text) !important;
     }
-
+    
     html[data-theme="dark"] a:hover,
     html[data-theme="dark"] .header-top a:hover,
     html[data-theme="dark"] .header-menu-bar a:hover {
         color: var(--primary-color) !important;
     }
-
+    
     html[data-theme="dark"] .primary-button,
     html[data-theme="dark"] .btn-primary,
     html[data-theme="dark"] .add-cart,
@@ -190,7 +190,7 @@
         color: #08110d !important;
         border-color: var(--primary-color) !important;
     }
-
+    
     html[data-theme="dark"] .secondary-button,
     html[data-theme="dark"] .btn-secondary,
     html[data-theme="dark"] .filter-btn,
@@ -200,7 +200,7 @@
         color: var(--main-text) !important;
         border-color: var(--main-border) !important;
     }
-
+    
     html[data-theme="dark"] .old-price,
     html[data-theme="dark"] .review-count,
     html[data-theme="dark"] .text-muted,
@@ -208,55 +208,112 @@
     html[data-theme="dark"] .profile-avatar__hint {
         color: var(--muted-text) !important;
     }
-
+    
     html[data-theme="dark"] .sale-price,
     html[data-theme="dark"] .normal-price,
     html[data-theme="dark"] .current-price,
     html[data-theme="dark"] .item-price {
         color: var(--accent-color) !important;
     }
-
+    
     html[data-theme="dark"] img {
         filter: brightness(0.92) contrast(1.03);
     }
-
+    
+    .theme-toggle-wrapper {
+        display: flex;
+        align-items: center;
+        padding: 4px;
+        border: 1px solid var(--border-light);
+        border-radius: 999px;
+        background: var(--surface-default);
+        box-shadow: var(--shadow-sm);
+    }
+    
     .theme-toggle-button {
-        min-width: 38px;
-        height: 38px;
+        min-width: 76px;
+        min-height: 30px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        border: 1px solid var(--border-normal, var(--main-border));
+        gap: 6px;
+        padding: 0 12px;
+        
+        border: none;
         border-radius: 999px;
-        background: var(--bg-white, var(--card-background));
-        color: var(--text-main, var(--main-text));
+        background: transparent;
+        color: var(--text-soft);
+        
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        
         cursor: pointer;
-        transition: background .2s ease, border-color .2s ease, color .2s ease;
+        transition: background-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
     }
-
+    
     .theme-toggle-button:hover,
-    .theme-toggle-button:focus-visible {
-        border-color: var(--color-primary, var(--primary-color));
-        color: var(--color-primary, var(--primary-color));
+    .theme-toggle-button:focus-visible,
+    .theme-toggle-button[aria-pressed="true"] {
+        background: var(--color-primary);
+        color: var(--text-on-primary);
+        transform: translateY(-1px);
         outline: none;
-        box-shadow: var(--focus-ring, var(--focus-outline));
     }
-
-    .theme-toggle-button .theme-label {
+    
+    .theme-toggle-button {
+        min-width: 76px;
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 0 12px;
+        
+        border: 1px solid var(--border-light);
+        border-radius: 999px;
+        background: var(--surface-default);
+        box-shadow: var(--shadow-sm);
+        
+        color: var(--text-soft);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        
+        cursor: pointer;
+        transition: background-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease,
+        border-color 0.2s ease;
+    }
+    
+    .theme-toggle-button:hover,
+    .theme-toggle-button:focus-visible,
+    .theme-toggle-button[aria-pressed="true"] {
+        background: var(--color-primary);
+        color: var(--text-on-primary);
+        transform: translateY(-1px);
+        outline: none;
+    }
+    
+    .theme-toggle-button i {
         font-size: 13px;
-        font-weight: 600;
     }
-
-    .auth-theme-toggle {
-        position: fixed;
-        top: 18px;
-        right: 18px;
-        z-index: 20;
-        padding: 0 14px;
+    
+    .theme-toggle-button .theme-label {
+        font-size: 12px;
+        font-weight: 700;
     }
-
+    
     @media (max-width: 640px) {
+        .theme-toggle-button {
+            min-width: 38px;
+            width: 38px;
+            padding: 0;
+        }
+        
         .theme-toggle-button .theme-label {
             display: none;
         }
@@ -272,7 +329,7 @@
             switchToLight: i18nElement?.dataset.themeSwitchToLight || 'Chuyển sang giao diện sáng',
             switchToDark: i18nElement?.dataset.themeSwitchToDark || 'Chuyển sang giao diện tối'
         };
-
+        
         function syncButtons(theme) {
             buttons.forEach(function (button) {
                 var icon = button.querySelector('[data-theme-icon]');
@@ -289,20 +346,20 @@
                 }
             });
         }
-
+        
         function setTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
             localStorage.setItem('inola-theme', theme);
             syncButtons(theme);
         }
-
+        
         buttons.forEach(function (button) {
             button.addEventListener('click', function () {
                 var currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
                 setTheme(currentTheme === 'dark' ? 'light' : 'dark');
             });
         });
-
+        
         syncButtons(document.documentElement.getAttribute('data-theme') || 'light');
     });
 </script>

@@ -35,7 +35,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><fmt:message key="auth.forgot.title"/></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/auth/signup.css?v=3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/auth/signup.css?v=4">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <jsp:include page="/WEB-INF/layout/dark-mode.jsp"/>
 </head>
@@ -49,28 +49,32 @@
      data-theme-switch-to-light="<fmt:message key='theme.switch_to_light'/>"
      data-theme-switch-to-dark="<fmt:message key='theme.switch_to_dark'/>">
 </div>
-<div class="auth-language-switcher"
-     role="group"
-     aria-label="<fmt:message key='language.label'/>">
-    <div class="auth-language-switcher__options">
-        <a class="auth-language-switcher__option ${requestScope.siteLanguage == 'vi' ? 'is-active' : ''}"
-           href="${languageViUrl}">
-            <fmt:message key="language.vi"/>
-        </a>
-        <a class="auth-language-switcher__option ${requestScope.siteLanguage == 'en' ? 'is-active' : ''}"
-           href="${languageEnUrl}">
-            <fmt:message key="language.en"/>
-        </a>
+<div class="auth-utility-switcher">
+    <div class="auth-language-switcher"
+         role="group"
+         aria-label="<fmt:message key='language.label'/>">
+        <div class="auth-language-switcher__options">
+            <a class="auth-language-switcher__option ${requestScope.siteLanguage == 'vi' ? 'is-active' : ''}"
+               href="${languageViUrl}">
+                <fmt:message key="language.vi"/>
+            </a>
+            <a class="auth-language-switcher__option ${requestScope.siteLanguage == 'en' ? 'is-active' : ''}"
+               href="${languageEnUrl}">
+                <fmt:message key="language.en"/>
+            </a>
+        </div>
+    </div>
+    <div class="theme-toggle-wrapper">
+        <button class="theme-toggle-button auth-theme-toggle"
+                type="button"
+                data-theme-toggle
+                aria-label="<fmt:message key='theme.toggle'/>"
+                aria-pressed="false">
+            <i class="fa-solid fa-moon" data-theme-icon aria-hidden="true"></i>
+            <span class="theme-label" data-theme-label><fmt:message key="theme.dark"/></span>
+        </button>
     </div>
 </div>
-<button class="theme-toggle-button auth-theme-toggle"
-        type="button"
-        data-theme-toggle
-        aria-label="<fmt:message key='theme.toggle'/>"
-        aria-pressed="false">
-    <i class="fa-solid fa-moon" data-theme-icon aria-hidden="true"></i>
-    <span class="theme-label" data-theme-label><fmt:message key="theme.dark"/></span>
-</button>
 <main class="auth-shell signup-shell">
     <aside class="auth-media" aria-label="<fmt:message key='auth.forgot.media_aria'/>">
         <img src="${pageContext.request.contextPath}/assets/images/products/lang-nghe-thu-cong/bo-am-chen-bach-ngoc-hoa-sen-qua-tang-cao-cap.jpg" alt="<fmt:message key='auth.forgot.media_title'/>">

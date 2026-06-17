@@ -71,8 +71,8 @@
             <div class="checkout-flow-user header-account">
 
                 <div class="header-language-switcher"
-                     role="group"
-                     aria-label="<fmt:message key='language.label'/>">
+                    role="group"
+                    aria-label="<fmt:message key='language.label'/>">
                     <div class="header-language-switcher__options">
                         <a class="header-language-switcher__option ${requestScope.siteLanguage == 'vi' ? 'is-active' : ''}"
                            href="${languageViUrl}">
@@ -81,7 +81,7 @@
                         <a class="header-language-switcher__option ${requestScope.siteLanguage == 'en' ? 'is-active' : ''}"
                            href="${languageEnUrl}">
                             <fmt:message key="language.en"/>
-                        </a>
+                    </a>
                     </div>
                 </div>
 
@@ -381,20 +381,18 @@
                 </div>
             </div>
 
-            <button class="theme-toggle-button"
-                    type="button"
-                    data-theme-toggle
-                    aria-label="<fmt:message key='theme.toggle'/>"
-                    aria-pressed="false">
-
-                <i class="fa-solid fa-moon"
-                   data-theme-icon
-                   aria-hidden="true"></i>
-
-                <span class="theme-label"
-                      data-theme-label><fmt:message key="theme.dark"/></span>
-
-            </button>
+            <div class="auth-theme-toggle theme-toggle-wrapper">
+                <button class="theme-toggle-button"
+                        type="button"
+                        data-theme-toggle
+                        aria-label="<fmt:message key='theme.toggle'/>"
+                        aria-pressed="false">
+                    <i class="fa-solid fa-moon" data-theme-icon aria-hidden="true"></i>
+                    <span class="theme-label" data-theme-label>
+                        <fmt:message key="theme.dark"/>
+                    </span>
+                </button>
+            </div>
 
             <a class="header-icon-link"
                href="${pageContext.request.contextPath}/user/orders">

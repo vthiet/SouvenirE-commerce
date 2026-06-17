@@ -9,7 +9,7 @@
 
 ## 📖 DOCUMENTATION FILES CREATED
 
-### 5 Files Chính Được Tạo
+### 7 Files Chính Được Tạo
 
 | # | File | Kích thước | Mô tả | Ưu tiên |
 |---|------|----------|------|--------|
@@ -19,6 +19,7 @@
 | 4 | **[ARCHITECTURE_GUIDE.md](ARCHITECTURE_GUIDE.md)** | 26 KB | 🏗️ Hướng dẫn cấu trúc Feature-Based chi tiết | 🟡 HIGH |
 | 5 | **[FILE_MIGRATION_MAPPING.md](FILE_MIGRATION_MAPPING.md)** | 21 KB | 🗺️ Ánh xạ file hiện tại → vị trí mới | 🟡 HIGH |
 | 6 | **[TASK_DASHBOARD.html](TASK_DASHBOARD.html)** | 19 KB | 🎨 Dashboard interactiv theo dõi tiến độ | 🟢 OPTIONAL |
+| 7 | **[PURCHASE_ORDER_MIGRATION_GUIDE.md](PURCHASE_ORDER_MIGRATION_GUIDE.md)** | 8 KB | 🧾 Hướng dẫn migrate schema phiếu nhập kho | 🟡 HIGH |
 
 ---
 
@@ -172,6 +173,19 @@
 └─ Cập nhật: Khi hoàn thành task
 ```
 
+### PURCHASE_ORDER_MIGRATION_GUIDE.md
+```
+├─ Mục Đích: Hướng dẫn migrate schema phiếu nhập kho
+├─ Nội dung:
+│  ├─ Cách migrate tự động khi app start
+│  ├─ Cách chạy SQL thủ công nếu cần
+│  ├─ Cách kiểm tra dữ liệu sau migrate
+│  ├─ Cách xử lý DB cũ có phiếu nhập legacy
+│  └─ Cách test luồng draft/finalize/detail/cancel
+├─ Thời gian đọc: 5-10 phút
+└─ Sau khi đọc: Dùng ngay khi deploy feature purchase order
+```
+
 ---
 
 ## 💼 USAGE SCENARIOS
@@ -282,6 +296,10 @@
 - Standalone interactive tool
 - Không cần coding, chỉ click & track
 
+### PURCHASE_ORDER_MIGRATION_GUIDE.md Links
+- ← README_ROADMAP.md (tổng quan)
+- Related: SchemaMigrationRunner.java, purchase_orders.sql, admin purchase order controllers
+
 ---
 
 ## ⚡ QUICK REFERENCE
@@ -305,6 +323,9 @@
 
 "Theo dõi tiến độ team"
   → TASK_DASHBOARD.html (mở browser)
+
+"Migrate phiếu nhập kho"
+  → PURCHASE_ORDER_MIGRATION_GUIDE.md
 
 "Kiểm tra success criteria"
   → README_ROADMAP.md (phần "Success Criteria")
