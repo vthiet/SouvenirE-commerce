@@ -36,7 +36,7 @@
                 </div>
             </c:if>
 
-            <!-- System Settings -->
+            <!-- Cài đặt hệ thống -->
             <div class="card settings-card-spaced">
                 <div class="card-header">
                     <h3>Cài đặt hệ thống</h3>
@@ -74,7 +74,7 @@
                                     <label>Ngôn ngữ mặc định</label>
                                     <select name="defaultLanguage" class="form-control">
                                         <option value="vi" ${settings.default_language == 'vi' ? 'selected' : ''}>Tiếng Việt</option>
-                                        <option value="en" ${settings.default_language == 'en' ? 'selected' : ''}>English</option>
+                                        <option value="en" ${settings.default_language == 'en' ? 'selected' : ''}>Tiếng Anh</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -97,7 +97,7 @@
                                     <label class="settings-check-label"><input type="checkbox" name="maintenanceMode" ${settings.maintenance_mode == 'true' ? 'checked' : ''}> Bật chế độ bảo trì</label>
                                 </div>
                                 <div class="form-group">
-                                    <label>Logo (URL)</label>
+                                    <label>Logo (đường dẫn)</label>
                                     <input type="text" name="siteLogoUrl" class="form-control" value="${settings.site_logo_url}">
                                 </div>
                             </div>
@@ -106,7 +106,7 @@
                         <div class="settings-section">
                             <h3>SEO & Mô tả</h3>
                             <div class="form-group">
-                                <label>Meta description</label>
+                                <label>Mô tả meta</label>
                                 <textarea name="metaDescription" class="form-control" rows="3">${settings.meta_description}</textarea>
                             </div>
                         </div>

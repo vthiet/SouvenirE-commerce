@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.order.service.OrderService;
 import nlu.fit.web.souvenirecommerce.model.entity.Address;
 import nlu.fit.web.souvenirecommerce.model.entity.Order;
@@ -17,6 +18,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,10 +61,27 @@ public class AdminOrderDetailController extends HttpServlet {
             String performedBy = (adminUser != null) ? adminUser.getEmail() : "Admin";
             try {
                 orderService.syncGhnStatus(orderId, performedBy);
+                AuditLogService.success(
+                        AdminOrderDetailController.class,
+                        adminUser,
+                        "ORDER",
+                        "ORDER_GHN_SYNCED",
+                        "ORDER",
+                        AuditLogService.describe("orderId", orderId, "performedBy", performedBy)
+                );
                 response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&success=true");
                 return;
             } catch (Exception e) {
-                response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+                AuditLogService.failure(
+                        AdminOrderDetailController.class,
+                        adminUser,
+                        "ORDER",
+                        "ORDER_GHN_SYNCED",
+                        "ORDER",
+                        AuditLogService.describe("orderId", orderId, "performedBy", performedBy, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
+                );
+                String errorMessage = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
                 return;
             }
         }
@@ -102,25 +122,55 @@ public class AdminOrderDetailController extends HttpServlet {
 
         String action = request.getParameter("action");
         try {
+            String auditAction = null;
             if ("confirm".equals(action)) {
                 orderService.confirmOrder(orderId, performedBy);
+                auditAction = "ORDER_CONFIRMED";
             } else if ("ship".equals(action)) {
                 orderService.startShipping(orderId, performedBy);
+                auditAction = "ORDER_SHIPPED";
             } else if ("complete".equals(action)) {
                 orderService.completeOrder(orderId, performedBy);
+                auditAction = "ORDER_COMPLETED";
             } else if ("cancel".equals(action)) {
                 String reason = request.getParameter("reason");
                 if (reason == null || reason.isBlank()) {
                     reason = "Bị hủy bởi Admin";
                 }
                 orderService.cancelOrder(orderId, performedBy, reason);
+                auditAction = "ORDER_CANCELLED";
             } else {
+                AuditLogService.failure(
+                        AdminOrderDetailController.class,
+                        adminUser,
+                        "ORDER",
+                        "ORDER_STATUS_CHANGED",
+                        "ORDER",
+                        AuditLogService.describe("orderId", orderId, "action", action, "reason", "unsupported_action")
+                );
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported action");
                 return;
             }
+            AuditLogService.success(
+                    AdminOrderDetailController.class,
+                    adminUser,
+                    "ORDER",
+                    auditAction,
+                    "ORDER",
+                    AuditLogService.describe("orderId", orderId, "action", action, "performedBy", performedBy)
+            );
             response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&success=true");
         } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+            AuditLogService.failure(
+                    AdminOrderDetailController.class,
+                    adminUser,
+                    "ORDER",
+                    "ORDER_STATUS_CHANGED",
+                    "ORDER",
+                    AuditLogService.describe("orderId", orderId, "action", action, "performedBy", performedBy, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
+            );
+            String errorMessage = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+            response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
         }
     }
 
@@ -146,7 +196,13 @@ public class AdminOrderDetailController extends HttpServlet {
                 order.getNote(),
                 order.getPaymentTransaction() != null ? order.getPaymentTransaction().getMethod().name() : "COD",
                 order.getStatusDescription(),
-                order.getTotalAmount()
+                order.getTotalAmount(),
+                safeMoney(order.getShippingFee()),
+                order.getGhnOrderCode(),
+                order.getGhnStatus(),
+                toDate(order.getGhnUpdatedAt()),
+                toDate(order.getGhnLeadtime()),
+                toDate(order.getGhnFinishDate())
         );
     }
 
@@ -176,7 +232,13 @@ public class AdminOrderDetailController extends HttpServlet {
             String note,
             String paymentMethod,
             String status,
-            BigDecimal totalAmount
+            BigDecimal totalAmount,
+            BigDecimal shippingFee,
+            String ghnOrderCode,
+            String ghnStatus,
+            Date ghnUpdatedAt,
+            Date ghnLeadtime,
+            Date ghnFinishDate
     ) {
         public int getId() { return id; }
         public java.util.Date getOrderDate() { return orderDate; }
@@ -188,6 +250,12 @@ public class AdminOrderDetailController extends HttpServlet {
         public String getPaymentMethod() { return paymentMethod; }
         public String getStatus() { return status; }
         public BigDecimal getTotalAmount() { return totalAmount; }
+        public BigDecimal getShippingFee() { return shippingFee; }
+        public String getGhnOrderCode() { return ghnOrderCode; }
+        public String getGhnStatus() { return ghnStatus; }
+        public Date getGhnUpdatedAt() { return ghnUpdatedAt; }
+        public Date getGhnLeadtime() { return ghnLeadtime; }
+        public Date getGhnFinishDate() { return ghnFinishDate; }
     }
 
     public record OrderItemView(
@@ -202,5 +270,13 @@ public class AdminOrderDetailController extends HttpServlet {
         public Integer getQuantity() { return quantity; }
         public BigDecimal getUnitPrice() { return unitPrice; }
         public BigDecimal getSubtotal() { return subtotal; }
+    }
+
+    private Date toDate(java.time.LocalDateTime value) {
+        return value == null ? null : Date.from(value.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    private BigDecimal safeMoney(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 }

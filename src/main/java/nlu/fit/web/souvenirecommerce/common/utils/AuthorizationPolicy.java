@@ -29,6 +29,23 @@ public final class AuthorizationPolicy {
             return resolveCrudPermission(request, "product", "read");
         }
 
+        if ("/admin/stock-imports".equals(servletPath) || "/admin/stock-imports/".equals(servletPath)) {
+            return resolveCrudPermission(request, "product", "update");
+        }
+
+        if ("/admin/purchase-order-detail".equals(servletPath) || "/admin/purchase-order-detail/".equals(servletPath)) {
+            if ("POST".equalsIgnoreCase(request.getMethod())) {
+                String action = safeLower(request.getParameter("action"));
+                String mappedAction = switch (action) {
+                    case "delete", "remove", "cancel" -> "delete";
+                    case "save", "update", "finalize", "finalise", "savedraft", "draft" -> "update";
+                    default -> "update";
+                };
+                return new RequiredPermission("product", mappedAction, true);
+            }
+            return new RequiredPermission("product", "read", true);
+        }
+
         if ("/admin/categories".equals(servletPath)) {
             return resolveCrudPermission(request, "category", "read");
         }
@@ -39,6 +56,18 @@ public final class AuthorizationPolicy {
 
         if ("/admin/customers".equals(servletPath)) {
             return resolveCrudPermission(request, "customer", "read");
+        }
+
+        if ("/admin/reviews".equals(servletPath) || "/admin/reviews.jsp".equals(servletPath)) {
+            if ("POST".equalsIgnoreCase(request.getMethod())) {
+                String action = safeLower(request.getParameter("action"));
+                String mappedAction = switch (action) {
+                    case "delete", "remove" -> "delete";
+                    default -> "read";
+                };
+                return new RequiredPermission("review", mappedAction, true);
+            }
+            return new RequiredPermission("review", "read", true);
         }
 
         if ("/admin/banners".equals(servletPath) || "/admin/banner".equals(servletPath)) {

@@ -9,7 +9,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.common.utils.EmailUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.RecaptchaUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
@@ -27,6 +29,8 @@ import java.time.LocalDateTime;
 })
 @Slf4j
 public class ForgotPasswordServlet extends HttpServlet {
+    private static final String AUDIT_CATEGORY = "AUTH";
+    private static final String AUDIT_ENTITY = "EMAIL";
     private AuthService authService;
 
     @Override
@@ -55,31 +59,40 @@ public class ForgotPasswordServlet extends HttpServlet {
         } else if ("/api/forgot-password/reset".equals(path)) {
             handleResetPassword(req, resp, jsonResponse);
         } else {
-            writeJson(resp, jsonResponse, "error", "Yêu cầu không hợp lệ");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.reset.failed"));
         }
     }
 
     private void handleSendCode(HttpServletRequest req, HttpServletResponse resp, JsonObject jsonResponse) throws IOException {
         String email = EmailUtil.normalizeEmail(req.getParameter("email"));
+        String actorLabel = resolveActorLabel(email);
 
         if (!RecaptchaUtil.verify(req, getServletContext())) {
             log.warn("Gửi mã reset mật khẩu thất bại do captcha: email={}", email);
-            writeJson(resp, jsonResponse, "error", "Vui lòng xác nhận bạn không phải robot.");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_SEND_CODE",
+                    AuditLogService.describe("email", email, "reason", "captcha_failed"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.send_code.captcha"));
             return;
         }
 
         if (email == null || email.isEmpty()) {
-            writeJson(resp, jsonResponse, "error", "Email không được để trống");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_SEND_CODE",
+                    AuditLogService.describe("reason", "email_empty"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.send_code.empty"));
             return;
         }
 
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            writeJson(resp, jsonResponse, "error", "Email không hợp lệ");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_SEND_CODE",
+                    AuditLogService.describe("email", email, "reason", "email_invalid"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.send_code.invalid"));
             return;
         }
 
         if (!authService.hasEmailExist(email)) {
-            writeJson(resp, jsonResponse, "error", "Email này chưa được đăng ký trong hệ thống");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_SEND_CODE",
+                    AuditLogService.describe("email", email, "reason", "email_not_found"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.send_code.not_found"));
             return;
         }
 
@@ -89,7 +102,9 @@ public class ForgotPasswordServlet extends HttpServlet {
         } catch (MessagingException | RuntimeException e) {
             rollbackCurrentTransaction();
             log.error("Gửi mã reset mật khẩu thất bại: email={}", email, e);
-            writeJson(resp, jsonResponse, "error", "Không gửi được mã xác thực. Vui lòng kiểm tra cấu hình email");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_SEND_CODE",
+                    AuditLogService.describe("email", email, "reason", "send_failed", "message", e.getMessage()));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.send_code.failed"));
             return;
         }
 
@@ -98,53 +113,71 @@ public class ForgotPasswordServlet extends HttpServlet {
         session.removeAttribute("forgotPasswordVerifiedEmail");
 
         log.info("Gửi mã reset mật khẩu thành công: email={}, expiresAt={}", email, expiresAt);
-        writeJson(resp, jsonResponse, "success", "Mã xác thực khôi phục mật khẩu đã được gửi tới email của bạn");
+        auditSuccess(actorLabel, "FORGOT_PASSWORD_SEND_CODE",
+                AuditLogService.describe("email", email, "expiresAt", String.valueOf(expiresAt)));
+        writeJson(resp, jsonResponse, "success", I18nUtil.message(req, "auth.server.forgot.send_code.success"));
     }
 
     private void handleVerifyCode(HttpServletRequest req, HttpServletResponse resp, JsonObject jsonResponse) throws IOException {
         String email = EmailUtil.normalizeEmail(req.getParameter("email"));
         String code = req.getParameter("code") == null ? "" : req.getParameter("code").trim();
+        String actorLabel = resolveActorLabel(email);
 
         if (email == null || email.isEmpty()) {
-            writeJson(resp, jsonResponse, "error", "Email không được để trống");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_VERIFY_CODE",
+                    AuditLogService.describe("reason", "email_empty"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.verify_code.empty"));
             return;
         }
 
         if (!code.matches("^[0-9]{6}$")) {
-            writeJson(resp, jsonResponse, "error", "Mã xác thực gồm 6 chữ số");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_VERIFY_CODE",
+                    AuditLogService.describe("email", email, "reason", "code_invalid"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.verify_code.invalid_format"));
             return;
         }
 
         HttpSession session = req.getSession(false);
         if (session == null) {
-            writeJson(resp, jsonResponse, "error", "Vui lòng gửi mã xác thực trước");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_VERIFY_CODE",
+                    AuditLogService.describe("email", email, "reason", "session_missing"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.verify_code.send_first"));
             return;
         }
 
         String sessionEmail = (String) session.getAttribute("forgotPasswordEmail");
         if (!email.equals(sessionEmail)) {
-            writeJson(resp, jsonResponse, "error", "Vui lòng gửi mã xác thực trước");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_VERIFY_CODE",
+                    AuditLogService.describe("email", email, "reason", "session_email_mismatch"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.verify_code.send_first"));
             return;
         }
 
         boolean verified = authService.verifyResetPasswordCode(email, code);
         if (!verified) {
-            writeJson(resp, jsonResponse, "error", "Mã xác thực không đúng hoặc đã hết hạn");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_VERIFY_CODE",
+                    AuditLogService.describe("email", email, "reason", "code_invalid_or_expired"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.verify_code.invalid"));
             return;
         }
 
         session.setAttribute("forgotPasswordVerifiedEmail", email);
         log.info("Xác thực mã reset mật khẩu thành công: email={}", email);
-        writeJson(resp, jsonResponse, "success", "Email đã được xác thực thành công");
+        auditSuccess(actorLabel, "FORGOT_PASSWORD_VERIFY_CODE",
+                AuditLogService.describe("email", email, "result", "verified"));
+        writeJson(resp, jsonResponse, "success", I18nUtil.message(req, "auth.server.forgot.verify_code.success"));
     }
 
     private void handleResetPassword(HttpServletRequest req, HttpServletResponse resp, JsonObject jsonResponse) throws IOException {
         String email = EmailUtil.normalizeEmail(req.getParameter("email"));
         String password = req.getParameter("password");
         String confirmPassword = req.getParameter("confirmPassword");
+        String actorLabel = resolveActorLabel(email);
 
         if (email == null || email.isEmpty()) {
-            writeJson(resp, jsonResponse, "error", "Email không được để trống");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_RESET",
+                    AuditLogService.describe("reason", "email_empty"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.reset.empty"));
             return;
         }
 
@@ -152,30 +185,40 @@ public class ForgotPasswordServlet extends HttpServlet {
         String verifiedEmail = session == null ? null : (String) session.getAttribute("forgotPasswordVerifiedEmail");
 
         if (!email.equals(verifiedEmail)) {
-            writeJson(resp, jsonResponse, "error", "Vui lòng xác thực email trước khi đặt lại mật khẩu");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_RESET",
+                    AuditLogService.describe("email", email, "reason", "email_not_verified"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.reset.not_verified"));
             return;
         }
 
         if (password == null || password.length() < 8) {
-            writeJson(resp, jsonResponse, "error", "Mật khẩu phải ít nhất 8 ký tự");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_RESET",
+                    AuditLogService.describe("email", email, "reason", "password_too_short"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.reset.password_min"));
             return;
         }
 
         if (!password.equals(confirmPassword)) {
-            writeJson(resp, jsonResponse, "error", "Mật khẩu xác nhận không trùng khớp");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_RESET",
+                    AuditLogService.describe("email", email, "reason", "confirmation_mismatch"));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.reset.password_mismatch"));
             return;
         }
 
         try {
             boolean reset = authService.resetPassword(email, password);
             if (!reset) {
-                writeJson(resp, jsonResponse, "error", "Không thể đặt lại mật khẩu. Vui lòng thử lại");
+                auditFailure(actorLabel, "FORGOT_PASSWORD_RESET",
+                        AuditLogService.describe("email", email, "reason", "reset_failed"));
+                writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.reset.failed"));
                 return;
             }
         } catch (Exception e) {
             rollbackCurrentTransaction();
             log.error("Đặt lại mật khẩu thất bại: email={}", email, e);
-            writeJson(resp, jsonResponse, "error", "Có lỗi xảy ra trong quá trình cập nhật mật khẩu");
+            auditFailure(actorLabel, "FORGOT_PASSWORD_RESET",
+                    AuditLogService.describe("email", email, "reason", "reset_exception", "message", e.getMessage()));
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.forgot.reset.exception"));
             return;
         }
 
@@ -185,7 +228,9 @@ public class ForgotPasswordServlet extends HttpServlet {
         }
 
         log.info("Đặt lại mật khẩu thành công: email={}", email);
-        writeJson(resp, jsonResponse, "success", "Đặt lại mật khẩu thành công");
+        auditSuccess(actorLabel, "FORGOT_PASSWORD_RESET",
+                AuditLogService.describe("email", email, "result", "updated"));
+        writeJson(resp, jsonResponse, "success", I18nUtil.message(req, "auth.server.forgot.reset.success"));
     }
 
     private void writeJson(HttpServletResponse resp, JsonObject jsonResponse, String status, String message) throws IOException {
@@ -204,5 +249,17 @@ public class ForgotPasswordServlet extends HttpServlet {
         } catch (RuntimeException rollbackError) {
             log.warn("Không thể rollback transaction trong forgot-password", rollbackError);
         }
+    }
+
+    private void auditSuccess(String actorLabel, String action, String details) {
+        AuditLogService.success(ForgotPasswordServlet.class, actorLabel, AUDIT_CATEGORY, action, AUDIT_ENTITY, details);
+    }
+
+    private void auditFailure(String actorLabel, String action, String details) {
+        AuditLogService.failure(ForgotPasswordServlet.class, actorLabel, AUDIT_CATEGORY, action, AUDIT_ENTITY, details);
+    }
+
+    private String resolveActorLabel(String email) {
+        return email == null || email.isBlank() ? "Guest" : email;
     }
 }

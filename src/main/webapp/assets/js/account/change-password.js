@@ -1,5 +1,7 @@
 $(document).ready(function () {
     const contextPath = $('meta[name="context-path"]').attr('content') || '';
+    const changePasswordI18n = document.getElementById('changePasswordI18n')?.dataset || {};
+    const text = (key, fallback = '') => changePasswordI18n[key] || fallback;
     
     const $btnSendCode = $('#btnSendCode');
     const $btnVerifyCode = $('#btnVerifyCode');
@@ -16,6 +18,10 @@ $(document).ready(function () {
     const $changePasswordForm = $('#changePasswordForm');
 
     let countdownInterval;
+
+    function formatMessage(template, value) {
+        return String(template || '').replace('{0}', value);
+    }
 
     function showAlert(type, message) {
         $jsAlertArea.hide().removeClass('profile-alert--error profile-alert--success');
@@ -54,23 +60,23 @@ $(document).ready(function () {
         let remaining = durationSeconds;
         $btnSendCode.prop('disabled', true).css('cursor', 'not-allowed');
         
-        $btnSendCode.find('span').text(`Gửi lại sau (${remaining}s)`);
+        $btnSendCode.html(`<i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i>${formatMessage(text('sendCodeAgainTemplate', 'Resend in ({0}s)'), `${remaining}`)}`);
         
         countdownInterval = setInterval(function () {
             remaining--;
             if (remaining <= 0) {
                 clearInterval(countdownInterval);
                 $btnSendCode.prop('disabled', false).css('cursor', 'pointer');
-                $btnSendCode.html('<i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i>Gửi lại mã');
+                $btnSendCode.html(`<i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i>${text('sendCodeAgain', 'Resend code')}`);
             } else {
-                $btnSendCode.find('span').text(`Gửi lại sau (${remaining}s)`);
+                $btnSendCode.html(`<i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i>${formatMessage(text('sendCodeAgainTemplate', 'Resend in ({0}s)'), `${remaining}`)}`);
             }
         }, 1000);
     }
 
     // Gửi mã OTP
     $btnSendCode.on('click', function () {
-        showAlert('success', 'Đang gửi mã xác thực tới email của bạn, vui lòng đợi...');
+        showAlert('success', text('waitingSend', 'Sending a verification code to your email, please wait...'));
         $btnSendCode.prop('disabled', true);
         
         $.ajax({
@@ -87,7 +93,7 @@ $(document).ready(function () {
                 }
             },
             error: function () {
-                showAlert('error', 'Có lỗi xảy ra kết nối với máy chủ. Vui lòng thử lại.');
+                showAlert('error', text('alertNetworkError', 'Something went wrong while verifying. Please try again.'));
                 $btnSendCode.prop('disabled', false);
             }
         });
@@ -97,15 +103,15 @@ $(document).ready(function () {
     $btnVerifyCode.on('click', function () {
         const code = $otpCode.val().trim();
         if (!code) {
-            showAlert('error', 'Vui lòng nhập mã xác thực OTP.');
+            showAlert('error', text('alertOtpRequired', 'Please enter the OTP code.'));
             return;
         }
         if (!/^\d{6}$/.test(code)) {
-            showAlert('error', 'Mã xác thực OTP phải gồm đúng 6 chữ số.');
+            showAlert('error', text('alertOtpInvalid', 'The OTP code must be exactly 6 digits.'));
             return;
         }
 
-        $btnVerifyCode.prop('disabled', true).text('Đang xác thực...');
+        $btnVerifyCode.prop('disabled', true).text(text('verifying', 'Verifying...'));
         
         $.ajax({
             url: `${contextPath}/api/change-password/verify-code`,
@@ -113,7 +119,7 @@ $(document).ready(function () {
             data: { code: code },
             dataType: 'json',
             success: function (response) {
-                $btnVerifyCode.prop('disabled', false).html('<i class="fa-solid fa-shield-check" style="margin-right: 6px;"></i>Xác thực OTP');
+                $btnVerifyCode.prop('disabled', false).html(`<i class="fa-solid fa-shield-check" style="margin-right: 6px;"></i>${text('verifyOtp', 'Verify OTP')}`);
                 if (response.status === 'success') {
                     showAlert('success', response.message);
                     
@@ -132,8 +138,8 @@ $(document).ready(function () {
                 }
             },
             error: function () {
-                $btnVerifyCode.prop('disabled', false).html('<i class="fa-solid fa-shield-check" style="margin-right: 6px;"></i>Xác thực OTP');
-                showAlert('error', 'Có lỗi xảy ra khi xác thực. Vui lòng thử lại.');
+                $btnVerifyCode.prop('disabled', false).html(`<i class="fa-solid fa-shield-check" style="margin-right: 6px;"></i>${text('verifyOtp', 'Verify OTP')}`);
+                showAlert('error', text('alertNetworkError', 'Something went wrong while verifying. Please try again.'));
             }
         });
     });
@@ -145,17 +151,17 @@ $(document).ready(function () {
         const confirmPass = $confirmPassword.val();
 
         if (!currentPass) {
-            showAlert('error', 'Vui lòng nhập mật khẩu hiện tại.');
+            showAlert('error', text('alertCurrentRequired', 'Please enter the current password.'));
             e.preventDefault();
             return false;
         }
         if (!newPass || newPass.length < 8) {
-            showAlert('error', 'Mật khẩu mới phải từ 8 ký tự trở lên.');
+            showAlert('error', text('alertNewMin', 'The new password must be at least 8 characters long.'));
             e.preventDefault();
             return false;
         }
         if (newPass !== confirmPass) {
-            showAlert('error', 'Xác nhận mật khẩu mới không khớp.');
+            showAlert('error', text('alertConfirmMismatch', 'The confirmation password does not match.'));
             e.preventDefault();
             return false;
         }

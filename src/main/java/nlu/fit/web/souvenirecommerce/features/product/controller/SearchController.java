@@ -5,6 +5,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.features.product.dto.ProductTypeDTO;
 import nlu.fit.web.souvenirecommerce.features.product.service.ProductTypeService;
 import nlu.fit.web.souvenirecommerce.model.enums.ProductSort;
@@ -48,7 +49,7 @@ public class SearchController extends HttpServlet {
         }
 
         request.setAttribute("headerMode", "BREADCRUMB");
-        request.setAttribute("breadcrumbLabel", "Tìm kiếm");
+        request.setAttribute("breadcrumbLabel", I18nUtil.message(request, "productType.search_breadcrumb"));
         request.setAttribute("data", dto);
 
         if (isAjaxRequest(request)) {

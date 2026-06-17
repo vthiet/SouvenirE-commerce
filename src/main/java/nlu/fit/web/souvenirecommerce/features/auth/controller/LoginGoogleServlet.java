@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
@@ -51,11 +52,21 @@ public class LoginGoogleServlet extends HttpServlet {
             cartService.prepareGuestCartMerge(session, preLoginCart);
             CartEntity cart = cartService.getCartForDisplay(session);
             cartService.storeCart(session, cart);
+            String redirectTarget = req.getContextPath() + "/home";
             if (redirectAfterLogin instanceof String redirect && !redirect.isBlank()) {
-                resp.sendRedirect(redirect);
-                return;
+                redirectTarget = redirect;
             }
-            resp.sendRedirect(req.getContextPath() + "/home");
+
+            AuditLogService.success(
+                    LoginGoogleServlet.class,
+                    user,
+                    "AUTH",
+                    "LOGIN_GOOGLE",
+                    "SESSION",
+                    AuditLogService.describe("method", "google", "redirect", redirectTarget)
+            );
+
+            resp.sendRedirect(redirectTarget);
         } catch (Exception e) {
             rollbackCurrentTransaction();
             log.warn("Đăng nhập Google thất bại", e);
@@ -67,7 +78,7 @@ public class LoginGoogleServlet extends HttpServlet {
                     "SESSION",
                     AuditLogService.describe("reason", "authentication_failed")
             );
-            req.getSession(true).setAttribute("error", "Đăng nhập Google thất bại.");
+            req.getSession(true).setAttribute("error", I18nUtil.message(req, "auth.server.login.oauth_google_failed"));
             resp.sendRedirect(req.getContextPath() + "/login");
         }
     }

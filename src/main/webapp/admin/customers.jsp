@@ -67,7 +67,7 @@
                                 <td>${customer.phone}</td>
                                 <td>
                                     <c:choose>
-                                        <c:when test="${customer.status == 'Active'}">
+                                        <c:when test="${customer.active}">
                                             <span class="badge badge-success">Hoạt động</span>
                                         </c:when>
                                         <c:otherwise>
@@ -87,15 +87,15 @@
                                                     data-customer-name="<c:out value='${customer.fullName}' />"
                                                     data-customer-email="<c:out value='${customer.email}' />"
                                                     data-customer-phone="<c:out value='${customer.phone}' />"
-                                                    data-customer-status="${customer.status}">
+                                                    data-customer-status="${customer.active ? 'Active' : 'Banned'}">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <form action="${pageContext.request.contextPath}/admin/customers" method="post" class="customer-form-inline">
                                                 <input type="hidden" name="action" value="toggleStatus">
                                                 <input type="hidden" name="id" value="${customer.id}">
-                                                <input type="hidden" name="currentStatus" value="${customer.status}">
-                                                <button class="btn-icon ${customer.status == 'Active' ? 'customer-toggle-active' : 'customer-toggle-banned'}" title="${customer.status == 'Active' ? 'Cấm' : 'Mở cấm'}">
-                                                    <i class="fas fa-${customer.status == 'Active' ? 'ban' : 'check'}"></i>
+                                                <input type="hidden" name="currentStatus" value="${customer.active ? 'Active' : 'Banned'}">
+                                                <button class="btn-icon ${customer.active ? 'customer-toggle-active' : 'customer-toggle-banned'}" title="${customer.active ? 'Cấm' : 'Mở cấm'}">
+                                                    <i class="fas fa-${customer.active ? 'ban' : 'check'}"></i>
                                                 </button>
                                             </form>
                                         </c:if>

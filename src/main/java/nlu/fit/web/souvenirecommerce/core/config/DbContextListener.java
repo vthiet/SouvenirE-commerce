@@ -5,6 +5,9 @@ import jakarta.servlet.ServletContextListener;
 import lombok.extern.slf4j.Slf4j;
 import com.mysql.cj.jdbc.AbandonedConnectionCleanupThread;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
+import nlu.fit.web.souvenirecommerce.core.logging.ProjectLogPaths;
+import nlu.fit.web.souvenirecommerce.features.shipping.service.GhnAutoSyncScheduler;
+import nlu.fit.web.souvenirecommerce.features.user.service.RoleInitializationService;
 import nlu.fit.web.souvenirecommerce.legacy.utils.DBContext;
 import org.hibernate.Session;
 
@@ -18,15 +21,25 @@ public class DbContextListener implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        ProjectLogPaths.ensureLogDirExists();
+
         String contextPath = sce.getServletContext().getContextPath();
         log.info("Application starting: contextPath={}", contextPath);
+        log.info("Log directory ready: {}", ProjectLogPaths.resolveLogDir());
 
         SchemaMigrationRunner.runBeforeHibernate();
         HibernateUtil.getSessionFactory();
         log.info("Hibernate SessionFactory initialized");
+        RoleInitializationService.initializeDefaultRoles();
+        log.info("Default roles and permissions verified");
 
         // Verify required roles exist
         verifyRequiredRoles();
+        try {
+            GhnAutoSyncScheduler.start();
+        } catch (Exception e) {
+            log.error("Failed to start GHN auto sync scheduler", e);
+        }
         log.info("Application started: contextPath={}", contextPath);
     }
 
@@ -35,6 +48,7 @@ public class DbContextListener implements ServletContextListener {
         String contextPath = sce.getServletContext().getContextPath();
         log.info("Application stopping: contextPath={}", contextPath);
 
+        GhnAutoSyncScheduler.shutdown();
         shutdownHibernate();
         shutdownLegacyJdbc();
         cleanupJdbcDrivers();

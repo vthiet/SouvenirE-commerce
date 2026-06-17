@@ -2,6 +2,7 @@
     const form = document.getElementById('checkoutForm');
     if (!form) return;
 
+    const checkoutI18n = document.getElementById('checkoutI18n')?.dataset || {};
     const newAddressFields = document.getElementById('newAddressFields');
     const addressInputs = newAddressFields ? newAddressFields.querySelectorAll('input, select') : [];
     const savedAddressRadios = document.querySelectorAll('input[name="savedAddressId"]');
@@ -23,6 +24,7 @@
     const hasSelect2 = window.jQuery && jQuery.fn && jQuery.fn.select2;
 
     const formatVND = (value) => `${Number(value || 0).toLocaleString('vi-VN')}₫`;
+    const text = (key, fallback = '') => checkoutI18n[key] || fallback;
 
     function setOptions(select, placeholder, items, valueKey, textKey) {
         if (!select) return;
@@ -47,7 +49,7 @@
         const response = await fetch(url);
         const json = await response.json();
         if (!response.ok) {
-            throw new Error(json.message || json.error || 'GHN location failed');
+            throw new Error(json.message || json.error || text('locationPrefix', 'Location load error'));
         }
         return json.data || [];
     }
@@ -72,13 +74,13 @@
     function setShippingFee(value, sourceText) {
         const fee = Number(value) || 0;
         shippingFeeInput.value = String(fee);
-        shippingFeeText.textContent = fee > 0 ? `${formatVND(fee)}${sourceText ? ` (${sourceText})` : ''}` : 'Chọn địa chỉ';
+        shippingFeeText.textContent = fee > 0 ? `${formatVND(fee)}${sourceText ? ` (${sourceText})` : ''}` : text('chooseAddress', 'Choose address');
         grandTotalText.textContent = formatVND(subtotal + fee);
     }
 
     async function calculateShippingFee(params) {
         if (!shippingFeeUrl) return;
-        if (shippingFeeText) shippingFeeText.textContent = 'Đang tính...';
+        if (shippingFeeText) shippingFeeText.textContent = text('shippingPending', 'Calculating...');
 
         const url = new URL(shippingFeeUrl, window.location.origin);
         Object.entries(params).forEach(([key, value]) => {
@@ -91,12 +93,12 @@
             });
             const data = await response.json();
             if (!response.ok || data.success === false) {
-                setShippingFee(30000, 'tạm tính');
+                setShippingFee(30000, text('shippingSimulation', 'GHN simulation'));
                 return;
             }
-            setShippingFee(data.shippingFee, data.source === 'SIMULATION' ? 'GHN mô phỏng' : 'GHN');
+            setShippingFee(data.shippingFee, data.source === 'SIMULATION' ? text('shippingSimulation', 'GHN simulation') : 'GHN');
         } catch (error) {
-            setShippingFee(30000, 'tạm tính');
+            setShippingFee(30000, text('shippingSimulation', 'GHN simulation'));
         }
     }
 
@@ -129,23 +131,25 @@
     function syncPaymentButton() {
         const method = document.querySelector('input[name="paymentMethod"]:checked')?.value;
         if (submitText) {
-            submitText.textContent = method === 'VNPAY_QR' ? 'Thanh toán qua VNPay' : 'Đặt hàng';
+            submitText.textContent = method === 'VNPAY_QR'
+                ? text('submitVnpay', 'Pay with VNPay')
+                : text('submitCod', 'Place order');
         }
     }
 
     async function loadProvinces() {
         try {
             const provinces = await fetchLocation('province');
-            setOptions(provinceSelect, 'Chọn Tỉnh/Thành phố', provinces, 'ProvinceID', 'ProvinceName');
+            setOptions(provinceSelect, text('selectProvince', 'Choose Province / City'), provinces, 'ProvinceID', 'ProvinceName');
         } catch (error) {
-            showLocationError('Không thể tải danh sách tỉnh/thành phố', error);
+            showLocationError(text('locationProvinceError', 'Could not load the province/city list'), error);
         }
     }
 
     async function onProvinceChange() {
         syncSelectedNames();
-        setOptions(districtSelect, 'Chọn Quận/Huyện', [], 'DistrictID', 'DistrictName');
-        setOptions(wardSelect, 'Chọn Phường/Xã', [], 'WardCode', 'WardName');
+        setOptions(districtSelect, text('selectDistrict', 'Choose District / County'), [], 'DistrictID', 'DistrictName');
+        setOptions(wardSelect, text('selectWard', 'Choose Ward / Commune'), [], 'WardCode', 'WardName');
         setSelectDisabled(districtSelect, !provinceSelect.value);
         setSelectDisabled(wardSelect, true);
         setShippingFee(0, '');
@@ -154,16 +158,16 @@
 
         try {
             const districts = await fetchLocation('district', {provinceId: provinceSelect.value});
-            setOptions(districtSelect, 'Chọn Quận/Huyện', districts, 'DistrictID', 'DistrictName');
+            setOptions(districtSelect, text('selectDistrict', 'Choose District / County'), districts, 'DistrictID', 'DistrictName');
             setSelectDisabled(districtSelect, false);
         } catch (error) {
-            showLocationError('Không thể tải danh sách quận/huyện', error);
+            showLocationError(text('locationDistrictError', 'Could not load the district/county list'), error);
         }
     }
 
     async function onDistrictChange() {
         syncSelectedNames();
-        setOptions(wardSelect, 'Chọn Phường/Xã', [], 'WardCode', 'WardName');
+        setOptions(wardSelect, text('selectWard', 'Choose Ward / Commune'), [], 'WardCode', 'WardName');
         setSelectDisabled(wardSelect, !districtSelect.value);
         setShippingFee(0, '');
 
@@ -171,14 +175,14 @@
 
         try {
             const wards = await fetchLocation('ward', {districtId: districtSelect.value});
-            setOptions(wardSelect, 'Chọn Phường/Xã', wards, 'WardCode', 'WardName');
+            setOptions(wardSelect, text('selectWard', 'Choose Ward / Commune'), wards, 'WardCode', 'WardName');
             setSelectDisabled(wardSelect, false);
             if (wardStatus) {
                 wardStatus.textContent = '';
                 wardStatus.classList.remove('is-error');
             }
         } catch (error) {
-            showLocationError('Không thể tải danh sách phường/xã', error);
+            showLocationError(text('locationWardError', 'Could not load the ward/commune list'), error);
         }
     }
 
@@ -201,9 +205,9 @@
     }
 
     if (hasSelect2) {
-        jQuery(provinceSelect).select2({width: '100%', placeholder: 'Chọn tỉnh/thành phố', allowClear: true});
-        jQuery(districtSelect).select2({width: '100%', placeholder: 'Chọn quận/huyện', allowClear: true});
-        jQuery(wardSelect).select2({width: '100%', placeholder: 'Chọn phường/xã', allowClear: true});
+        jQuery(provinceSelect).select2({width: '100%', placeholder: text('selectProvince', 'Choose Province / City'), allowClear: true});
+        jQuery(districtSelect).select2({width: '100%', placeholder: text('selectDistrict', 'Choose District / County'), allowClear: true});
+        jQuery(wardSelect).select2({width: '100%', placeholder: text('selectWard', 'Choose Ward / Commune'), allowClear: true});
     }
 
     if (hasSelect2) {
@@ -223,7 +227,7 @@
     form.addEventListener('submit', function () {
         syncSelectedNames();
         if (submitButton) submitButton.disabled = true;
-        if (submitText) submitText.textContent = 'Đang xử lý...';
+        if (submitText) submitText.textContent = text('processing', 'Processing...');
     });
 
     loadProvinces();

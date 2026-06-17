@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
@@ -27,7 +28,8 @@ public class ShoppingCartController extends HttpServlet {
         request.setAttribute("cart", cart);
         request.setAttribute("headerMode", "CHECKOUT_FLOW");
         request.setAttribute("checkoutStep", "CART");
-        request.setAttribute("pageTitle", "Giỏ hàng của bạn - INOLA");
+        request.setAttribute("pageTitleKey", "cart.page.title");
+        request.setAttribute("pageTitle", I18nUtil.message(request, "cart.page.title"));
         request.setAttribute("pageCss", "cart.css");
         request.setAttribute("pageJs", "ShoppingCart.js");
         request.setAttribute("contentPage", "/cart.jsp");

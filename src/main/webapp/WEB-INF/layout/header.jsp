@@ -2,24 +2,88 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
+<fmt:setLocale value="${requestScope.siteLocale}" scope="request"/>
+<fmt:setBundle basename="messages" scope="request"/>
+
+<c:set var="currentRequestPath"
+       value="${not empty requestScope.currentRequestPath ? requestScope.currentRequestPath : pageContext.request.servletPath}"/>
+
+<c:url var="languageViUrl" value="${currentRequestPath}">
+    <c:forEach var="entry" items="${paramValues}">
+        <c:if test="${entry.key != 'lang'}">
+            <c:forEach var="value" items="${entry.value}">
+                <c:param name="${entry.key}" value="${value}"/>
+            </c:forEach>
+        </c:if>
+    </c:forEach>
+    <c:param name="lang" value="vi"/>
+</c:url>
+
+<c:url var="languageEnUrl" value="${currentRequestPath}">
+    <c:forEach var="entry" items="${paramValues}">
+        <c:if test="${entry.key != 'lang'}">
+            <c:forEach var="value" items="${entry.value}">
+                <c:param name="${entry.key}" value="${value}"/>
+            </c:forEach>
+        </c:if>
+    </c:forEach>
+    <c:param name="lang" value="en"/>
+</c:url>
+
+<div id="siteI18n"
+     hidden
+     data-search-recent="<fmt:message key='header.search.recent'/>"
+     data-search-clear-all="<fmt:message key='header.search.clear_all'/>"
+     data-search-empty-recent="<fmt:message key='header.search.empty_recent'/>"
+     data-search-empty-suggestions="<fmt:message key='header.search.empty_suggestions'/>"
+     data-search-meta="<fmt:message key='header.search.meta'/>"
+     data-search-clear="<fmt:message key='header.search.clear'/>"
+     data-cart-empty="<fmt:message key='header.cart.empty'/>"
+     data-cart-recent="<fmt:message key='header.cart.recent'/>"
+     data-cart-view="<fmt:message key='header.cart.view'/>"
+     data-cart-count-template="<fmt:message key='header.cart.count'/>"
+     data-cart-add-success="<fmt:message key='cart.add_success'/>"
+     data-cart-add-to-cart-error="<fmt:message key='cart.add_to_cart_error'/>"
+     data-theme-light="<fmt:message key='theme.light'/>"
+     data-theme-dark="<fmt:message key='theme.dark'/>"
+     data-theme-toggle="<fmt:message key='theme.toggle'/>"
+     data-theme-switch-to-light="<fmt:message key='theme.switch_to_light'/>"
+     data-theme-switch-to-dark="<fmt:message key='theme.switch_to_dark'/>">
+</div>
+
 <c:if test="${headerMode == 'CHECKOUT_FLOW'}">
     <header class="checkout-flow-header">
         <div class="checkout-flow-shell">
             <a class="checkout-flow-logo"
                href="${pageContext.request.contextPath}/home"
-               aria-label="Về trang chủ">
-                <img src="${pageContext.request.contextPath}/assets/images/logo.png" alt="INOLA">
+               aria-label="<fmt:message key='header.checkout.home'/>">
+                <img src="${pageContext.request.contextPath}/assets/images/logo.png" alt="<fmt:message key='site.name'/>">
             </a>
 
-            <nav class="checkout-flow-steps" aria-label="Tiến trình đặt hàng">
-                <span class="checkout-flow-step ${checkoutStep == 'CART' ? 'active' : ''}">Giỏ hàng</span>
+            <nav class="checkout-flow-steps" aria-label="<fmt:message key='header.checkout.steps'/>">
+                <span class="checkout-flow-step ${checkoutStep == 'CART' ? 'active' : ''}"><fmt:message key="header.checkout.cart"/></span>
                 <i class="fa-solid fa-chevron-right"></i>
-                <span class="checkout-flow-step ${checkoutStep == 'CHECKOUT' ? 'active' : ''}">Thanh toán</span>
+                <span class="checkout-flow-step ${checkoutStep == 'CHECKOUT' ? 'active' : ''}"><fmt:message key="header.checkout.checkout"/></span>
                 <i class="fa-solid fa-chevron-right"></i>
-                <span class="checkout-flow-step ${checkoutStep == 'DONE' ? 'active' : ''}">Hoàn thành</span>
+                <span class="checkout-flow-step ${checkoutStep == 'DONE' ? 'active' : ''}"><fmt:message key="header.checkout.done"/></span>
             </nav>
 
             <div class="checkout-flow-user header-account">
+
+                <div class="header-language-switcher"
+                    role="group"
+                    aria-label="<fmt:message key='language.label'/>">
+                    <div class="header-language-switcher__options">
+                        <a class="header-language-switcher__option ${requestScope.siteLanguage == 'vi' ? 'is-active' : ''}"
+                           href="${languageViUrl}">
+                            <fmt:message key="language.vi"/>
+                        </a>
+                        <a class="header-language-switcher__option ${requestScope.siteLanguage == 'en' ? 'is-active' : ''}"
+                           href="${languageEnUrl}">
+                            <fmt:message key="language.en"/>
+                    </a>
+                    </div>
+                </div>
 
                 <c:choose>
 
@@ -31,7 +95,7 @@
                             <i class="fa-solid fa-circle-user"></i>
 
                 <span class="user-name">
-                    Xin chào, ${authUser.fullName}
+                    <fmt:message key="header.greeting"/>, ${authUser.fullName}
                 </span>
 
                             <i class="fa fa-caret-down"></i>
@@ -45,7 +109,7 @@
 
                                 <i class="fa fa-user"></i>
 
-                                Tài khoản
+                                <fmt:message key="header.account"/>
 
                             </a>
 
@@ -53,7 +117,7 @@
 
                                 <i class="fa fa-receipt"></i>
 
-                                Đơn hàng
+                                <fmt:message key="header.orders"/>
 
                             </a>
 
@@ -61,7 +125,7 @@
 
                                 <i class="fa fa-sign-out-alt"></i>
 
-                                Đăng xuất
+                                <fmt:message key="header.logout"/>
 
                             </a>
 
@@ -72,13 +136,13 @@
                     <c:otherwise>
 
                         <a href="${pageContext.request.contextPath}/login">
-                            Đăng nhập
+                            <fmt:message key="header.login"/>
                         </a>
 
                         <span>|</span>
 
                         <a href="${pageContext.request.contextPath}/signup">
-                            Đăng ký
+                            <fmt:message key="header.signup"/>
                         </a>
 
                     </c:otherwise>
@@ -100,13 +164,13 @@
             <div class="header-utility">
 
                 <a href="${pageContext.request.contextPath}/home">
-                    INOLA Souvenir
+                    <c:out value="${not empty settings.site_name ? settings.site_name : 'INOLA Souvenir'}"/>
                 </a>
 
                 <span>|</span>
 
                 <a href="${pageContext.request.contextPath}/admin/dashboard">
-                    Kênh quản trị
+                    <fmt:message key="header.admin"/>
                 </a>
 
             </div>
@@ -121,9 +185,9 @@
                         <div class="user-box"
                              id="userToggle">
 
-                            <span class="user-name">
-                                Xin chào, ${authUser.fullName}
-                            </span>
+                        <span class="user-name">
+                                <fmt:message key="header.greeting"/>, ${authUser.fullName}
+                        </span>
 
                             <i class="fa fa-caret-down"></i>
 
@@ -136,7 +200,7 @@
 
                                 <i class="fa fa-user"></i>
 
-                                Tài khoản
+                                <fmt:message key="header.account"/>
 
                             </a>
 
@@ -144,7 +208,7 @@
 
                                 <i class="fa fa-receipt"></i>
 
-                                Đơn hàng
+                                <fmt:message key="header.orders"/>
 
                             </a>
 
@@ -152,7 +216,7 @@
 
                                 <i class="fa fa-sign-out-alt"></i>
 
-                                Đăng xuất
+                                <fmt:message key="header.logout"/>
 
                             </a>
 
@@ -164,13 +228,13 @@
                     <c:otherwise>
 
                         <a href="${pageContext.request.contextPath}/login">
-                            Đăng nhập
+                            <fmt:message key="header.login"/>
                         </a>
 
                         <span>|</span>
 
                         <a href="${pageContext.request.contextPath}/signup">
-                            Đăng ký
+                            <fmt:message key="header.signup"/>
                         </a>
 
                     </c:otherwise>
@@ -192,7 +256,8 @@
                     id="headerMenuButton"
                     class="header-menu-button"
                     type="button"
-                    aria-expanded="false">
+                    aria-expanded="false"
+                    aria-label="<fmt:message key='header.menu.open'/>">
 
                 <i class="fa-solid fa-bars"></i>
 
@@ -204,7 +269,7 @@
 
                 <img
                         src="${pageContext.request.contextPath}/assets/images/logo.png"
-                        alt="INOLA">
+                        alt="<fmt:message key='site.name'/>">
 
             </a>
 
@@ -254,17 +319,17 @@
                 method="get">
 
             <input
-                    id="headerSearchInput"
+                id="headerSearchInput"
                     type="search"
                     name="keyword"
                     value="${param.keyword}"
                     autocomplete="off"
-                    placeholder="Tìm đặc sản, quà tặng, thủ công...">
+                    placeholder="<fmt:message key='header.search.placeholder'/>">
 
             <button class="header-search-clear"
                     id="headerSearchClear"
                     type="button"
-                    aria-label="Xóa tìm kiếm"
+                    aria-label="<fmt:message key='header.search.clear'/>"
                     hidden>
 
                 <i class="fa-solid fa-circle-xmark"></i>
@@ -284,10 +349,10 @@
                  aria-hidden="true">
 
                 <div class="header-search-dropdown-head">
-                    <strong>Recent searches</strong>
+                    <strong><fmt:message key="header.search.recent"/></strong>
                     <button type="button"
                             id="headerSearchClearAll">
-                        Clear all
+                        <fmt:message key="header.search.clear_all"/>
                     </button>
                 </div>
 
@@ -301,20 +366,33 @@
 
         <div class="header-actions">
 
-            <button class="theme-toggle-button"
-                    type="button"
-                    data-theme-toggle
-                    aria-label="Chuyển giao diện sáng tối"
-                    aria-pressed="false">
+            <div class="header-language-switcher"
+                 role="group"
+                 aria-label="<fmt:message key='language.label'/>">
+                <div class="header-language-switcher__options">
+                    <a class="header-language-switcher__option ${requestScope.siteLanguage == 'vi' ? 'is-active' : ''}"
+                       href="${languageViUrl}">
+                        <fmt:message key="language.vi"/>
+                    </a>
+                    <a class="header-language-switcher__option ${requestScope.siteLanguage == 'en' ? 'is-active' : ''}"
+                       href="${languageEnUrl}">
+                        <fmt:message key="language.en"/>
+                    </a>
+                </div>
+            </div>
 
-                <i class="fa-solid fa-moon"
-                   data-theme-icon
-                   aria-hidden="true"></i>
-
-                <span class="theme-label"
-                      data-theme-label>Tối</span>
-
-            </button>
+            <div class="auth-theme-toggle theme-toggle-wrapper">
+                <button class="theme-toggle-button"
+                        type="button"
+                        data-theme-toggle
+                        aria-label="<fmt:message key='theme.toggle'/>"
+                        aria-pressed="false">
+                    <i class="fa-solid fa-moon" data-theme-icon aria-hidden="true"></i>
+                    <span class="theme-label" data-theme-label>
+                        <fmt:message key="theme.dark"/>
+                    </span>
+                </button>
+            </div>
 
             <a class="header-icon-link"
                href="${pageContext.request.contextPath}/user/orders">
@@ -329,7 +407,7 @@
                         type="button"
                         data-cart-toggle="true"
                         aria-expanded="false"
-                        aria-label="Mở giỏ hàng">
+                        aria-label="<fmt:message key='header.cart.open'/>">
 
                     <i class="fa-solid fa-cart-shopping"></i>
 
@@ -357,12 +435,12 @@
                                         <i class="fa-solid fa-star"></i>
                                     </div>
 
-                                    <p>Giỏ hàng trống</p>
+                                    <p><fmt:message key="header.cart.empty"/></p>
                                 </div>
                             </c:when>
 
                             <c:otherwise>
-                                <h3>Sản phẩm mới thêm</h3>
+                                <h3><fmt:message key="header.cart.recent"/></h3>
 
                                 <div class="cart-preview-list">
                                     <c:forEach items="${sessionScope.cart.items}" var="item" varStatus="status">
@@ -376,7 +454,7 @@
                                                     <p class="cart-preview-name">${item.product.name}</p>
                                                     <p class="cart-preview-price">
                                                         ${item.quantity} x
-                                                        <fmt:formatNumber value="${item.price}" groupingUsed="true"/> đ
+                                                        <fmt:formatNumber value="${item.price}" groupingUsed="true"/> ₫
                                                     </p>
                                                 </div>
                                             </div>
@@ -386,11 +464,13 @@
 
                                 <div class="cart-preview-footer">
                                     <span>
-                                        ${sessionScope.cart.totalQuantity()} Sản phẩm trong giỏ hàng
+                                        <fmt:message key="header.cart.count">
+                                            <fmt:param value="${sessionScope.cart.totalQuantity()}"/>
+                                        </fmt:message>
                                     </span>
 
                                     <a href="${pageContext.request.contextPath}/cart">
-                                        Xem giỏ hàng
+                                        <fmt:message key="header.cart.view"/>
                                     </a>
                                 </div>
                             </c:otherwise>
@@ -440,7 +520,7 @@
 
                     <a href="${pageContext.request.contextPath}/home">
 
-                        Trang chủ
+                        <fmt:message key="header.breadcrumb.home"/>
 
                     </a>
 

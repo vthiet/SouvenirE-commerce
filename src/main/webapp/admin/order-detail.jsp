@@ -47,7 +47,7 @@
                             <i class="fas fa-arrow-left"></i>
                             Trở về danh sách đơn hàng
                         </a>
-                        <span class="page-eyebrow">Order detail</span>
+                        <span class="page-eyebrow">Chi tiết đơn hàng</span>
                         <h1>Đơn hàng #${orderView.id}</h1>
                         <p class="page-lead">
                             Hồ sơ chi tiết của đơn hàng, bao gồm trạng thái, thanh toán, khách hàng và danh sách sản phẩm.
@@ -334,7 +334,7 @@
                             <div class="card-header order-section-header">
                                 <div>
                                     <h3>Giao hàng</h3>
-                                    <p class="orders-card-subtitle">Địa chỉ nhận hàng và ghi chú.</p>
+                                    <p class="orders-card-subtitle">Địa chỉ nhận hàng, phí ship và trạng thái GHN.</p>
                                 </div>
                             </div>
                             <div class="order-info-list">
@@ -353,6 +353,68 @@
                                         <c:choose>
                                             <c:when test="${not empty orderView.note}">${orderView.note}</c:when>
                                             <c:otherwise>Không có ghi chú</c:otherwise>
+                                        </c:choose>
+                                    </strong>
+                                </div>
+                                <div class="order-info-row">
+                                    <span>Phí vận chuyển</span>
+                                    <strong><fmt:formatNumber value="${orderView.shippingFee}" pattern="#,###"/>₫</strong>
+                                </div>
+                                <div class="order-info-row">
+                                    <span>Mã vận đơn GHN</span>
+                                    <strong>
+                                        <c:choose>
+                                            <c:when test="${not empty orderView.ghnOrderCode}">${orderView.ghnOrderCode}</c:when>
+                                            <c:otherwise>Chưa tạo</c:otherwise>
+                                        </c:choose>
+                                    </strong>
+                                </div>
+                                <div class="order-info-row">
+                                    <span>Trạng thái GHN</span>
+                                    <strong>
+                                        <c:choose>
+                                            <c:when test="${orderView.ghnStatus eq 'ready_to_pick'}">Đang chờ lấy hàng</c:when>
+                                            <c:when test="${orderView.ghnStatus eq 'picked'}">Đã lấy hàng</c:when>
+                                            <c:when test="${orderView.ghnStatus eq 'transporting'}">Đang vận chuyển</c:when>
+                                            <c:when test="${orderView.ghnStatus eq 'delivering'}">Đang giao</c:when>
+                                            <c:when test="${orderView.ghnStatus eq 'delivered'}">Đã giao</c:when>
+                                            <c:when test="${orderView.ghnStatus eq 'returned'}">Đã hoàn hàng</c:when>
+                                            <c:when test="${orderView.ghnStatus eq 'create_failed'}">Tạo đơn GHN thất bại</c:when>
+                                            <c:when test="${not empty orderView.ghnStatus}">${orderView.ghnStatus}</c:when>
+                                            <c:otherwise>Chưa đồng bộ</c:otherwise>
+                                        </c:choose>
+                                    </strong>
+                                </div>
+                                <div class="order-info-row">
+                                    <span>Cập nhật gần nhất</span>
+                                    <strong>
+                                        <c:choose>
+                                            <c:when test="${not empty orderView.ghnUpdatedAt}">
+                                                <fmt:formatDate value="${orderView.ghnUpdatedAt}" pattern="dd/MM/yyyy HH:mm"/>
+                                            </c:when>
+                                            <c:otherwise>Chưa có dữ liệu</c:otherwise>
+                                        </c:choose>
+                                    </strong>
+                                </div>
+                                <div class="order-info-row">
+                                    <span>Dự kiến giao</span>
+                                    <strong>
+                                        <c:choose>
+                                            <c:when test="${not empty orderView.ghnLeadtime}">
+                                                <fmt:formatDate value="${orderView.ghnLeadtime}" pattern="dd/MM/yyyy HH:mm"/>
+                                            </c:when>
+                                            <c:otherwise>Chưa xác định</c:otherwise>
+                                        </c:choose>
+                                    </strong>
+                                </div>
+                                <div class="order-info-row">
+                                    <span>Hoàn tất giao</span>
+                                    <strong>
+                                        <c:choose>
+                                            <c:when test="${not empty orderView.ghnFinishDate}">
+                                                <fmt:formatDate value="${orderView.ghnFinishDate}" pattern="dd/MM/yyyy HH:mm"/>
+                                            </c:when>
+                                            <c:otherwise>Chưa hoàn tất</c:otherwise>
                                         </c:choose>
                                     </strong>
                                 </div>

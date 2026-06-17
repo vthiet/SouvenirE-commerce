@@ -5,6 +5,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.ProductDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
@@ -32,6 +34,7 @@ public class ExportReportController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String type = request.getParameter("type");
+        User currentUser = resolveCurrentUser(request);
 
         if (type == null || type.isEmpty()) {
             type = "summary";
@@ -39,25 +42,47 @@ public class ExportReportController extends HttpServlet {
 
         log.info("Export report requested: type={}", type);
 
-        switch (type) {
-            case "summary":
-                exportSummaryReport(response);
-                break;
-            case "products":
-                exportProductsReport(response);
-                break;
-            case "orders":
-                exportOrdersReport(response);
-                break;
-            case "customers":
-                exportCustomersReport(response);
-                break;
-            default:
-                exportSummaryReport(response);
+        try {
+            switch (type) {
+                case "summary":
+                    exportSummaryReport(response, currentUser);
+                    break;
+                case "products":
+                    exportProductsReport(response, currentUser);
+                    break;
+                case "orders":
+                    exportOrdersReport(response, currentUser);
+                    break;
+                case "customers":
+                    exportCustomersReport(response, currentUser);
+                    break;
+                default:
+                    exportSummaryReport(response, currentUser);
+            }
+        } catch (IOException e) {
+            AuditLogService.failure(
+                    ExportReportController.class,
+                    currentUser,
+                    "REPORT",
+                    "REPORT_EXPORTED",
+                    "EXPORT",
+                    AuditLogService.describe("type", type, "reason", "io_exception", "message", e.getMessage())
+            );
+            throw e;
+        } catch (RuntimeException e) {
+            AuditLogService.failure(
+                    ExportReportController.class,
+                    currentUser,
+                    "REPORT",
+                    "REPORT_EXPORTED",
+                    "EXPORT",
+                    AuditLogService.describe("type", type, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
+            );
+            throw e;
         }
     }
 
-    private void exportSummaryReport(HttpServletResponse response) throws IOException {
+    private void exportSummaryReport(HttpServletResponse response, User currentUser) throws IOException {
         response.setContentType("text/csv; charset=UTF-8");
         response.setCharacterEncoding("UTF-8");
         String filename = "bao-cao-tong-quan-" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".csv";
@@ -104,9 +129,23 @@ public class ExportReportController extends HttpServlet {
 
         writer.flush();
         log.info("Exported summary report");
+        AuditLogService.success(
+                ExportReportController.class,
+                currentUser,
+                "REPORT",
+                "REPORT_EXPORTED",
+                "SUMMARY",
+                AuditLogService.describe(
+                        "file", filename,
+                        "totalRevenue", String.format("%.0f", totalRevenue),
+                        "totalOrders", totalOrders,
+                        "totalProducts", totalProducts,
+                        "totalCustomers", totalCustomers
+                )
+        );
     }
 
-    private void exportProductsReport(HttpServletResponse response) throws IOException {
+    private void exportProductsReport(HttpServletResponse response, User currentUser) throws IOException {
         response.setContentType("text/csv; charset=UTF-8");
         response.setCharacterEncoding("UTF-8");
         String filename = "bao-cao-san-pham-" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".csv";
@@ -137,9 +176,17 @@ public class ExportReportController extends HttpServlet {
 
         writer.flush();
         log.info("Exported products report");
+        AuditLogService.success(
+                ExportReportController.class,
+                currentUser,
+                "REPORT",
+                "REPORT_EXPORTED",
+                "PRODUCTS",
+                AuditLogService.describe("file", filename, "rowCount", products.size())
+        );
     }
 
-    private void exportOrdersReport(HttpServletResponse response) throws IOException {
+    private void exportOrdersReport(HttpServletResponse response, User currentUser) throws IOException {
         response.setContentType("text/csv; charset=UTF-8");
         response.setCharacterEncoding("UTF-8");
         String filename = "bao-cao-don-hang-" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".csv";
@@ -148,7 +195,7 @@ public class ExportReportController extends HttpServlet {
         PrintWriter writer = response.getWriter();
         writer.write('\ufeff');
 
-        writer.println("BÁO CÁO ĐỐN HÀNG");
+        writer.println("BÁO CÁO ĐƠN HÀNG");
         writer.println("Ngày xuất: " + new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()));
         writer.println();
         writer.println("ID,Khách hàng,Email,Ngày đặt,Tổng tiền,Trạng thái");
@@ -163,15 +210,23 @@ public class ExportReportController extends HttpServlet {
                     o.getCustomerEmail() != null ? o.getCustomerEmail().replace("\"", "\"\"") : "",
                     o.getOrderDate() != null ? sdf.format(o.getOrderDate()) : "",
                     String.format("%.0f", o.getTotalAmount()),
-                    o.getStatus() != null ? o.getStatus() : "Pending"
+                    o.getStatus() != null ? o.getStatus() : "Chờ xác nhận"
             ));
         }
 
         writer.flush();
         log.info("Exported orders report");
+        AuditLogService.success(
+                ExportReportController.class,
+                currentUser,
+                "REPORT",
+                "REPORT_EXPORTED",
+                "ORDERS",
+                AuditLogService.describe("file", filename, "rowCount", orders.size())
+        );
     }
 
-    private void exportCustomersReport(HttpServletResponse response) throws IOException {
+    private void exportCustomersReport(HttpServletResponse response, User currentUser) throws IOException {
         response.setContentType("text/csv; charset=UTF-8");
         response.setCharacterEncoding("UTF-8");
         String filename = "bao-cao-khach-hang-" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()) + ".csv";
@@ -194,14 +249,47 @@ public class ExportReportController extends HttpServlet {
                     u.getEmail() != null ? u.getEmail().replace("\"", "\"\"") : "",
                     u.getPhone() != null ? u.getPhone() : "",
                     u.getRoles() != null && !u.getRoles().isEmpty()
-                            ? u.getRoles().stream().map(r -> r.getName()).collect(Collectors.joining("|"))
-                            : "Customer",
-                    u.isActive() ? "Active" : "Inactive",
+                            ? u.getRoles().stream().map(r -> localizeRoleName(r.getName())).collect(Collectors.joining("|"))
+                            : "Khách hàng",
+                    u.isActive() ? "Đang hoạt động" : "Không hoạt động",
                     u.getCreatedAt() != null ? u.getCreatedAt().toString() : ""
             ));
         }
 
         writer.flush();
         log.info("Exported customers report");
+        AuditLogService.success(
+                ExportReportController.class,
+                currentUser,
+                "REPORT",
+                "REPORT_EXPORTED",
+                "CUSTOMERS",
+                AuditLogService.describe("file", filename, "rowCount", customers.size())
+        );
+    }
+
+    private User resolveCurrentUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        User currentUser = (User) session.getAttribute("user");
+        if (currentUser == null) {
+            currentUser = (User) session.getAttribute("userInSession");
+        }
+        return currentUser;
+    }
+
+    private String localizeRoleName(String roleName) {
+        if (roleName == null || roleName.isBlank()) {
+            return "";
+        }
+
+        return switch (roleName.trim()) {
+            case "Customer" -> "Khách hàng";
+            case "Admin" -> "Quản trị viên";
+            case "Super Admin" -> "Siêu quản trị viên";
+            default -> roleName;
+        };
     }
 }

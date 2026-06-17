@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.model.enums.Gender;
 import nlu.fit.web.souvenirecommerce.common.utils.EmailUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
@@ -49,10 +50,10 @@ public class SignupServlet extends HttpServlet {
             String password = req.getParameter("password");
             String confirmPassword = req.getParameter("confirmPassword");
 
-            String validationError = validate(email, firstName, lastName, phone, gender, password, confirmPassword);
-            if (validationError != null) {
-                log.warn("Đăng ký thất bại do dữ liệu không hợp lệ: email={}, reason={}", email, validationError);
-                writeJson(resp, jsonResponse, "error", validationError);
+            String validationKey = validate(email, firstName, lastName, phone, gender, password, confirmPassword);
+            if (validationKey != null) {
+                log.warn("Đăng ký thất bại do dữ liệu không hợp lệ: email={}, reason={}", email, validationKey);
+                writeJson(resp, jsonResponse, "error", I18nUtil.message(req, validationKey));
                 return;
             }
 
@@ -60,19 +61,19 @@ public class SignupServlet extends HttpServlet {
             String verifiedEmail = session == null ? null : (String) session.getAttribute("signupVerifiedEmail");
             if (!email.equals(verifiedEmail)) {
                 log.warn("Đăng ký thất bại do chưa xác thực email: email={}", email);
-                writeJson(resp, jsonResponse, "error", "Vui lòng xác thực email trước khi đăng ký");
+                writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.email_not_verified"));
                 return;
             }
 
             if (authService.hasEmailExist(email)) {
                 log.warn("Đăng ký thất bại do email đã tồn tại: email={}", email);
-                writeJson(resp, jsonResponse, "error", "Email này đã được đăng ký");
+                writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.email_exists"));
                 return;
             }
 
             if (authService.hasPhoneExist(phone)) {
                 log.warn("Đăng ký thất bại do số điện thoại đã tồn tại: phone={}", phone);
-                writeJson(resp, jsonResponse, "error", "Số điện thoại này đã được đăng ký");
+                writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.phone_exists"));
                 return;
             }
 
@@ -80,19 +81,19 @@ public class SignupServlet extends HttpServlet {
                 boolean registered = authService.createUser(email, password, firstName, lastName, phone, gender).isPresent();
                 if (!registered) {
                     log.error("Đăng ký thất bại: createUser trả về rỗng cho email={}", email);
-                    writeJson(resp, jsonResponse, "error", "Không thể tạo tài khoản. Vui lòng thử lại");
+                    writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.create_failed"));
                     return;
                 }
             } catch (Exception createUserError) {
                 rollbackCurrentTransaction();
                 log.error("Lỗi khi tạo tài khoản: email={}", email, createUserError);
 
-                String errorMsg = "Không thể tạo tài khoản. Vui lòng thử lại";
+                String errorMsg = I18nUtil.message(req, "auth.server.signup.create_failed");
                 if (createUserError.getMessage() != null) {
                     if (createUserError.getMessage().contains("Customer role")) {
-                        errorMsg = "Lỗi hệ thống: Role chưa được khởi tạo. Liên hệ admin";
+                        errorMsg = I18nUtil.message(req, "auth.server.signup.role_missing");
                     } else if (createUserError.getMessage().contains("Database") || createUserError.getMessage().contains("Connection")) {
-                        errorMsg = "Lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại sau";
+                        errorMsg = I18nUtil.message(req, "auth.server.signup.database_error");
                     }
                 }
                 writeJson(resp, jsonResponse, "error", errorMsg);
@@ -113,58 +114,57 @@ public class SignupServlet extends HttpServlet {
                     "ACCOUNT",
                     AuditLogService.describe("phone", phone, "gender", gender)
             );
-            writeJson(resp, jsonResponse, "success", "Tạo tài khoản thành công");
+            writeJson(resp, jsonResponse, "success", I18nUtil.message(req, "auth.js.signup_success"));
         } catch (Exception e) {
             rollbackCurrentTransaction();
             log.error("Lỗi không mong muốn trong luồng đăng ký", e);
             try {
-                writeJson(resp, jsonResponse, "error", "Có lỗi xảy ra. Vui lòng thử lại");
+                writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.unexpected"));
             } catch (IOException ioError) {
                 log.error("Không thể ghi response JSON của đăng ký", ioError);
             }
         }
 
-        // Create UserSession and setAttributes
     }
 
     private String validate(String email, String firstName, String lastName, String phone, String gender,
                             String password, String confirmPassword) {
         if (email == null || email.isEmpty()) {
-            return "Email không được để trống";
+            return "auth.server.check_email.empty";
         }
 
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            return "Email không hợp lệ";
+            return "auth.server.check_email.invalid";
         }
 
         if (lastName == null || lastName.isBlank()) {
-            return "Họ không được để trống";
+            return "auth.js.last_name_required";
         }
 
         if (firstName == null || firstName.isBlank()) {
-            return "Tên không được để trống";
+            return "auth.js.first_name_required";
         }
 
         if (phone == null || !phone.matches("^[0-9]{10,20}$")) {
-            return "Số điện thoại phải từ 10-20 chữ số";
+            return "auth.js.phone_invalid";
         }
 
         if (gender == null || gender.isBlank()) {
-            return "Vui lòng chọn giới tính";
+            return "auth.js.gender_required";
         }
 
         try {
             Gender.valueOf(gender.toUpperCase());
         } catch (IllegalArgumentException e) {
-            return "Giới tính không hợp lệ";
+            return "auth.js.gender_required";
         }
 
         if (password == null || password.length() < 8) {
-            return "Mật khẩu phải ít nhất 8 ký tự";
+            return "auth.js.password_min";
         }
 
         if (!password.equals(confirmPassword)) {
-            return "Mật khẩu xác nhận không trùng khớp";
+            return "auth.js.password_mismatch";
         }
 
         return null;

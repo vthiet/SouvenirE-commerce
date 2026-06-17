@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
@@ -50,15 +52,33 @@ public class LoginFacebookServlet extends HttpServlet {
             cartService.prepareGuestCartMerge(session, preLoginCart);
             CartEntity cart = cartService.getCartForDisplay(session);
             cartService.storeCart(session, cart);
+            String redirectTarget = req.getContextPath() + "/home";
             if (redirectAfterLogin instanceof String redirect && !redirect.isBlank()) {
-                resp.sendRedirect(redirect);
-                return;
+                redirectTarget = redirect;
             }
-            resp.sendRedirect(req.getContextPath() + "/home");
+
+            AuditLogService.success(
+                    LoginFacebookServlet.class,
+                    user,
+                    "AUTH",
+                    "LOGIN_FACEBOOK",
+                    "SESSION",
+                    AuditLogService.describe("method", "facebook", "redirect", redirectTarget)
+            );
+
+            resp.sendRedirect(redirectTarget);
         } catch (Exception e) {
             rollbackCurrentTransaction();
             log.warn("Đăng nhập Facebook thất bại", e);
-            req.getSession(true).setAttribute("error", "Đăng nhập Facebook thất bại.");
+            AuditLogService.failure(
+                    LoginFacebookServlet.class,
+                    "Facebook OAuth",
+                    "AUTH",
+                    "LOGIN_FACEBOOK",
+                    "SESSION",
+                    AuditLogService.describe("reason", "authentication_failed")
+            );
+            req.getSession(true).setAttribute("error", I18nUtil.message(req, "auth.server.login.oauth_facebook_failed"));
             resp.sendRedirect(req.getContextPath() + "/login");
         }
     }

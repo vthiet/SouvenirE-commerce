@@ -5,6 +5,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import nlu.fit.web.souvenirecommerce.core.logging.ProjectLogPaths;
 import nlu.fit.web.souvenirecommerce.features.dashboard.dto.AdminLogEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,16 +15,13 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 @WebServlet("/admin/logs")
 public class AdminLogController extends HttpServlet {
@@ -31,7 +29,7 @@ public class AdminLogController extends HttpServlet {
     private static final Logger log = LoggerFactory.getLogger(AdminLogController.class);
     private static final String AUDIT_PREFIX = "AUDIT|";
     private static final Pattern LOG_PATTERN = Pattern.compile(
-            "^(?<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) \\[(?<thread>[^\\]]*)\\] (?<level>\\w+) \\[(?<logger>[^\\]]*)\\] - \\[(?<requestId>[^\\]]*)\\] \\[(?<user>[^\\]]*)\\] - (?<message>.*)$"
+            "^(?<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) \\[(?<thread>[^\\]]*)\\] (?<level>\\w+)\\s+\\[(?<logger>[^\\]]*)\\] - \\[(?<requestId>[^\\]]*)\\] \\[(?<user>[^\\]]*)\\] - (?<message>.*)$"
     );
 
     @Override
@@ -41,16 +39,14 @@ public class AdminLogController extends HttpServlet {
         String query = normalize(request.getParameter("q"));
         int limit = parseLimit(request.getParameter("limit"));
 
-        List<Path> logFiles = resolveLogFiles();
+        Path logFile = ProjectLogPaths.resolveActivityLogFile();
+        List<Path> logFiles = List.of(logFile);
         List<AdminLogEntry> entries = new ArrayList<>();
 
-        for (Path logFile : logFiles) {
-            readLogFile(logFile, level, entryType, query, entries, limit);
-            if (entries.size() >= limit) {
-                break;
-            }
-        }
+        readLogFile(logFile, level, entryType, query, entries, limit);
 
+        request.setAttribute("resolvedLogDir", ProjectLogPaths.resolveLogDir().toString());
+        request.setAttribute("resolvedLogFile", logFile.toString());
         request.setAttribute("entries", entries);
         request.setAttribute("selectedLevel", level);
         request.setAttribute("selectedEntryType", entryType);
@@ -240,49 +236,6 @@ public class AdminLogController extends HttpServlet {
 
     private String decode(String value) {
         return URLDecoder.decode(value, StandardCharsets.UTF_8);
-    }
-
-    private List<Path> resolveLogFiles() {
-        Path logDir = resolveLogDir();
-        List<Path> files = new ArrayList<>();
-
-        if (Files.isDirectory(logDir)) {
-            try (Stream<Path> stream = Files.list(logDir)) {
-                stream.filter(path -> {
-                            String name = path.getFileName().toString();
-                            return name.equals("app.log") || name.matches("app\\.\\d{4}-\\d{2}-\\d{2}\\.log");
-                        })
-                        .sorted(Comparator.comparing(this::safeLastModified).reversed())
-                        .forEach(files::add);
-            } catch (IOException e) {
-                log.warn("Unable to list admin log directory: {}", logDir, e);
-            }
-        }
-
-        return files;
-    }
-
-    private long safeLastModified(Path path) {
-        try {
-            return Files.getLastModifiedTime(path).toMillis();
-        } catch (IOException e) {
-            return 0L;
-        }
-    }
-
-    private Path resolveLogDir() {
-        String explicit = System.getProperty("LOG_DIR");
-        if (explicit == null || explicit.isBlank()) {
-            explicit = System.getenv("LOG_DIR");
-        }
-        if (explicit != null && !explicit.isBlank()) {
-            return Paths.get(explicit);
-        }
-        String catalinaBase = System.getProperty("catalina.base");
-        if (catalinaBase != null && !catalinaBase.isBlank()) {
-            return Paths.get(catalinaBase, "logs");
-        }
-        return Paths.get("logs");
     }
 
     private String normalize(String value) {

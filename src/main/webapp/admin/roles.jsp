@@ -71,7 +71,7 @@
                                     <label>Tên nhóm quyền</label>
                                     <input type="text" name="name" class="form-control"
                                            value="${not empty editRole ? editRole.name : ''}"
-                                           placeholder="Ví dụ: Content Manager" required>
+                                           placeholder="Ví dụ: Quản lý nội dung" required>
                                 </div>
 
                                 <div class="form-group">
@@ -136,7 +136,14 @@
                                 <c:forEach items="${roles}" var="role">
                                     <tr>
                                         <td>
-                                            <strong>${role.name}</strong>
+                                            <strong>
+                                                <c:choose>
+                                                    <c:when test="${role.name == 'Customer'}">Khách hàng</c:when>
+                                                    <c:when test="${role.name == 'Admin'}">Quản trị viên</c:when>
+                                                    <c:when test="${role.name == 'Super Admin'}">Siêu quản trị viên</c:when>
+                                                    <c:otherwise>${role.name}</c:otherwise>
+                                                </c:choose>
+                                            </strong>
                                             <div class="role-description">
                                                 ${role.description}
                                             </div>
@@ -159,10 +166,10 @@
                                         <td>
                                             <c:choose>
                                                 <c:when test="${role.system}">
-                                                    <span class="tag tag-muted">System</span>
+                                                    <span class="tag tag-muted">Hệ thống</span>
                                                 </c:when>
                                                 <c:otherwise>
-                                                    <span class="tag">Custom</span>
+                                                    <span class="tag">Tùy chỉnh</span>
                                                 </c:otherwise>
                                             </c:choose>
                                         </td>
@@ -202,14 +209,19 @@
                             <form action="${ctx}/admin/roles" method="post">
                                 <input type="hidden" name="action" value="assignUsers">
 
-                                <div class="form-group">
+                                        <div class="form-group">
                                     <label>Nhóm quyền</label>
                                     <select name="roleId" class="form-control" required>
                                         <option value="">-- Chọn nhóm quyền --</option>
                                         <c:forEach items="${roles}" var="role">
                                             <option value="${role.id}"
                                                     <c:if test="${not empty editRole and editRole.id == role.id}">selected</c:if>>
-                                                ${role.name}
+                                                <c:choose>
+                                                    <c:when test="${role.name == 'Customer'}">Khách hàng</c:when>
+                                                    <c:when test="${role.name == 'Admin'}">Quản trị viên</c:when>
+                                                    <c:when test="${role.name == 'Super Admin'}">Siêu quản trị viên</c:when>
+                                                    <c:otherwise>${role.name}</c:otherwise>
+                                                </c:choose>
                                             </option>
                                         </c:forEach>
                                     </select>
@@ -262,7 +274,14 @@
                                 <c:otherwise>
                                     <c:forEach items="${roles}" var="role">
                                         <div class="role-member-row">
-                                            <strong>${role.name}</strong>
+                                            <strong>
+                                                <c:choose>
+                                                    <c:when test="${role.name == 'Customer'}">Khách hàng</c:when>
+                                                    <c:when test="${role.name == 'Admin'}">Quản trị viên</c:when>
+                                                    <c:when test="${role.name == 'Super Admin'}">Siêu quản trị viên</c:when>
+                                                    <c:otherwise>${role.name}</c:otherwise>
+                                                </c:choose>
+                                            </strong>
                                             <div class="tag-list role-tag-list">
                                                 <c:choose>
                                                     <c:when test="${empty role.users}">

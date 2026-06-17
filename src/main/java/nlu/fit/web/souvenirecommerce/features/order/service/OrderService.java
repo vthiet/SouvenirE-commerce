@@ -58,23 +58,24 @@ public class OrderService {
             throw new CheckoutException("Chỉ có thể giao đơn hàng đang ở trạng thái 'Đang xử lý' hoặc 'Chờ xác nhận'.");
         }
 
+        ShippingProvider provider = shippingService.getActiveProvider();
+
         // Lazy create shipping order if not exists
         if (order.getGhnOrderCode() == null || order.getGhnOrderCode().isBlank()) {
             try {
-                ShippingProvider.ShippingOrderResult result = shippingService.getActiveProvider().createOrder(order);
-                order.setGhnOrderCode(result.orderCode());
-                order.setGhnStatus(result.status());
-                order.setGhnLeadtime(result.leadtime());
-                order.setGhnFinishDate(result.finishDate());
-                order.setGhnUpdatedAt(result.updatedAt());
+                ShippingProvider.ShippingOrderResult result = provider.createOrder(order);
+                applyShippingSnapshot(order, result);
+                orderRepository.update(order);
             } catch (Exception e) {
                 order.setGhnStatus("create_failed");
                 order.setGhnUpdatedAt(LocalDateTime.now());
-                logHistory(order, "Đang giao", "Tạo đơn vận chuyển thất bại: " + e.getMessage(), "Hệ thống");
+                orderRepository.update(order);
+                logHistory(order, currentStatusDesc, "Tạo đơn vận chuyển thất bại: " + e.getMessage(), "Hệ thống");
+                throw new CheckoutException("Không thể tạo đơn vận chuyển GHN: " + e.getMessage());
             }
         }
 
-        return updateStatus(order, OrderStatusCode.SHIPPING, performedBy, "Đã giao hàng cho đơn vị vận chuyển (" + shippingService.getActiveProvider().getName() + ").");
+        return updateStatus(order, OrderStatusCode.SHIPPING, performedBy, "Đã giao hàng cho đơn vị vận chuyển (" + provider.getName() + ").");
     }
 
     public Order completeOrder(Long orderId, String performedBy) {
@@ -118,14 +119,10 @@ public class OrderService {
             throw new CheckoutException("Đơn hàng này chưa được tạo mã vận đơn vận chuyển.");
         }
 
+        ShippingProvider provider = shippingService.getActiveProvider();
         try {
-            ShippingProvider.ShippingOrderResult result = shippingService.getActiveProvider()
-                    .getOrderDetail(order.getGhnOrderCode(), order.getGhnStatus());
-            
-            order.setGhnStatus(result.status());
-            order.setGhnLeadtime(result.leadtime());
-            order.setGhnFinishDate(result.finishDate());
-            order.setGhnUpdatedAt(result.updatedAt());
+            ShippingProvider.ShippingOrderResult result = provider.getOrderDetail(order.getGhnOrderCode(), order.getGhnStatus());
+            applyShippingSnapshot(order, result);
             orderRepository.update(order);
 
             String status = result.status();
@@ -139,6 +136,7 @@ public class OrderService {
             }
         } catch (Exception e) {
             logHistory(order, order.getStatusDescription(), "Đồng bộ trạng thái vận chuyển thất bại: " + e.getMessage(), performedBy);
+            throw new CheckoutException("Không thể đồng bộ trạng thái GHN: " + e.getMessage());
         }
 
         return order;
@@ -160,5 +158,17 @@ public class OrderService {
                                 .description(code.getDescription())
                                 .build())
                         .orElseThrow(() -> new CheckoutException("Không thể cập nhật trạng thái đơn hàng.")));
+    }
+
+    private void applyShippingSnapshot(Order order, ShippingProvider.ShippingOrderResult result) {
+        if (order == null || result == null) {
+            return;
+        }
+
+        order.setGhnOrderCode(result.orderCode());
+        order.setGhnStatus(result.status());
+        order.setGhnLeadtime(result.leadtime());
+        order.setGhnFinishDate(result.finishDate());
+        order.setGhnUpdatedAt(result.updatedAt());
     }
 }

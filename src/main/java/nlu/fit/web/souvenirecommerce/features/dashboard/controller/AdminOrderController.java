@@ -5,10 +5,14 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.features.order.service.OrderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
 import nlu.fit.web.souvenirecommerce.legacy.model.Order;
+import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,6 +22,7 @@ public class AdminOrderController extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(AdminOrderController.class);
     private final OrderDAO orderDAO = new OrderDAO();
+    private final OrderService shippingOrderService = new OrderService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -93,12 +98,21 @@ public class AdminOrderController extends HttpServlet {
 
         request.setCharacterEncoding("UTF-8");
         String action = request.getParameter("action");
+        User currentUser = resolveCurrentUser(request);
         log.debug("Admin order POST request received. action={}", action);
 
         if ("updateStatus".equals(action)) {
-            updateOrderStatus(request, response);
+            updateOrderStatus(request, response, currentUser);
         } else {
             log.warn("Unsupported admin order POST action: {}", action);
+            AuditLogService.failure(
+                    AdminOrderController.class,
+                    currentUser,
+                    "ORDER",
+                    "ORDER_STATUS_UPDATED",
+                    "ORDER",
+                    AuditLogService.describe("action", action, "reason", "unsupported_action")
+            );
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported action");
         }
     }
@@ -118,7 +132,7 @@ public class AdminOrderController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId);
     }
 
-    private void updateOrderStatus(HttpServletRequest request, HttpServletResponse response)
+    private void updateOrderStatus(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws IOException {
 
         int orderId;
@@ -126,21 +140,89 @@ public class AdminOrderController extends HttpServlet {
             orderId = Integer.parseInt(request.getParameter("orderId"));
         } catch (NumberFormatException ex) {
             log.warn("Invalid order id supplied for admin order status update: {}", request.getParameter("orderId"));
+            AuditLogService.failure(
+                    AdminOrderController.class,
+                    currentUser,
+                    "ORDER",
+                    "ORDER_STATUS_UPDATED",
+                    "ORDER",
+                    AuditLogService.describe("orderId", request.getParameter("orderId"), "reason", "invalid_order_id")
+            );
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid order id");
             return;
         }
 
         String newStatus = request.getParameter("status");
+        if (newStatus == null || newStatus.isBlank()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing status");
+            return;
+        }
+
+        Order currentOrder = orderDAO.getOrderById(orderId);
+        if (currentOrder != null && newStatus.equals(currentOrder.getStatus())) {
+            String redirectUrl = request.getContextPath() + "/admin/orders?success=true";
+            if ("Đang giao".equals(newStatus) && currentOrder.getGhnOrderCode() != null && !currentOrder.getGhnOrderCode().isBlank()) {
+                redirectUrl += "&ghnOrderCode=" + java.net.URLEncoder.encode(currentOrder.getGhnOrderCode(), "UTF-8");
+            }
+            response.sendRedirect(redirectUrl);
+            return;
+        }
 
         log.info("Updating order status. orderId={}, newStatus={}", orderId, newStatus);
-        boolean success = orderDAO.updateOrderStatus(orderId, newStatus);
+        String auditAction = "ORDER_STATUS_UPDATED";
+        String redirectUrl = request.getContextPath() + "/admin/orders?success=true";
+        boolean success;
+        String performedBy = currentUser != null ? currentUser.getEmail() : "Admin";
+
+        if ("Đang giao".equals(newStatus)) {
+            nlu.fit.web.souvenirecommerce.model.entity.Order shippingOrder =
+                    shippingOrderService.startShipping((long) orderId, performedBy);
+            success = true;
+            auditAction = "ORDER_SHIPPED";
+            if (shippingOrder.getGhnOrderCode() != null && !shippingOrder.getGhnOrderCode().isBlank()) {
+                redirectUrl += "&ghnOrderCode=" + java.net.URLEncoder.encode(shippingOrder.getGhnOrderCode(), "UTF-8");
+            }
+        } else {
+            success = orderDAO.updateOrderStatus(orderId, newStatus);
+        }
 
         if (success) {
             log.info("Order status updated successfully. orderId={}, newStatus={}", orderId, newStatus);
-            response.sendRedirect(request.getContextPath() + "/admin/orders?success=true");
+            AuditLogService.success(
+                    AdminOrderController.class,
+                    currentUser,
+                    "ORDER",
+                    auditAction,
+                    "ORDER",
+                    AuditLogService.describe("orderId", orderId, "newStatus", newStatus)
+            );
+            response.sendRedirect(redirectUrl);
         } else {
             log.warn("Order status update failed. orderId={}, newStatus={}", orderId, newStatus);
+            AuditLogService.failure(
+                    AdminOrderController.class,
+                    currentUser,
+                    "ORDER",
+                    "ORDER_STATUS_UPDATED",
+                    "ORDER",
+                    AuditLogService.describe("orderId", orderId, "newStatus", newStatus, "reason", "update_failed")
+            );
             response.sendRedirect(request.getContextPath() + "/admin/orders?error=true");
         }
+    }
+
+    private User resolveCurrentUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        User currentUser = (User) session.getAttribute("userInSession");
+        if (currentUser == null) {
+            currentUser = (User) session.getAttribute("currentUser");
+        }
+        if (currentUser == null) {
+            currentUser = (User) session.getAttribute("user");
+        }
+        return currentUser;
     }
 }
