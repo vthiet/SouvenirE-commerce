@@ -35,6 +35,26 @@ public class OrderRepository extends AbsBaseRepository<Long, Order> {
                 .getResultList();
     }
 
+    public List<Long> findGhnSyncCandidateIds(int limit) {
+        if (limit <= 0) {
+            return List.of();
+        }
+
+        return getSession()
+                .createQuery("""
+                        select o.id
+                        from CustomerOrder o
+                        join o.status s
+                        where o.ghnOrderCode is not null
+                          and o.ghnOrderCode <> ''
+                          and s.description in ('Đang xử lý', 'Đang giao')
+                          and coalesce(lower(o.ghnStatus), '') not in ('delivered', 'returned')
+                        order by coalesce(o.ghnUpdatedAt, o.orderDate) asc, o.id asc
+                        """, Long.class)
+                .setMaxResults(limit)
+                .getResultList();
+    }
+
     public Optional<Address> findLatestShippingAddressByUserId(Long userId) {
         if (userId == null) {
             return Optional.empty();

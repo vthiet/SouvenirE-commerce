@@ -65,6 +65,46 @@
                         </span>
                     </p>
                 </div>
+                <div class="info-item">
+                    <label>Phí vận chuyển</label>
+                    <p><fmt:formatNumber value="${requestScope.order.shippingFee}" pattern="#,###"/>₫</p>
+                </div>
+                <div class="info-item">
+                    <label>Mã vận đơn GHN</label>
+                    <p>
+                        <c:choose>
+                            <c:when test="${not empty requestScope.order.ghnOrderCode}">${requestScope.order.ghnOrderCode}</c:when>
+                            <c:otherwise>Chưa tạo</c:otherwise>
+                        </c:choose>
+                    </p>
+                </div>
+                <div class="info-item">
+                    <label>Trạng thái GHN</label>
+                    <p>
+                        <c:choose>
+                            <c:when test="${requestScope.order.ghnStatus eq 'ready_to_pick'}">Đang chờ lấy hàng</c:when>
+                            <c:when test="${requestScope.order.ghnStatus eq 'picked'}">Đã lấy hàng</c:when>
+                            <c:when test="${requestScope.order.ghnStatus eq 'transporting'}">Đang vận chuyển</c:when>
+                            <c:when test="${requestScope.order.ghnStatus eq 'delivering'}">Đang giao</c:when>
+                            <c:when test="${requestScope.order.ghnStatus eq 'delivered'}">Đã giao</c:when>
+                            <c:when test="${requestScope.order.ghnStatus eq 'returned'}">Đã hoàn hàng</c:when>
+                            <c:when test="${requestScope.order.ghnStatus eq 'create_failed'}">Tạo đơn GHN thất bại</c:when>
+                            <c:when test="${not empty requestScope.order.ghnStatus}">${requestScope.order.ghnStatus}</c:when>
+                            <c:otherwise>Chưa đồng bộ</c:otherwise>
+                        </c:choose>
+                    </p>
+                </div>
+                <div class="info-item">
+                    <label>Cập nhật GHN</label>
+                    <p>
+                        <c:choose>
+                            <c:when test="${not empty requestScope.order.ghnUpdatedAt}">
+                                <fmt:formatDate value="${requestScope.order.ghnUpdatedAt}" pattern="dd/MM/yyyy HH:mm"/>
+                            </c:when>
+                            <c:otherwise>Chưa có dữ liệu</c:otherwise>
+                        </c:choose>
+                    </p>
+                </div>
             </div>
             <div class="order-detail-total">
                 <span>Tổng tiền:</span>

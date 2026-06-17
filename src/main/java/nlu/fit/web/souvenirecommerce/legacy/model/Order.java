@@ -16,7 +16,13 @@ public class Order {
     private String customerEmail;
     private Date orderDate;
     private double totalAmount;
+    private double shippingFee;
     private String status;
     private String shippingAddress;
     private String paymentMethod;
+    private String ghnOrderCode;
+    private String ghnStatus;
+    private Date ghnUpdatedAt;
+    private Date ghnLeadtime;
+    private Date ghnFinishDate;
 }

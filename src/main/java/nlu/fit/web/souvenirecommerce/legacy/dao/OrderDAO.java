@@ -1,5 +1,7 @@
 package nlu.fit.web.souvenirecommerce.legacy.dao;
 
+import nlu.fit.web.souvenirecommerce.features.dashboard.dto.MostProfitableOrderDTO;
+import nlu.fit.web.souvenirecommerce.features.dashboard.dto.RevenueTrendPointDTO;
 import nlu.fit.web.souvenirecommerce.legacy.model.Order;
 import nlu.fit.web.souvenirecommerce.legacy.model.OrderItem;
 import nlu.fit.web.souvenirecommerce.legacy.utils.DBContext;
@@ -10,7 +12,14 @@ import nlu.fit.web.souvenirecommerce.features.order.dto.OrderStatusTabDTO;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.DayOfWeek;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -18,6 +27,10 @@ import java.util.List;
 import java.util.Map;
 
 public class OrderDAO {
+
+    private static final String COMPLETED_STATUS = "Hoàn thành";
+    private static final DateTimeFormatter WEEK_LABEL_FORMAT = DateTimeFormatter.ofPattern("dd/MM");
+    private static final DateTimeFormatter MONTH_LABEL_FORMAT = DateTimeFormatter.ofPattern("MM/yyyy");
 
     public int getTotalOrders() {
         String sql = "SELECT COUNT(*) as total FROM orders";
@@ -90,6 +103,210 @@ public class OrderDAO {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    public List<RevenueTrendPointDTO> getWeeklyRevenueTrend(int weeks) {
+        if (weeks <= 0) {
+            return List.of();
+        }
+
+        LocalDate currentDay = LocalDate.now();
+        LocalDate startWeek = currentDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                .minusWeeks(weeks - 1L);
+        LocalDate endExclusive = currentDay.plusDays(1);
+
+        Map<LocalDate, TrendBucket> buckets = new LinkedHashMap<>();
+        LocalDate cursor = startWeek;
+        for (int i = 0; i < weeks; i++) {
+            buckets.put(cursor, new TrendBucket());
+            cursor = cursor.plusWeeks(1);
+        }
+
+        String sql = """
+            SELECT o.order_date, o.total_amount
+            FROM orders o
+            JOIN order_status os ON o.status_id = os.id
+            WHERE os.description = ?
+              AND o.order_date >= ?
+              AND o.order_date < ?
+            ORDER BY o.order_date ASC
+        """;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, COMPLETED_STATUS);
+            ps.setTimestamp(2, Timestamp.valueOf(startWeek.atStartOfDay()));
+            ps.setTimestamp(3, Timestamp.valueOf(endExclusive.atStartOfDay()));
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Timestamp orderTimestamp = rs.getTimestamp("order_date");
+                    if (orderTimestamp == null) {
+                        continue;
+                    }
+
+                    LocalDate weekStart = orderTimestamp.toLocalDateTime()
+                            .toLocalDate()
+                            .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                    TrendBucket bucket = buckets.get(weekStart);
+                    if (bucket != null) {
+                        bucket.add(rs.getBigDecimal("total_amount"));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        List<RevenueTrendPointDTO> trend = new ArrayList<>();
+        for (Map.Entry<LocalDate, TrendBucket> entry : buckets.entrySet()) {
+            LocalDate weekStartDate = entry.getKey();
+            TrendBucket bucket = entry.getValue();
+            String label = "Tuần " + WEEK_LABEL_FORMAT.format(weekStartDate)
+                    + " - "
+                    + WEEK_LABEL_FORMAT.format(weekStartDate.plusDays(6));
+            trend.add(new RevenueTrendPointDTO(label, bucket.getRevenue(), bucket.getOrderCount()));
+        }
+        return trend;
+    }
+
+    public List<RevenueTrendPointDTO> getMonthlyRevenueTrend(int months) {
+        if (months <= 0) {
+            return List.of();
+        }
+
+        YearMonth currentMonth = YearMonth.now();
+        YearMonth startMonth = currentMonth.minusMonths(months - 1L);
+        LocalDate endExclusive = currentMonth.plusMonths(1).atDay(1);
+
+        Map<YearMonth, TrendBucket> buckets = new LinkedHashMap<>();
+        YearMonth cursor = startMonth;
+        for (int i = 0; i < months; i++) {
+            buckets.put(cursor, new TrendBucket());
+            cursor = cursor.plusMonths(1);
+        }
+
+        String sql = """
+            SELECT o.order_date, o.total_amount
+            FROM orders o
+            JOIN order_status os ON o.status_id = os.id
+            WHERE os.description = ?
+              AND o.order_date >= ?
+              AND o.order_date < ?
+            ORDER BY o.order_date ASC
+        """;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, COMPLETED_STATUS);
+            ps.setTimestamp(2, Timestamp.valueOf(startMonth.atDay(1).atStartOfDay()));
+            ps.setTimestamp(3, Timestamp.valueOf(endExclusive.atStartOfDay()));
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Timestamp orderTimestamp = rs.getTimestamp("order_date");
+                    if (orderTimestamp == null) {
+                        continue;
+                    }
+
+                    YearMonth orderMonth = YearMonth.from(orderTimestamp.toLocalDateTime());
+                    TrendBucket bucket = buckets.get(orderMonth);
+                    if (bucket != null) {
+                        bucket.add(rs.getBigDecimal("total_amount"));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        List<RevenueTrendPointDTO> trend = new ArrayList<>();
+        for (Map.Entry<YearMonth, TrendBucket> entry : buckets.entrySet()) {
+            YearMonth month = entry.getKey();
+            TrendBucket bucket = entry.getValue();
+            String label = "T" + MONTH_LABEL_FORMAT.format(month.atDay(1));
+            trend.add(new RevenueTrendPointDTO(label, bucket.getRevenue(), bucket.getOrderCount()));
+        }
+        return trend;
+    }
+
+    public MostProfitableOrderDTO getMostProfitableOrder() {
+        String sql = """
+            SELECT
+                o.id,
+                o.order_date,
+                o.total_amount,
+                COALESCE(o.shipping_fee, 0) AS shipping_fee,
+                os.description AS status_name,
+                COALESCE(u.full_name, '') AS full_name,
+                COALESCE(u.email, '') AS email,
+                COALESCE(pt.method, 'COD') AS payment_method,
+                COALESCE(COUNT(DISTINCT od.product_id), 0) AS item_count,
+                COALESCE(SUM(od.quantity), 0) AS total_quantity,
+                COALESCE(SUM(od.quantity * od.price_at_purchase), 0) AS merchandise_value,
+                (
+                    SELECT COALESCE(NULLIF(od2.product_name, ''), p2.name)
+                    FROM order_details od2
+                    LEFT JOIN products p2 ON od2.product_id = p2.id
+                    WHERE od2.order_id = o.id
+                    ORDER BY (od2.quantity * od2.price_at_purchase) DESC, od2.product_id ASC
+                    LIMIT 1
+                ) AS top_item_name
+            FROM orders o
+            JOIN order_status os ON o.status_id = os.id
+            LEFT JOIN users u ON o.user_id = u.id
+            LEFT JOIN payment_transactions pt ON pt.order_id = o.id
+            LEFT JOIN order_details od ON od.order_id = o.id
+            WHERE os.description = ?
+            GROUP BY
+                o.id,
+                o.order_date,
+                o.total_amount,
+                o.shipping_fee,
+                os.description,
+                u.full_name,
+                u.email,
+                pt.method
+            ORDER BY (COALESCE(o.total_amount, 0) - COALESCE(o.shipping_fee, 0)) DESC,
+                     COALESCE(o.total_amount, 0) DESC,
+                     o.id DESC
+            LIMIT 1
+        """;
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, COMPLETED_STATUS);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    MostProfitableOrderDTO dto = new MostProfitableOrderDTO();
+                    int orderId = rs.getInt("id");
+                    Timestamp orderTimestamp = rs.getTimestamp("order_date");
+                    BigDecimal totalAmount = safeMoney(rs.getBigDecimal("total_amount"));
+                    BigDecimal shippingFee = safeMoney(rs.getBigDecimal("shipping_fee"));
+                    BigDecimal estimatedProfit = totalAmount.subtract(shippingFee);
+
+                    dto.setOrderId(orderId);
+                    dto.setOrderCode(buildOrderCode(orderId, orderTimestamp));
+                    dto.setCustomerName(emptyIfNull(rs.getString("full_name"), "Khách hàng"));
+                    dto.setCustomerEmail(emptyIfNull(rs.getString("email"), ""));
+                    dto.setOrderDate(orderTimestamp == null ? null : new java.util.Date(orderTimestamp.getTime()));
+                    dto.setStatus(rs.getString("status_name"));
+                    dto.setPaymentMethod(emptyIfNull(rs.getString("payment_method"), "COD"));
+                    dto.setTotalAmount(totalAmount);
+                    dto.setShippingFee(shippingFee);
+                    dto.setEstimatedProfit(estimatedProfit);
+                    dto.setItemCount(rs.getInt("item_count"));
+                    dto.setTotalQuantity(rs.getInt("total_quantity"));
+                    dto.setTopItemName(emptyIfNull(rs.getString("top_item_name"), "Không có dữ liệu"));
+                    return dto;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     public List<Integer> getMonthlyOrdersData(int months) {
@@ -172,6 +389,7 @@ public class OrderDAO {
                 order.setCustomerEmail(rs.getString("email"));
                 order.setOrderDate(rs.getTimestamp("order_date"));
                 order.setTotalAmount(rs.getDouble("total_amount"));
+                order.setShippingFee(rs.getDouble("shipping_fee"));
                 order.setStatus(rs.getString("status_name"));
                 orders.add(order);
             }
@@ -205,6 +423,7 @@ public class OrderDAO {
                     order.setCustomerEmail(rs.getString("email"));
                     order.setOrderDate(rs.getTimestamp("order_date"));
                     order.setTotalAmount(rs.getDouble("total_amount"));
+                    order.setShippingFee(rs.getDouble("shipping_fee"));
                     order.setStatus(rs.getString("status_name"));
                     orders.add(order);
                 }
@@ -347,7 +566,13 @@ public class OrderDAO {
                     order.setCustomerEmail(rs.getString("email"));
                     order.setOrderDate(rs.getTimestamp("order_date"));
                     order.setTotalAmount(rs.getDouble("total_amount"));
+                    order.setShippingFee(rs.getDouble("shipping_fee"));
                     order.setStatus(rs.getString("status_name"));
+                    order.setGhnOrderCode(rs.getString("ghn_order_code"));
+                    order.setGhnStatus(rs.getString("ghn_status"));
+                    order.setGhnUpdatedAt(toDate(rs.getTimestamp("ghn_updated_at")));
+                    order.setGhnLeadtime(toDate(rs.getTimestamp("ghn_leadtime")));
+                    order.setGhnFinishDate(toDate(rs.getTimestamp("ghn_finish_date")));
 
                     // Build shipping address
                     String address = rs.getString("address_detail") + ", " +
@@ -362,6 +587,10 @@ public class OrderDAO {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private java.util.Date toDate(Timestamp timestamp) {
+        return timestamp == null ? null : new java.util.Date(timestamp.getTime());
     }
 
     public boolean updateOrderStatus(int orderId, String newStatus) {
@@ -404,6 +633,7 @@ public class OrderDAO {
                     order.setCustomerEmail(rs.getString("email"));
                     order.setOrderDate(rs.getTimestamp("order_date"));
                     order.setTotalAmount(rs.getDouble("total_amount"));
+                    order.setShippingFee(rs.getDouble("shipping_fee"));
                     order.setStatus(rs.getString("status_name"));
                     orders.add(order);
                 }
@@ -466,6 +696,7 @@ public class OrderDAO {
                     order.setCustomerEmail(rs.getString("email"));
                     order.setOrderDate(rs.getTimestamp("order_date"));
                     order.setTotalAmount(rs.getDouble("total_amount"));
+                    order.setShippingFee(rs.getDouble("shipping_fee"));
                     order.setStatus(rs.getString("status_name"));
                     orders.add(order);
                 }
@@ -534,6 +765,7 @@ public class OrderDAO {
                     order.setUserId(rs.getInt("user_id"));
                     order.setOrderDate(rs.getTimestamp("order_date"));
                     order.setTotalAmount(rs.getDouble("total_amount"));
+                    order.setShippingFee(rs.getDouble("shipping_fee"));
                     order.setStatus(rs.getString("status_name"));
                     orders.add(order);
                 }
@@ -684,5 +916,40 @@ public class OrderDAO {
             case "PAYMENT_FAILED" -> "Thanh toán thất bại";
             default -> status;
         };
+    }
+
+    private BigDecimal safeMoney(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private String emptyIfNull(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private String buildOrderCode(int orderId, Timestamp orderTimestamp) {
+        if (orderTimestamp == null) {
+            return String.format("ORD-UNKNOWN-%05d", orderId);
+        }
+        LocalDateTime orderDateTime = orderTimestamp.toLocalDateTime();
+        return "ORD-" + orderDateTime.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                + "-" + String.format("%05d", orderId);
+    }
+
+    private static class TrendBucket {
+        private BigDecimal revenue = BigDecimal.ZERO;
+        private int orderCount;
+
+        void add(BigDecimal amount) {
+            revenue = revenue.add(amount == null ? BigDecimal.ZERO : amount);
+            orderCount++;
+        }
+
+        BigDecimal getRevenue() {
+            return revenue;
+        }
+
+        int getOrderCount() {
+            return orderCount;
+        }
     }
 }
