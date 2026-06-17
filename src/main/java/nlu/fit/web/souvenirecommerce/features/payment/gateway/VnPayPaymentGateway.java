@@ -1,6 +1,6 @@
 package nlu.fit.web.souvenirecommerce.features.payment.gateway;
 
-import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
+import nlu.fit.web.souvenirecommerce.features.order.exception.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.payment.dto.PaymentContext;
 import nlu.fit.web.souvenirecommerce.features.payment.dto.PaymentPreparation;
 import nlu.fit.web.souvenirecommerce.features.payment.service.VnPayService;

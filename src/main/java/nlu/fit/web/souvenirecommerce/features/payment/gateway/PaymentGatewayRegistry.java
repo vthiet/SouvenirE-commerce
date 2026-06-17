@@ -1,7 +1,7 @@
 package nlu.fit.web.souvenirecommerce.features.payment.gateway;
 
 import nlu.fit.web.souvenirecommerce.model.enums.PaymentMethod;
-import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
+import nlu.fit.web.souvenirecommerce.features.order.exception.CheckoutException;
 
 import java.util.EnumMap;
 import java.util.Map;

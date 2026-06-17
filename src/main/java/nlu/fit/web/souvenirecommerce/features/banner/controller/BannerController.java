@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.page.home.controller;
+package nlu.fit.web.souvenirecommerce.features.banner.controller;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
-import nlu.fit.web.souvenirecommerce.features.page.home.service.BannerService;
+import nlu.fit.web.souvenirecommerce.features.banner.service.BannerService;
 import nlu.fit.web.souvenirecommerce.model.entity.Banner;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 

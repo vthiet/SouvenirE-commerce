@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.page.home.repository;
+package nlu.fit.web.souvenirecommerce.features.banner.repository;
 
 import nlu.fit.web.souvenirecommerce.common.base.AbsBaseRepository;
 import nlu.fit.web.souvenirecommerce.model.entity.Banner;
