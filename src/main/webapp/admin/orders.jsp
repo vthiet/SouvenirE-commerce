@@ -29,7 +29,7 @@
             <div class="container-fluid px-3 px-lg-4 py-4 admin-page orders-page">
                 <section class="admin-page-hero orders-hero">
                     <div class="hero-copy">
-                        <span class="page-eyebrow">Order center</span>
+                        <span class="page-eyebrow">Tổng quan đơn hàng</span>
                         <h1>Quản lý đơn hàng</h1>
                         <p class="page-lead">
                             Theo dõi trạng thái, thanh toán và lịch sử đơn hàng trong một bảng điều khiển rõ ràng hơn.
@@ -51,9 +51,11 @@
                     </div>
 
                     <div class="hero-surface">
-                        <span class="hero-surface-label">Cập nhật gần nhất</span>
-                        <div class="hero-surface-value">${not empty currentPage ? currentPage : 1}</div>
-                        <div class="hero-surface-note">Trang hiện tại trong danh sách đơn hàng</div>
+                        <span class="hero-surface-label">Doanh thu 6 tháng</span>
+                        <div class="hero-surface-value">
+                            <fmt:formatNumber value="${monthlyRevenueTotal}" pattern="#,###"/>₫
+                        </div>
+                        <div class="hero-surface-note">Chỉ tính đơn hoàn thành trong 6 tháng gần nhất</div>
                     </div>
                 </section>
 
@@ -63,6 +65,125 @@
                 <c:if test="${not empty param.error}">
                     <div class="alert alert-danger">Cập nhật trạng thái đơn hàng thất bại. Vui lòng thử lại.</div>
                 </c:if>
+
+                <section class="order-analytics-grid">
+                    <article class="card admin-panel-card orders-chart-card">
+                        <div class="card-header orders-card-header">
+                            <div>
+                                <h3>Biểu đồ doanh thu</h3>
+                                <p class="orders-card-subtitle">
+                                    Dữ liệu chỉ tính đơn hoàn thành. Chuyển giữa 7 tuần và 6 tháng gần nhất để theo dõi nhịp bán hàng.
+                                </p>
+                            </div>
+                            <div class="orders-range-toggle" role="group" aria-label="Chọn chu kỳ thống kê">
+                                <button type="button" class="range-toggle-button active" data-chart-range="weekly">
+                                    7 tuần gần nhất
+                                </button>
+                                <button type="button" class="range-toggle-button" data-chart-range="monthly">
+                                    6 tháng gần nhất
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card-body orders-analytics-body">
+                            <div class="orders-analytics-stats">
+                                <article class="analytics-stat analytics-stat--weekly">
+                                    <span>Doanh thu tuần</span>
+                                    <strong><fmt:formatNumber value="${weeklyRevenueTotal}" pattern="#,###"/>₫</strong>
+                                    <small>${weeklyOrderCount} đơn hoàn thành</small>
+                                </article>
+
+                                <article class="analytics-stat analytics-stat--monthly">
+                                    <span>Doanh thu tháng</span>
+                                    <strong><fmt:formatNumber value="${monthlyRevenueTotal}" pattern="#,###"/>₫</strong>
+                                    <small>${monthlyOrderCount} đơn hoàn thành</small>
+                                </article>
+                            </div>
+
+                            <div class="orders-chart-wrap">
+                                <canvas id="orderRevenueChart" class="orders-revenue-chart"></canvas>
+                            </div>
+                        </div>
+                    </article>
+
+                    <aside class="card admin-panel-card orders-profit-card">
+                        <div class="card-header orders-card-header">
+                            <div>
+                                <h3>Đơn lợi nhất</h3>
+                                <p class="orders-card-subtitle">
+                                    Sắp xếp theo lợi ước tính, dựa trên doanh thu hàng hóa sau khi trừ phí vận chuyển.
+                                </p>
+                            </div>
+                            <span class="orders-profit-pill">KPI ước tính</span>
+                        </div>
+
+                        <div class="card-body orders-profit-body">
+                            <c:choose>
+                                <c:when test="${not empty mostProfitableOrder}">
+                                    <div class="profit-order-hero">
+                                        <div class="profit-order-id">#${mostProfitableOrder.orderId}</div>
+                                        <div class="profit-order-code"><c:out value="${mostProfitableOrder.orderCode}"/></div>
+                                    </div>
+
+                                    <div class="profit-order-value">
+                                        <span>Lợi ước tính</span>
+                                        <strong><fmt:formatNumber value="${mostProfitableOrder.estimatedProfit}" pattern="#,###"/>₫</strong>
+                                    </div>
+
+                                    <div class="profit-order-meta">
+                                        <div class="profit-order-row">
+                                            <span>Khách hàng</span>
+                                            <strong><c:out value="${mostProfitableOrder.customerName}"/></strong>
+                                        </div>
+                                        <div class="profit-order-row">
+                                            <span>Trạng thái</span>
+                                            <strong><c:out value="${mostProfitableOrder.status}"/></strong>
+                                        </div>
+                                        <div class="profit-order-row">
+                                            <span>Ngày đặt</span>
+                                            <strong><fmt:formatDate value="${mostProfitableOrder.orderDate}" pattern="dd/MM/yyyy HH:mm"/></strong>
+                                        </div>
+                                        <div class="profit-order-row">
+                                            <span>Thanh toán</span>
+                                            <strong><c:out value="${mostProfitableOrder.paymentMethod}"/></strong>
+                                        </div>
+                                        <div class="profit-order-row">
+                                            <span>Phí vận chuyển</span>
+                                            <strong><fmt:formatNumber value="${mostProfitableOrder.shippingFee}" pattern="#,###"/>₫</strong>
+                                        </div>
+                                        <div class="profit-order-row">
+                                            <span>Tổng đơn</span>
+                                            <strong><fmt:formatNumber value="${mostProfitableOrder.totalAmount}" pattern="#,###"/>₫</strong>
+                                        </div>
+                                        <div class="profit-order-row">
+                                            <span>Số dòng hàng</span>
+                                            <strong>${mostProfitableOrder.itemCount} dòng / ${mostProfitableOrder.totalQuantity} sản phẩm</strong>
+                                        </div>
+                                        <div class="profit-order-row">
+                                            <span>Mặt hàng nổi bật</span>
+                                            <strong><c:out value="${mostProfitableOrder.topItemName}"/></strong>
+                                        </div>
+                                    </div>
+
+                                    <div class="profit-order-footnote">
+                                        <c:out value="${profitRule}"/>
+                                    </div>
+
+                                    <a href="${ctx}/admin/order-detail?id=${mostProfitableOrder.orderId}" class="btn btn-primary w-100">
+                                        Xem chi tiết đơn hàng
+                                    </a>
+                                </c:when>
+                                <c:otherwise>
+                                    <div class="orders-empty-card profit-empty-card">
+                                        <i class="fas fa-chart-line orders-empty-icon"></i>
+                                        <p>Chưa có đủ dữ liệu để xác định đơn lợi nhất.</p>
+                                        <span class="orders-empty-note">Khi có đơn hoàn thành, hệ thống sẽ tự tính KPI ước tính cho bạn.</span>
+                                    </div>
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
+                    </aside>
+                </section>
 
                 <section class="stats-grid orders-stats">
                     <article class="stat-card orders-stat-pending">
@@ -255,7 +376,7 @@
     <div class="modal-content orders-modal-content">
         <div class="modal-header orders-modal-header">
             <div>
-                <span class="orders-modal-kicker">Order action</span>
+                <span class="orders-modal-kicker">Thao tác đơn hàng</span>
                 <h3>Cập nhật trạng thái đơn hàng</h3>
             </div>
             <button type="button" class="close-btn" onclick="closeUpdateStatusModal()" aria-label="Đóng">&times;</button>
@@ -328,5 +449,133 @@
 </script>
 <script src="${ctx}/assets/js/bootstrap.bundle.min.js"></script>
 <script src="${ctx}/assets/js/admin-main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    (function () {
+        const chartConfig = <c:out value="${orderAnalyticsJson}" escapeXml="false"/>;
+        const chartCanvas = document.getElementById('orderRevenueChart');
+        const toggleButtons = Array.from(document.querySelectorAll('[data-chart-range]'));
+
+        if (!chartCanvas || !window.Chart || !chartConfig) {
+            return;
+        }
+
+        const series = {
+            weekly: Array.isArray(chartConfig.weekly) ? chartConfig.weekly : [],
+            monthly: Array.isArray(chartConfig.monthly) ? chartConfig.monthly : []
+        };
+        let activeRange = 'weekly';
+        let activePoints = series[activeRange];
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + '₫';
+        }
+
+        function buildLabels(points) {
+            return points.map(function (point) {
+                return point.label || '';
+            });
+        }
+
+        function buildValues(points) {
+            return points.map(function (point) {
+                return Number(point.revenue || 0);
+            });
+        }
+
+        const chart = new Chart(chartCanvas, {
+            type: 'line',
+            data: {
+                labels: buildLabels(activePoints),
+                datasets: [{
+                    label: 'Doanh thu',
+                    data: buildValues(activePoints),
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.14)',
+                    pointBackgroundColor: '#0f172a',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.38,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const point = activePoints[context.dataIndex] || {};
+                                return [
+                                    formatCurrency(point.revenue),
+                                    (point.orderCount || 0) + ' đơn hoàn thành'
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#64748b'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.18)'
+                        },
+                        ticks: {
+                            color: '#64748b',
+                            callback: function (value) {
+                                return new Intl.NumberFormat('vi-VN', {
+                                    notation: 'compact',
+                                    compactDisplay: 'short'
+                                }).format(value) + '₫';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        function setActiveRange(range) {
+            activeRange = range;
+            activePoints = series[range] || [];
+
+            chart.data.labels = buildLabels(activePoints);
+            chart.data.datasets[0].data = buildValues(activePoints);
+            chart.data.datasets[0].borderColor = range === 'monthly' ? '#0ea5e9' : '#2563eb';
+            chart.data.datasets[0].backgroundColor = range === 'monthly' ? 'rgba(14, 165, 233, 0.14)' : 'rgba(37, 99, 235, 0.14)';
+            chart.update();
+
+            toggleButtons.forEach(function (button) {
+                const isActive = button.getAttribute('data-chart-range') === range;
+                button.classList.toggle('active', isActive);
+            });
+        }
+
+        toggleButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                setActiveRange(this.getAttribute('data-chart-range'));
+            });
+        });
+
+        setActiveRange('weekly');
+    })();
+</script>
 </body>
 </html>

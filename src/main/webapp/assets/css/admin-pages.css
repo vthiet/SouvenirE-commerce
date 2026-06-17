@@ -337,7 +337,7 @@
 
 .hero-surface .hero-surface-label,
 .hero-surface .hero-surface-note {
-    color: rgba(226, 232, 240, 0.82);
+    color: var(--admin-page-text);
 }
 
 .hero-surface-value {
@@ -353,6 +353,223 @@
     gap: 1rem;
     border-radius: 1.25rem;
     padding: 1.25rem;
+}
+
+.order-analytics-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.85fr);
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.orders-chart-card,
+.orders-profit-card {
+    overflow: hidden;
+}
+
+.orders-chart-card {
+    background: linear-gradient(180deg, rgba(37, 99, 235, 0.04) 0%, rgba(255, 255, 255, 0.98) 24%, #ffffff 100%);
+}
+
+.orders-analytics-body,
+.orders-profit-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.orders-analytics-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+}
+
+.analytics-stat {
+    padding: 1rem 1.05rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: var(--admin-page-surface-soft);
+    display: grid;
+    gap: 0.3rem;
+}
+
+.analytics-stat span {
+    color: var(--admin-page-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.analytics-stat strong {
+    color: var(--admin-page-text);
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1.1;
+}
+
+.analytics-stat small {
+    color: var(--admin-page-muted);
+    font-size: 0.88rem;
+}
+
+.analytics-stat--weekly {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(255, 255, 255, 0.95));
+}
+
+.analytics-stat--monthly {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(255, 255, 255, 0.95));
+}
+
+.orders-range-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.range-toggle-button {
+    border: 1px solid var(--admin-page-border);
+    background: var(--admin-page-surface-soft);
+    color: var(--admin-page-muted);
+    border-radius: 999px;
+    padding: 0.62rem 0.9rem;
+    font-weight: 800;
+    transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.range-toggle-button:hover,
+.range-toggle-button:focus-visible {
+    transform: translateY(-1px);
+    border-color: rgba(37, 99, 235, 0.28);
+    color: var(--admin-page-text);
+}
+
+.range-toggle-button.active {
+    background: var(--admin-page-primary);
+    border-color: var(--admin-page-primary);
+    color: var(--admin-page-surface);
+}
+
+.orders-chart-wrap {
+    position: relative;
+    min-height: 340px;
+}
+
+.orders-revenue-chart {
+    width: 100% !important;
+    height: 340px !important;
+}
+
+.orders-profit-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.orders-profit-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    background: var(--admin-page-warning-soft);
+    color: #b45309;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+.profit-order-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.1rem;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, var(--admin-page-primary) 0%, #1d4ed8 100%);
+    color: var(--admin-page-surface);
+}
+
+.profit-order-id {
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.profit-order-code {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.82);
+    text-align: right;
+}
+
+.profit-order-value {
+    padding: 0.95rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(22, 163, 74, 0.12);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(255, 255, 255, 0.96));
+}
+
+.profit-order-value span {
+    display: block;
+    color: var(--admin-page-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.profit-order-value strong {
+    display: block;
+    margin-top: 0.2rem;
+    color: #166534;
+    font-size: 1.55rem;
+    font-weight: 900;
+    line-height: 1.1;
+}
+
+.profit-order-meta {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.profit-order-row {
+    padding: 0.85rem 0.95rem;
+    border-radius: 0.95rem;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: var(--admin-page-surface-soft);
+}
+
+.profit-order-row span {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: var(--admin-page-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.profit-order-row strong {
+    color: var(--admin-page-text);
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.profit-order-footnote {
+    padding: 0.9rem 1rem;
+    border-radius: 0.95rem;
+    background: var(--admin-page-info-soft);
+    color: #0369a1;
+    font-size: 0.88rem;
+    line-height: 1.55;
+}
+
+.profit-empty-card {
+    padding: 2.2rem 1rem;
 }
 
 .orders-stats .stat-icon {
@@ -499,7 +716,7 @@
 
 .order-status-pill.is-warning,
 .detail-status-pill.is-warning {
-    background: var(--admin-page-surface)7ed;
+    background: var(--admin-page-warning-soft);
     color: #c2410c;
 }
 
@@ -785,6 +1002,10 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
+    .order-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+
     .order-summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -797,6 +1018,18 @@
 @media (max-width: 767.98px) {
     .order-summary-grid {
         grid-template-columns: 1fr;
+    }
+
+    .orders-analytics-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .orders-range-toggle {
+        width: 100%;
+    }
+
+    .orders-range-toggle .range-toggle-button {
+        width: 100%;
     }
 
     .orders-filter-select {
@@ -906,11 +1139,11 @@
 }
 
 .order-detail-page .hero-surface-label {
-    color: rgba(226, 232, 240, 0.78);
+    color: var(--admin-page-text);
 }
 
 .order-detail-page .hero-surface-note {
-    color: rgba(226, 232, 240, 0.78);
+    color: var(--admin-page-text);
 }
 
 .order-detail-page .detail-status-pill {

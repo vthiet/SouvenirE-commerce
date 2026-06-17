@@ -265,6 +265,13 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var buttons = document.querySelectorAll('[data-theme-toggle]');
+        var i18nElement = document.getElementById('siteI18n');
+        var themeLabels = {
+            light: i18nElement?.dataset.themeLight || 'Sáng',
+            dark: i18nElement?.dataset.themeDark || 'Tối',
+            switchToLight: i18nElement?.dataset.themeSwitchToLight || 'Chuyển sang giao diện sáng',
+            switchToDark: i18nElement?.dataset.themeSwitchToDark || 'Chuyển sang giao diện tối'
+        };
 
         function syncButtons(theme) {
             buttons.forEach(function (button) {
@@ -272,12 +279,13 @@
                 var label = button.querySelector('[data-theme-label]');
                 var isDark = theme === 'dark';
                 button.setAttribute('aria-pressed', String(isDark));
-                button.setAttribute('title', isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối');
+                button.setAttribute('title', isDark ? themeLabels.switchToLight : themeLabels.switchToDark);
+                button.setAttribute('aria-label', isDark ? themeLabels.switchToLight : themeLabels.switchToDark);
                 if (icon) {
                     icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
                 }
                 if (label) {
-                    label.textContent = isDark ? 'Sáng' : 'Tối';
+                    label.textContent = isDark ? themeLabels.light : themeLabels.dark;
                 }
             });
         }

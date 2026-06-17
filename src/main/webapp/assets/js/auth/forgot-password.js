@@ -2,9 +2,18 @@ let currentStep = 1;
 const totalSteps = 3;
 const contextPath = window.appContextPath || '';
 const recaptchaEnabled = Boolean(window.recaptchaEnabled);
+const i18n = window.authI18n || {};
 let verifiedEmail = '';
 let resendTimer = null;
 let resendSeconds = 0;
+
+function text(key, fallback) {
+    return i18n[key] || fallback;
+}
+
+function formatTemplate(template, value) {
+    return String(template || '').replace('{0}', value);
+}
 
 function showMessage(message, type) {
     const messageArea = $('#messageArea');
@@ -13,7 +22,7 @@ function showMessage(message, type) {
         success: 'success-text',
         warning: 'warning-text'
     };
-    messageArea.html(`<p class="${classes[type] || 'warning-text'}">${message}</p>`);
+    messageArea.empty().append($('<p>').addClass(classes[type] || 'warning-text').text(message));
 }
 
 function clearMessage() {
@@ -32,27 +41,27 @@ function checkPasswordStrength(password) {
     const strengthDiv = $('#passwordStrength');
 
     if (!password) {
-        strengthDiv.html('').removeClass().addClass('password-strength');
+        strengthDiv.text('').removeClass().addClass('password-strength');
         return;
     }
 
     if (password.length < 8) {
-        strengthDiv.html('Mật khẩu cần ít nhất 8 ký tự').removeClass().addClass('password-strength weak');
+        strengthDiv.text(text('passwordMin', 'Mật khẩu cần ít nhất 8 ký tự')).removeClass().addClass('password-strength weak');
         return;
     }
 
     let strength = 'weak';
-    let message = 'Mật khẩu yếu';
+    let message = text('passwordWeak', 'Mật khẩu yếu');
 
     if (/[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password)) {
         strength = 'strong';
-        message = 'Mật khẩu mạnh';
+        message = text('passwordStrong', 'Mật khẩu mạnh');
     } else if (/[a-zA-Z]/.test(password) && /[0-9]/.test(password)) {
         strength = 'medium';
-        message = 'Mật khẩu trung bình';
+        message = text('passwordMedium', 'Mật khẩu trung bình');
     }
 
-    strengthDiv.html(message).removeClass().addClass('password-strength ' + strength);
+    strengthDiv.text(message).removeClass().addClass('password-strength ' + strength);
 }
 
 function goToStep(step) {
@@ -89,13 +98,13 @@ function startResendCountdown() {
 
         if (resendSeconds <= 0) {
             clearInterval(resendTimer);
-            $('#sendCodeBtn').prop('disabled', false).find('span').text('Gửi mã');
+            $('#sendCodeBtn').prop('disabled', false).find('span').text(text('sendCode', 'Gửi mã'));
         }
     }, 1000);
 }
 
 function updateSendCodeButton() {
-    $('#sendCodeBtn').find('span').text(`Gửi lại ${resendSeconds}s`);
+    $('#sendCodeBtn').find('span').text(formatTemplate(text('resendCodeTemplate', 'Gửi lại {0}s'), resendSeconds));
 }
 
 function getEmail() {
@@ -104,12 +113,12 @@ function getEmail() {
 
 function validateEmail(email) {
     if (!email) {
-        showMessage('Email không được để trống', 'error');
+        showMessage(text('emailRequired', 'Email không được để trống'), 'error');
         return false;
     }
 
     if (!/^[A-Za-z0-9+_.-]+@(.+)$/.test(email)) {
-        showMessage('Email không hợp lệ', 'error');
+        showMessage(text('emailInvalid', 'Email không hợp lệ'), 'error');
         return false;
     }
 
@@ -121,12 +130,12 @@ function getRecaptchaToken() {
         return '';
     }
     if (!window.grecaptcha) {
-        showMessage('Captcha chưa tải xong. Vui lòng thử lại sau vài giây', 'error');
+        showMessage(text('captchaLoading', 'Captcha chưa tải xong. Vui lòng thử lại sau vài giây'), 'error');
         return null;
     }
     const token = grecaptcha.getResponse();
     if (!token) {
-        showMessage('Vui lòng xác nhận bạn không phải robot.', 'error');
+        showMessage(text('notRobot', 'Vui lòng xác nhận bạn không phải robot.'), 'error');
         return null;
     }
     return token;
@@ -173,13 +182,13 @@ function sendVerificationCode(showSuccessMessage) {
 
             if (response.status === 'success') {
                 if (showSuccessMessage) {
-                    showMessage(response.message || 'Mã xác thực đã được gửi tới email của bạn', 'success');
+                    showMessage(response.message || text('codeSent', 'Mã xác thực đã được gửi tới email của bạn'), 'success');
                 }
                 startResendCountdown();
                 $('#verificationCode').focus();
             } else {
                 $('#sendCodeBtn').prop('disabled', false);
-                showMessage(response.message, 'error');
+                showMessage(response.message || text('codeSendFailed', 'Không gửi được mã xác thực. Vui lòng thử lại'), 'error');
             }
         },
         error: function() {
@@ -188,7 +197,7 @@ function sendVerificationCode(showSuccessMessage) {
                 loading: '#codeLoading',
                 buttons: ['#sendCodeBtn', '#verifyCodeBtn', '#backToEmailBtn']
             }, false);
-            showMessage('Không gửi được mã xác thực. Vui lòng thử lại', 'error');
+            showMessage(text('codeSendFailed', 'Không gửi được mã xác thực. Vui lòng thử lại'), 'error');
         }
     });
 }
@@ -228,17 +237,17 @@ $('#continueBtn').click(function() {
                 $('#verificationCode').val('');
                 goToStep(2);
                 startResendCountdown();
-                showMessage(response.message, 'success');
+                showMessage(response.message || text('codeSent', 'Mã xác thực đã được gửi tới email của bạn'), 'success');
                 $('#verificationCode').focus();
             } else {
-                showMessage(response.message, 'error');
+                showMessage(response.message || text('genericError', 'Có lỗi xảy ra. Vui lòng thử lại'), 'error');
             }
         },
         error: function() {
             resetRecaptcha();
             $('#emailCheckLoading').hide();
             $('#continueBtn').prop('disabled', false);
-            showMessage('Có lỗi xảy ra. Vui lòng thử lại', 'error');
+            showMessage(text('requestFailed', 'Có lỗi xảy ra. Vui lòng thử lại'), 'error');
         }
     });
 });
@@ -256,7 +265,7 @@ $('#verifyCodeBtn').click(function() {
     }
 
     if (!/^[0-9]{6}$/.test(code)) {
-        showMessage('Mã xác thực gồm 6 chữ số', 'error');
+        showMessage(text('codeSixDigits', 'Mã xác thực gồm 6 chữ số'), 'error');
         return;
     }
 
@@ -283,9 +292,9 @@ $('#verifyCodeBtn').click(function() {
             if (response.status === 'success') {
                 verifiedEmail = email;
                 goToStep(3);
-                showMessage('Email đã được xác thực. Vui lòng nhập mật khẩu mới', 'success');
+                showMessage(response.message || text('forgotVerified', 'Email đã được xác thực. Vui lòng nhập mật khẩu mới'), 'success');
             } else {
-                showMessage(response.message, 'error');
+                showMessage(response.message || text('genericError', 'Có lỗi xảy ra. Vui lòng thử lại'), 'error');
             }
         },
         error: function() {
@@ -293,7 +302,7 @@ $('#verifyCodeBtn').click(function() {
                 loading: '#codeLoading',
                 buttons: ['#sendCodeBtn', '#verifyCodeBtn', '#backToEmailBtn']
             }, false);
-            showMessage('Có lỗi xảy ra. Vui lòng thử lại', 'error');
+            showMessage(text('requestFailed', 'Có lỗi xảy ra. Vui lòng thử lại'), 'error');
         }
     });
 });
@@ -312,18 +321,18 @@ $('#submitBtn').click(function() {
     const confirmPassword = $('#confirm_password').val();
 
     if (!verifiedEmail || verifiedEmail !== email) {
-        showMessage('Vui lòng xác thực email trước khi đổi mật khẩu', 'error');
+        showMessage(text('emailNotVerified', 'Vui lòng xác thực email trước khi đổi mật khẩu'), 'error');
         goToStep(1);
         return;
     }
 
     if (!password || password.length < 8) {
-        showMessage('Mật khẩu phải ít nhất 8 ký tự', 'error');
+        showMessage(text('passwordMin', 'Mật khẩu phải ít nhất 8 ký tự'), 'error');
         return;
     }
 
     if (password !== confirmPassword) {
-        showMessage('Mật khẩu xác nhận không trùng khớp', 'error');
+        showMessage(text('passwordMismatch', 'Mật khẩu xác nhận không trùng khớp'), 'error');
         return;
     }
 
@@ -345,19 +354,19 @@ $('#submitBtn').click(function() {
               $('#submitBtn').prop('disabled', false);
 
               if (response.status === 'success') {
-                  showMessage('Đặt lại mật khẩu thành công. Đang chuyển sang trang đăng nhập...', 'success');
+                  showMessage(text('passwordResetSuccess', 'Đặt lại mật khẩu thành công. Đang chuyển sang trang đăng nhập...'), 'success');
                   setTimeout(() => {
                       window.location.href = `${contextPath}/login`;
                   }, 1600);
               } else {
-                  showMessage(response.message || 'Có lỗi xảy ra. Vui lòng thử lại', 'error');
+                  showMessage(response.message || text('genericError', 'Có lỗi xảy ra. Vui lòng thử lại'), 'error');
               }
           },
           error: function(xhr, status, error) {
               $('#submitLoading').hide();
               $('#submitBtn').prop('disabled', false);
 
-              let errorMessage = 'Có lỗi xảy ra. Vui lòng thử lại';
+              let errorMessage = text('genericError', 'Có lỗi xảy ra. Vui lòng thử lại');
 
               if (xhr.responseJSON && xhr.responseJSON.message) {
                   errorMessage = xhr.responseJSON.message;
@@ -368,6 +377,8 @@ $('#submitBtn').click(function() {
                           errorMessage = parsed.message;
                       }
                   } catch (parseError) {}
+              } else if (status === 'timeout') {
+                  errorMessage = text('passwordResetTimeout', 'Yêu cầu quá lâu. Vui lòng thử lại');
               }
 
               showMessage(errorMessage, 'error');

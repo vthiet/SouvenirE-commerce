@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
@@ -41,7 +42,7 @@ public class ChangePassController extends HttpServlet {
             return;
         }
 
-        request.setAttribute("pageTitle", "Đổi mật khẩu");
+        applyPageAttributes(request);
         request.setAttribute("pageCss", "account/account-layout.css");
         request.setAttribute("contentCss", "account/profile-form.css");
         request.setAttribute("pageJs", "account/change-password.js");
@@ -77,13 +78,13 @@ public class ChangePassController extends HttpServlet {
         User user = getLoggedInUser(session);
 
         if (user == null) {
-            writeJson(response, jsonResponse, "error", "Vui lòng đăng nhập để thực hiện chức năng này");
+            writeJson(request, response, jsonResponse, "error", "change_password.server.not_logged_in");
             return;
         }
 
         String email = user.getEmail();
         if (email == null || email.isBlank()) {
-            writeJson(response, jsonResponse, "error", "Không tìm thấy địa chỉ email của tài khoản");
+            writeJson(request, response, jsonResponse, "error", "change_password.server.email_missing");
             return;
         }
 
@@ -93,10 +94,10 @@ public class ChangePassController extends HttpServlet {
             session.removeAttribute("changePasswordVerifiedEmail");
 
             log.info("Gửi mã xác thực đổi mật khẩu thành công: email={}, expiresAt={}", email, expiresAt);
-            writeJson(response, jsonResponse, "success", "Mã xác thực đổi mật khẩu đã được gửi tới email của bạn");
+            writeJson(request, response, jsonResponse, "success", "change_password.server.code_sent");
         } catch (MessagingException | RuntimeException e) {
             log.error("Gửi mã xác thực đổi mật khẩu thất bại: email={}", email, e);
-            writeJson(response, jsonResponse, "error", "Không gửi được mã xác thực. Vui lòng kiểm tra cấu hình email");
+            writeJson(request, response, jsonResponse, "error", "change_password.server.code_send_failed");
         }
     }
 
@@ -108,31 +109,31 @@ public class ChangePassController extends HttpServlet {
         User user = getLoggedInUser(session);
 
         if (user == null) {
-            writeJson(response, jsonResponse, "error", "Vui lòng đăng nhập để thực hiện chức năng này");
+            writeJson(request, response, jsonResponse, "error", "change_password.server.not_logged_in");
             return;
         }
 
         String code = request.getParameter("code") == null ? "" : request.getParameter("code").trim();
         if (!code.matches("^[0-9]{6}$")) {
-            writeJson(response, jsonResponse, "error", "Mã xác thực gồm 6 chữ số");
+            writeJson(request, response, jsonResponse, "error", "change_password.server.code_invalid_format");
             return;
         }
 
         String sessionEmail = (session != null) ? (String) session.getAttribute("changePasswordEmail") : null;
         if (sessionEmail == null || !sessionEmail.equals(user.getEmail())) {
-            writeJson(response, jsonResponse, "error", "Vui lòng gửi mã xác thực trước");
+            writeJson(request, response, jsonResponse, "error", "change_password.server.send_first");
             return;
         }
 
         boolean verified = authService.verifyChangePasswordCode(user.getEmail(), code);
         if (!verified) {
-            writeJson(response, jsonResponse, "error", "Mã xác thực không đúng hoặc đã hết hạn");
+            writeJson(request, response, jsonResponse, "error", "change_password.server.code_invalid");
             return;
         }
 
         session.setAttribute("changePasswordVerifiedEmail", user.getEmail());
         log.info("Xác thực mã đổi mật khẩu thành công: email={}", user.getEmail());
-        writeJson(response, jsonResponse, "success", "Xác thực email thành công! Hãy nhập mật khẩu mới");
+        writeJson(request, response, jsonResponse, "success", "change_password.server.verify_success");
     }
 
     private void handleChangePasswordForm(HttpServletRequest request, HttpServletResponse response)
@@ -148,7 +149,7 @@ public class ChangePassController extends HttpServlet {
 
         String verifiedEmail = (session != null) ? (String) session.getAttribute("changePasswordVerifiedEmail") : null;
         if (verifiedEmail == null || !verifiedEmail.equalsIgnoreCase(user.getEmail())) {
-            request.setAttribute("error", "Vui lòng xác thực email trước khi đổi mật khẩu");
+            request.setAttribute("error", I18nUtil.message(request, "change_password.server.email_before_change"));
             renderPage(request, response);
             return;
         }
@@ -166,9 +167,9 @@ public class ChangePassController extends HttpServlet {
                     "CREDENTIAL",
                     AuditLogService.describe("reason", "current_password_invalid")
             );
-            request.setAttribute("error", "Mật khẩu hiện tại không đúng");
+            request.setAttribute("error", I18nUtil.message(request, "change_password.server.current_invalid"));
         } else if (newPassword == null || newPassword.length() < 8) {
-            request.setAttribute("error", "Mật khẩu mới phải từ 8 ký tự trở lên");
+            request.setAttribute("error", I18nUtil.message(request, "change_password.server.new_min"));
         } else if (!newPassword.equals(confirmPassword)) {
             AuditLogService.failure(
                     ChangePassController.class,
@@ -178,7 +179,7 @@ public class ChangePassController extends HttpServlet {
                     "CREDENTIAL",
                     AuditLogService.describe("reason", "confirmation_mismatch")
             );
-            request.setAttribute("error", "Mật khẩu xác nhận không khớp");
+            request.setAttribute("error", I18nUtil.message(request, "change_password.server.confirm_mismatch"));
         } else if (newPassword.length() < 8) {
             AuditLogService.failure(
                     ChangePassController.class,
@@ -188,7 +189,7 @@ public class ChangePassController extends HttpServlet {
                     "CREDENTIAL",
                     AuditLogService.describe("reason", "password_too_short")
             );
-            request.setAttribute("error", "Mật khẩu mới phải từ 8 ký tự trở lên");
+            request.setAttribute("error", I18nUtil.message(request, "change_password.server.new_min"));
         } else {
             boolean updated = userDAOImpl.updatePassword(user.getId().intValue(), newPassword);
 
@@ -201,7 +202,7 @@ public class ChangePassController extends HttpServlet {
                         "CREDENTIAL",
                         AuditLogService.describe("result", "updated")
                 );
-                request.setAttribute("success", "Đổi mật khẩu thành công");
+                request.setAttribute("success", I18nUtil.message(request, "change_password.server.update_success"));
                 if (session != null) {
                     session.removeAttribute("changePasswordEmail");
                     session.removeAttribute("changePasswordVerifiedEmail");
@@ -215,7 +216,7 @@ public class ChangePassController extends HttpServlet {
                         "CREDENTIAL",
                         AuditLogService.describe("reason", "update_failed")
                 );
-                request.setAttribute("error", "Có lỗi xảy ra, vui lòng thử lại");
+                request.setAttribute("error", I18nUtil.message(request, "change_password.server.update_failed"));
             }
         }
 
@@ -224,7 +225,7 @@ public class ChangePassController extends HttpServlet {
 
     private void renderPage(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setAttribute("pageTitle", "Đổi mật khẩu");
+        applyPageAttributes(request);
         request.setAttribute("pageCss", "account/account-layout.css");
         request.setAttribute("contentCss", "account/profile-form.css");
         request.setAttribute("pageJs", "account/change-password.js");
@@ -250,5 +251,16 @@ public class ChangePassController extends HttpServlet {
         jsonResponse.addProperty("message", message);
         PrintWriter out = response.getWriter();
         out.print(jsonResponse.toString());
+    }
+
+    private void writeJson(HttpServletRequest request, HttpServletResponse response, JsonObject jsonResponse, String status, String messageKey)
+            throws IOException {
+        writeJson(response, jsonResponse, status, I18nUtil.message(request, messageKey));
+    }
+
+    private void applyPageAttributes(HttpServletRequest request) {
+        request.setAttribute("pageTitleKey", "change_password.page.title");
+        request.setAttribute("pageTitle", I18nUtil.message(request, "change_password.page.title"));
+        request.setAttribute("accountActive", "change-password");
     }
 }

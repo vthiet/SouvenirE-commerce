@@ -3,11 +3,17 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
 <c:if test="${not empty p}">
+    <fmt:message var="productDetailLabel" key="product.view_detail">
+        <fmt:param value="${p.name}"/>
+    </fmt:message>
+    <fmt:message var="productRatingLabel" key="product.avg_rating">
+        <fmt:param value="${p.avgRating}"/>
+    </fmt:message>
     <article class="product-card">
 
         <a class="product-card__link"
            href="${pageContext.request.contextPath}/product?id=${p.id}"
-           aria-label="Xem chi tiết ${p.name}">
+           aria-label="<c:out value='${productDetailLabel}'/>">
 
             <div class="product-card__media">
                 <c:url var="productImage" value="${p.image}"/>
@@ -19,7 +25,7 @@
 
                 <c:if test="${p.discountPercent != null && p.discountPercent > 0}">
                     <span class="product-card__badge">
-                        SALE
+                        <fmt:message key="product.sale"/>
                     </span>
                 </c:if>
             </div>
@@ -58,10 +64,12 @@
 
                 <div class="product-card__meta">
                     <span>
-                        Đã bán ${p.totalSold}
+                        <fmt:message key="product.sold">
+                            <fmt:param value="${p.totalSold}"/>
+                        </fmt:message>
                     </span>
 
-                    <span class="rating" aria-label="Đánh giá trung bình ${p.avgRating}">
+                    <span class="rating" aria-label="<c:out value='${productRatingLabel}'/>">
                         <i class="fa-solid fa-star" aria-hidden="true"></i>
 
                         <fmt:formatNumber value="${p.avgRating}"

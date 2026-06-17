@@ -2,6 +2,9 @@
  * Add to Cart Handler with Login Check and Toast Notification
  */
 
+const siteI18n = document.getElementById('siteI18n')?.dataset || {};
+const text = (key, fallback = '') => siteI18n[key] || fallback;
+
 // Show toast notification
 function showToast(message, type = 'info') {
     // Remove existing toast if any
@@ -55,7 +58,7 @@ function addToCartAjax(productId, quantity, contextPath) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast(data.message, 'success');
+            showToast(data.message || text('cartAddSuccess', 'The product has been added to your cart'), 'success');
             // Update cart count if element exists
             const cartCountElements = document.querySelectorAll('.cart-count, .cart-quantity');
             cartCountElements.forEach(el => {
@@ -70,12 +73,12 @@ function addToCartAjax(productId, quantity, contextPath) {
                 window.location.href = `${contextPath}/login`;
             }, 1500);
         } else {
-            showToast(data.message, 'error');
+            showToast(data.message || text('cartAddToCartError', 'Something went wrong while adding the product to cart'), 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('Có lỗi xảy ra khi thêm vào giỏ hàng', 'error');
+        showToast(text('cartAddToCartError', 'Something went wrong while adding the product to cart'), 'error');
     });
 }
 

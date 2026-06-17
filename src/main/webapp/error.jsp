@@ -1,7 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
-    request.setAttribute("pageTitle", "INOLA | Lỗi");
+    request.setAttribute("pageTitleKey", "error.page.title");
     request.setAttribute("pageCss", "error-page.css");
     request.setAttribute("contentPage", "/WEB-INF/views/error-content.jsp");
 

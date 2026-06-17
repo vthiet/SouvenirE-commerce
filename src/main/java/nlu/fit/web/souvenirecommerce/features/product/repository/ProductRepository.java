@@ -44,4 +44,44 @@ public class ProductRepository extends AbsBaseRepository<Long, Product> {
                 .setMaxResults(limit)
                 .getResultList();
     }
+
+    public List<Product> findAllForStockImport() {
+        return getSession()
+                .createQuery("""
+                        select p
+                        from Product p
+                        left join fetch p.category
+                        order by p.stockQuantity asc, p.name asc, p.id desc
+                        """, Product.class)
+                .getResultList();
+    }
+
+    public List<Product> findLowStockProducts(int threshold, int limit) {
+        if (threshold < 0 || limit <= 0) {
+            return List.of();
+        }
+        return getSession()
+                .createQuery("""
+                        select p
+                        from Product p
+                        left join fetch p.category
+                        where p.stockQuantity <= :threshold
+                        order by p.stockQuantity asc, p.name asc, p.id desc
+                        """, Product.class)
+                .setParameter("threshold", threshold)
+                .setMaxResults(limit)
+                .getResultList();
+    }
+
+    public long countLowStockProducts(int threshold) {
+        Long count = getSession()
+                .createQuery("""
+                        select count(p)
+                        from Product p
+                        where p.stockQuantity <= :threshold
+                        """, Long.class)
+                .setParameter("threshold", threshold)
+                .uniqueResult();
+        return count == null ? 0L : count;
+    }
 }
