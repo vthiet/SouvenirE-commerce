@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
@@ -74,9 +75,7 @@ public class VnPayCreatePaymentServlet extends HttpServlet {
                     AuditLogService.describe("orderId", request.getParameter("orderId"), "reason", e.getClass().getSimpleName(), "message", e.getMessage())
             );
             request.setAttribute("paymentStatus", "FAILED");
-            request.setAttribute("paymentMessage", e.getMessage() == null
-                    ? "Không thể tạo lại giao dịch VNPay."
-                    : e.getMessage());
+            request.setAttribute("paymentMessage", I18nUtil.message(request, "payment.server.create_failed"));
             request.getRequestDispatcher("/WEB-INF/views/payment/result.jsp").forward(request, response);
         }
     }

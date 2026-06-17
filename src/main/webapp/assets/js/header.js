@@ -18,11 +18,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const stickyBar = document.querySelector(".header-menu-bar, .header-breadcrumb");
     const stickySpacer = document.createElement("div");
     const recentSearchKey = "inolaRecentSearches";
+    const siteI18n = document.getElementById("siteI18n");
+    const i18n = {
+        searchRecent: siteI18n?.dataset.searchRecent || "Tìm kiếm gần đây",
+        searchClearAll: siteI18n?.dataset.searchClearAll || "Xóa tất cả",
+        searchEmptyRecent: siteI18n?.dataset.searchEmptyRecent || "Không có từ khóa tìm kiếm gần đây",
+        searchEmptySuggestions: siteI18n?.dataset.searchEmptySuggestions || "Không có gợi ý phù hợp",
+        searchMeta: siteI18n?.dataset.searchMeta || "Tìm kiếm",
+        cartEmpty: siteI18n?.dataset.cartEmpty || "Giỏ hàng trống",
+        cartRecent: siteI18n?.dataset.cartRecent || "Sản phẩm mới thêm",
+        cartView: siteI18n?.dataset.cartView || "Xem giỏ hàng",
+        cartCountTemplate: siteI18n?.dataset.cartCountTemplate || "{0} sản phẩm trong giỏ hàng"
+    };
     let searchTimer = null;
     let stickyThreshold = 0;
 
+    function getLocale() {
+        const language = (document.documentElement.lang || "vi").toLowerCase();
+        return language.startsWith("en") ? "en-US" : "vi-VN";
+    }
+
     function formatCurrency(value) {
-        return new Intl.NumberFormat("vi-VN").format(Number(value) || 0) + " đ";
+        return new Intl.NumberFormat(getLocale()).format(Number(value) || 0) + " ₫";
+    }
+
+    function formatTemplate(template, value) {
+        return String(template || "{0}").replace("{0}", value);
     }
 
     function escapeHtml(value) {
@@ -138,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <i class="fa-solid fa-magnifying-glass"></i>
                         <i class="fa-solid fa-pencil"></i>
                     </div>
-                    <p>Không có từ khóa tìm kiếm gần đây</p>
+                    <p>${escapeHtml(i18n.searchEmptyRecent)}</p>
                 </div>
             `;
             return;
@@ -162,7 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const suggestions = Array.isArray(items) ? items : [];
         if (suggestions.length === 0) {
-            searchList.innerHTML = `<div class="header-search-empty">Không có gợi ý phù hợp</div>`;
+            searchList.innerHTML = `<div class="header-search-empty">${escapeHtml(i18n.searchEmptySuggestions)}</div>`;
             return;
         }
 
@@ -172,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="header-search-row" data-suggestion-search="${name}">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <strong>${name}</strong>
-                    <span class="search-row-meta">Search</span>
+                    <span class="search-row-meta">${escapeHtml(i18n.searchMeta)}</span>
                 </div>
             `;
         }).join("");
@@ -227,10 +248,11 @@ document.addEventListener("DOMContentLoaded", () => {
                         <i class="fa-solid fa-cart-shopping"></i>
                         <i class="fa-solid fa-star"></i>
                     </div>
-                    <p>Giỏ hàng trống</p>
+                    <p>${escapeHtml(i18n.cartEmpty)}</p>
                 </div>
             `;
         } else {
+            const formattedCount = new Intl.NumberFormat(getLocale()).format(cartCount);
             const itemHtml = items.map((item) => {
                 const itemName = escapeHtml(item.name);
                 const imageUrl = escapeHtml(item.imageUrl || "");
@@ -247,13 +269,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }).join("");
 
             cartPreviewContent.innerHTML = `
-                <h3>Sản phẩm mới thêm</h3>
+                <h3>${escapeHtml(i18n.cartRecent)}</h3>
                 <div class="cart-preview-list">
                     ${itemHtml}
                 </div>
                 <div class="cart-preview-footer">
-                    <span>${cartCount} Sản phẩm trong giỏ hàng</span>
-                    <a href="${contextPath}/cart">Xem giỏ hàng</a>
+                    <span>${escapeHtml(formatTemplate(i18n.cartCountTemplate, formattedCount))}</span>
+                    <a href="${contextPath}/cart">${escapeHtml(i18n.cartView)}</a>
                 </div>
             `;
         }

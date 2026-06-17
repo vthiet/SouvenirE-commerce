@@ -75,7 +75,7 @@
                             <c:set var="resolvedImageUrl" value="${p.imageUrl}" />
                             <c:choose>
                                 <c:when test="${empty p.imageUrl}">
-                                    <c:set var="resolvedImageUrl" value="https://placehold.co/50x50?text=No+Image" />
+                                    <c:set var="resolvedImageUrl" value="https://placehold.co/50x50?text=Không+có+ảnh" />
                                 </c:when>
                                 <c:when test="${fn:startsWith(p.imageUrl, 'http://') or fn:startsWith(p.imageUrl, 'https://') or fn:startsWith(p.imageUrl, 'data:')}">
                                     <c:set var="resolvedImageUrl" value="${p.imageUrl}" />
@@ -93,7 +93,7 @@
                                     <img src="${resolvedImageUrl}"
                                          alt="${p.name}"
                                          class="product-thumb"
-                                         onerror="this.src='https://placehold.co/50x50?text=No+Image'">
+                                         onerror="this.src='https://placehold.co/50x50?text=Không+có+ảnh'">
                                 </td>
                                 <td class="product-name">${p.name}</td>
                                 <td>
@@ -251,7 +251,7 @@
 
                         <div class="product-preview-card">
                             <div class="product-preview-image-wrap">
-                                <img id="productPreviewImage" src="https://placehold.co/640x420?text=Preview" alt="Xem trước sản phẩm" class="product-preview-image">
+                                <img id="productPreviewImage" src="https://placehold.co/640x420?text=Xem+trước" alt="Xem trước sản phẩm" class="product-preview-image">
                             </div>
                             <div class="product-preview-copy">
                                 <strong id="productPreviewName">Xem trước sản phẩm</strong>
@@ -300,7 +300,7 @@
         const value = (imageUrl || '').trim();
 
         if (!value) {
-            return 'https://placehold.co/640x420?text=Preview';
+            return 'https://placehold.co/640x420?text=Xem+trước';
         }
 
         if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) {
@@ -419,7 +419,7 @@
         if (data.image) {
             previewImage.src = normalizeImageUrl(data.image);
         } else {
-            previewImage.src = 'https://placehold.co/640x420?text=Preview';
+            previewImage.src = 'https://placehold.co/640x420?text=Xem+trước';
         }
     }
 

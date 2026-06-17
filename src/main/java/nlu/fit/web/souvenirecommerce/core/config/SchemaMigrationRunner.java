@@ -31,6 +31,7 @@ public final class SchemaMigrationRunner {
              Statement statement = connection.createStatement()) {
             migrateUserPasswordColumn(connection, statement);
             ensureUniqueUserPhone(connection, statement);
+            ensureProductLocalizationColumns(connection, statement);
             ensureInnoDBStorageEngine(connection, statement);
         } catch (SQLException e) {
             throw new IllegalStateException("Database schema migration failed", e);
@@ -73,6 +74,33 @@ public final class SchemaMigrationRunner {
 
         statement.executeUpdate("create unique index uk_users_phone on users (phone)");
         log.info("Created unique index uk_users_phone on users.phone");
+    }
+
+    private static void ensureProductLocalizationColumns(Connection connection, Statement statement) throws SQLException {
+        if (!tableExists(connection, "products")) {
+            return;
+        }
+
+        java.util.List<String> alterations = new java.util.ArrayList<>();
+
+        if (!columnExists(connection, "products", "name_en")) {
+            alterations.add("ADD COLUMN name_en VARCHAR(255) NULL AFTER name");
+        }
+        if (!columnExists(connection, "products", "description_en")) {
+            alterations.add("ADD COLUMN description_en TEXT NULL AFTER description");
+        }
+        if (!columnExists(connection, "products", "short_description_en")) {
+            alterations.add("ADD COLUMN short_description_en TEXT NULL AFTER short_description");
+        }
+
+        if (!alterations.isEmpty()) {
+            statement.executeUpdate("ALTER TABLE products " + String.join(", ", alterations));
+            log.info("Added localized product columns: {}", String.join(", ", alterations));
+        }
+
+        statement.executeUpdate("ALTER TABLE products MODIFY COLUMN description_en TEXT NULL");
+        statement.executeUpdate("ALTER TABLE products MODIFY COLUMN short_description_en TEXT NULL");
+        log.info("Normalized localized product text columns to TEXT");
     }
 
     private static boolean hasDuplicateUserPhones(Connection connection) throws SQLException {

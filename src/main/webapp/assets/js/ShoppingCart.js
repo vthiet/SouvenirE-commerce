@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const contextPath = document.querySelector('meta[name="context-path"]')?.content || "";
+    const cartI18n = document.getElementById("cartI18n")?.dataset || {};
     const selectAll = document.getElementById("selectAllCartItems");
     const shopCheckbox = document.querySelector(".shop-checkbox");
     const checkoutButton = document.getElementById("checkoutButton");
@@ -12,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let toastTimer = null;
 
     const formatVND = (value) => `${Number(value || 0).toLocaleString("vi-VN")} đ`;
+    const text = (key, fallback = "") => cartI18n[key] || fallback;
 
     function getCards() {
         return Array.from(document.querySelectorAll(".cart-item-card"));
@@ -120,8 +122,9 @@ document.addEventListener("DOMContentLoaded", () => {
         currentContainer.outerHTML = `
             <div class="cart-empty-state" id="cartEmptyState">
                 <i class="fa-solid fa-cart-shopping"></i>
-                <p>Giỏ hàng của bạn đang trống.</p>
-                <a href="${contextPath}/home">Tiếp tục mua sắm</a>
+                <p>${text("emptyTitle", "")}</p>
+                <span>${text("emptyDesc", "")}</span>
+                <a href="${contextPath}/home">${text("emptyCta", "")}</a>
             </div>
         `;
     }
@@ -133,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .then((response) => response.ok ? response.json() : null)
             .then((data) => {
                 if (data && data.success === false) {
-                    alert("Không thể xóa sản phẩm. Vui lòng thử lại.");
+                    alert(text("removeFailed", "Could not remove the product. Please try again."));
                     return;
                 }
 
@@ -143,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 updateSelectedSummary();
             })
             .catch(() => {
-                alert("Lỗi kết nối server");
+                alert(text("networkError", "Server connection error"));
             });
     }
 
@@ -184,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (!window.confirm("Bạn có muốn xóa tất cả sản phẩm trong giỏ hàng không?")) {
+        if (!window.confirm(text("removeAllConfirm", "Do you want to remove all products from the cart?"))) {
             return;
         }
 
@@ -222,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updateItemSubtotal(card);
             updateSelectedSummary();
             syncBackend(productId, quantity).catch(() => {
-                alert("Lỗi kết nối server");
+                alert(text("networkError", "Server connection error"));
             });
         }
 

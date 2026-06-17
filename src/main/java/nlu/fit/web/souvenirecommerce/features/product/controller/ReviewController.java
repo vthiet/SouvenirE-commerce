@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.features.product.service.ReviewService;
 import nlu.fit.web.souvenirecommerce.legacy.model.Review;
 
@@ -89,7 +90,7 @@ public class ReviewController extends HttpServlet {
                     "REVIEW",
                     AuditLogService.describe("reason", "not_authenticated")
             );
-            response.getWriter().write("{\"message\":\"Vui lòng đăng nhập để đánh giá\"}");
+            writeMessage(response, request, "review.login_required");
             return;
         }
 
@@ -107,7 +108,7 @@ public class ReviewController extends HttpServlet {
                     "REVIEW",
                     AuditLogService.describe("productId", request.getParameter("productId"), "reason", "invalid_product_id")
             );
-            response.getWriter().write("{\"message\":\"Sản phẩm không hợp lệ\"}");
+            writeMessage(response, request, "review.invalid_product");
             return;
         }
 
@@ -121,7 +122,7 @@ public class ReviewController extends HttpServlet {
                     "REVIEW",
                     AuditLogService.describe("productId", productId, "rating", rating, "reason", "invalid_rating")
             );
-            response.getWriter().write("{\"message\":\"Số sao đánh giá không hợp lệ\"}");
+            writeMessage(response, request, "review.invalid_rating");
             return;
         }
 
@@ -135,7 +136,7 @@ public class ReviewController extends HttpServlet {
                     "REVIEW",
                     AuditLogService.describe("productId", productId, "reason", "comment_too_short")
             );
-            response.getWriter().write("{\"message\":\"Nội dung đánh giá quá ngắn\"}");
+            writeMessage(response, request, "review.comment_too_short");
             return;
         }
 
@@ -149,7 +150,7 @@ public class ReviewController extends HttpServlet {
                     "REVIEW",
                     AuditLogService.describe("productId", productId, "reason", "not_eligible")
             );
-            response.getWriter().write("{\"message\":\"Bạn chỉ có thể đánh giá sản phẩm đã mua\"}");
+            writeMessage(response, request, "review.not_eligible");
             return;
         }
 
@@ -171,7 +172,7 @@ public class ReviewController extends HttpServlet {
                     "REVIEW",
                     AuditLogService.describe("productId", productId, "rating", rating, "reason", "save_failed")
             );
-            response.getWriter().write("{\"message\":\"Không thể gửi đánh giá\"}");
+            writeMessage(response, request, "review.save_failed");
             return;
         }
 
@@ -184,7 +185,7 @@ public class ReviewController extends HttpServlet {
                 "REVIEW",
                 AuditLogService.describe("productId", productId, "rating", rating, "result", "created")
         );
-        response.getWriter().write("{\"message\":\"Đã gửi đánh giá\"}");
+        writeMessage(response, request, "review.success");
     }
 
     private Integer parseInt(String val, Integer def) {
@@ -258,5 +259,18 @@ public class ReviewController extends HttpServlet {
 
     private String resolveActorLabel(Integer userId) {
         return userId == null ? "Guest" : "User#" + userId;
+    }
+
+    private void writeMessage(HttpServletResponse response, HttpServletRequest request, String messageKey) throws IOException {
+        response.getWriter().write("{\"message\":\"" + escapeJson(I18nUtil.message(request, messageKey)) + "\"}");
+    }
+
+    private String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 }

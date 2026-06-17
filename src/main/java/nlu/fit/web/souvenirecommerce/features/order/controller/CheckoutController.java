@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartItemEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
@@ -108,7 +109,7 @@ public class CheckoutController extends HttpServlet {
                     "CHECKOUT",
                     AuditLogService.describe("reason", e.getMessage())
             );
-            request.setAttribute("error", e.getMessage());
+            request.setAttribute("error", localizeCheckoutError(request, e.getMessage()));
             prepareCheckoutHeader(request);
             prepareCheckoutPage(request, user, checkoutCart);
             request.getRequestDispatcher("/WEB-INF/layout/base.jsp").forward(request, response);
@@ -197,7 +198,8 @@ public class CheckoutController extends HttpServlet {
     private void prepareCheckoutHeader(HttpServletRequest request) {
         request.setAttribute("headerMode", "CHECKOUT_FLOW");
         request.setAttribute("checkoutStep", "CHECKOUT");
-        request.setAttribute("pageTitle", "Thanh toán - INOLA");
+        request.setAttribute("pageTitleKey", "checkout.page.title");
+        request.setAttribute("pageTitle", I18nUtil.message(request, "checkout.page.title"));
         request.setAttribute("pageCss", "Payment.css");
         request.setAttribute("pageJs", "payment.js");
         request.setAttribute("enableSelect2", true);
@@ -280,5 +282,48 @@ public class CheckoutController extends HttpServlet {
             if (u instanceof User user) return user;
         }
         return null;
+    }
+
+    private String localizeCheckoutError(HttpServletRequest request, String message) {
+        if (message == null || message.isBlank()) {
+            return I18nUtil.message(request, "checkout.error.generic");
+        }
+
+        return switch (message) {
+            case "Phương thức thanh toán đã chọn hiện không khả dụng." ->
+                    I18nUtil.message(request, "checkout.error.payment_unavailable");
+            case "Sản phẩm không tồn tại" ->
+                    I18nUtil.message(request, "checkout.error.product_missing");
+            case "Không thể tạo đơn hàng" ->
+                    I18nUtil.message(request, "checkout.error.order_create_failed");
+            case "Địa chỉ giao hàng không hợp lệ" ->
+                    I18nUtil.message(request, "checkout.error.address_invalid");
+            case "Vui lòng nhập đầy đủ họ tên, số điện thoại và địa chỉ giao hàng" ->
+                    I18nUtil.message(request, "checkout.error.address_required");
+            case "Vui lòng chọn đầy đủ tỉnh/thành phố, quận/huyện, phường/xã và nhập địa chỉ chi tiết" ->
+                    I18nUtil.message(request, "checkout.error.address_required_full");
+            case "Vui lòng chọn đầy đủ tỉnh/thành phố, phường/xã và nhập địa chỉ chi tiết" ->
+                    I18nUtil.message(request, "checkout.error.address_required_basic");
+            case "Không thể tạo trạng thái đơn hàng" ->
+                    I18nUtil.message(request, "checkout.error.status_create_failed");
+            case "Vui lòng đăng nhập để đặt hàng" ->
+                    I18nUtil.message(request, "checkout.error.login_required");
+            case "Giỏ hàng đang trống" ->
+                    I18nUtil.message(request, "checkout.error.cart_empty");
+            case "Số lượng sản phẩm không hợp lệ" ->
+                    I18nUtil.message(request, "checkout.error.quantity_invalid");
+            case String stockMessage when stockMessage.startsWith("Sản phẩm ") && stockMessage.endsWith(" không đủ tồn kho") ->
+                    I18nUtil.message(request, "checkout.error.stock_insufficient",
+                            stockMessage.substring("Sản phẩm ".length(), stockMessage.length() - " không đủ tồn kho".length()));
+            case "Phương thức thanh toán này chưa được hỗ trợ" ->
+                    I18nUtil.message(request, "checkout.error.payment_gateway_unavailable");
+            case "VNPay chưa được cấu hình. Vui lòng chọn COD hoặc liên hệ quản trị viên." ->
+                    I18nUtil.message(request, "checkout.error.vnpay_unconfigured");
+            case "Không thể tạo giao dịch VNPay cho đơn hàng chưa được lưu." ->
+                    I18nUtil.message(request, "checkout.error.vnpay_unavailable");
+            case "Không thể tạo phiên thanh toán VNPay. Vui lòng thử lại." ->
+                    I18nUtil.message(request, "checkout.error.vnpay_session_failed");
+            default -> I18nUtil.message(request, "checkout.error.generic");
+        };
     }
 }

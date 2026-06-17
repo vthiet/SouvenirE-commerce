@@ -2,6 +2,9 @@ $(document).ready(function () {
     /* Global variables */
     const productId = $('#productId').val();
     const contextPath = $('#contextPath').val();
+    const productDetailI18n = document.getElementById('productDetailI18n')?.dataset || {};
+    const siteI18n = document.getElementById('siteI18n')?.dataset || {};
+    const text = (key, fallback = '') => productDetailI18n[key] || siteI18n[key] || fallback;
 
     let currentPage = 1;
     let currentRating = '';
@@ -30,16 +33,15 @@ $(document).ready(function () {
         }
     }
 
-    function showCartAddedToast() {
-        const productName = $('.product-title').text().trim() || 'Sản phẩm';
+    function showCartAddedToast(message) {
         let $toast = $('#cartAddedToast');
 
         if (!$toast.length) {
             $toast = $(`
                 <div class="cart-action-toast" id="cartAddedToast" hidden>
-                    <strong>Thông báo</strong>
+                    <strong>${text('toastTitle', 'Notification')}</strong>
                     <span></span>
-                    <button type="button" aria-label="Đóng thông báo">
+                    <button type="button" aria-label="${text('toastClose', 'Close notification')}">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
@@ -53,7 +55,7 @@ $(document).ready(function () {
             });
         }
 
-        $toast.find('span').text(`${productName} đã được thêm vào giỏ hàng của bạn`);
+        $toast.find('span').text(message || text('cartAddSuccess', 'The product has been added to your cart'));
         $toast.prop('hidden', false);
 
         clearTimeout($toast.data('timer'));
@@ -82,7 +84,7 @@ $(document).ready(function () {
             success: function (data) {
                 if (data.success) {
                     updateCartPreview(data);
-                    showCartAddedToast();
+                    showCartAddedToast(data.message);
                     return;
                 }
 
@@ -92,10 +94,10 @@ $(document).ready(function () {
                     return;
                 }
 
-                showMessage(data.message || 'Không thể thêm vào giỏ hàng');
+                showMessage(data.message || text('cartAddToCartError', 'Something went wrong while adding the product to cart'));
             },
             error: function () {
-                showMessage('Có lỗi xảy ra khi thêm vào giỏ hàng');
+                showMessage(text('cartAddToCartError', 'Something went wrong while adding the product to cart'));
             }
         });
     });
@@ -162,12 +164,12 @@ $(document).ready(function () {
         const canReview = String($(this).data('can-review')) === 'true';
 
         if (!isLoggedIn) {
-            showMessage('Vui lòng đăng nhập để đánh giá');
+            showMessage(text('reviewLoginRequired', 'Please log in to leave a review'));
             return;
         }
 
         if (!canReview) {
-            showMessage('Bạn chỉ có thể đánh giá sản phẩm đã mua');
+            showMessage(text('reviewNotEligible', 'You can only review purchased products'));
             return;
         }
 
@@ -201,12 +203,12 @@ $(document).ready(function () {
         const comment = $('#reviewText').val().trim();
 
         if (!rating || rating < 1 || rating > 5) {
-            showMessage('Vui lòng chọn số sao đánh giá ⭐');
+            showMessage(text('reviewInvalidRating', 'Invalid review rating'));
             return;
         }
 
         if (comment.length < 5) {
-            showMessage('Nhận xét quá ngắn ❗');
+            showMessage(text('reviewCommentTooShort', 'The review content is too short'));
             return;
         }
 
@@ -219,7 +221,7 @@ $(document).ready(function () {
                 comment: comment
             },
             success: function () {
-                showMessage('Đã gửi đánh giá ✔');
+                showMessage(text('reviewSuccess', 'Review submitted successfully'));
 
                 $('#reviewModal').removeClass('show');
 
@@ -233,12 +235,12 @@ $(document).ready(function () {
                 loadReviews(true);
             },
             error: function (xhr) {
-                let message = 'Không gửi được đánh giá ❌';
+                let message = text('reviewSaveFailed', 'Could not submit the review');
 
                 if (xhr.status === 401) {
-                    message = 'Vui lòng đăng nhập để đánh giá';
+                    message = text('reviewLoginRequired', 'Please log in to leave a review');
                 } else if (xhr.status === 403) {
-                    message = 'Bạn chỉ có thể đánh giá sản phẩm đã mua';
+                    message = text('reviewNotEligible', 'You can only review purchased products');
                 } else if (xhr.responseText) {
                     try {
                         const res = JSON.parse(xhr.responseText);
@@ -247,7 +249,7 @@ $(document).ready(function () {
                             message = res.message;
                         }
                     } catch (e) {
-                        message = 'Không gửi được đánh giá ❌';
+                        message = text('reviewSaveFailed', 'Could not submit the review');
                     }
                 }
 
@@ -288,7 +290,7 @@ $(document).ready(function () {
                 }
             },
             error: function () {
-                showMessage('Không tải được danh sách đánh giá');
+                showMessage(text('reviewLoadFailed', 'Could not load the review list'));
             },
             complete: function () {
                 isLoading = false;

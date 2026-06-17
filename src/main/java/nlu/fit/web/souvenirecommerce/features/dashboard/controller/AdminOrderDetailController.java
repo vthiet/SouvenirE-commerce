@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -194,7 +196,13 @@ public class AdminOrderDetailController extends HttpServlet {
                 order.getNote(),
                 order.getPaymentTransaction() != null ? order.getPaymentTransaction().getMethod().name() : "COD",
                 order.getStatusDescription(),
-                order.getTotalAmount()
+                order.getTotalAmount(),
+                safeMoney(order.getShippingFee()),
+                order.getGhnOrderCode(),
+                order.getGhnStatus(),
+                toDate(order.getGhnUpdatedAt()),
+                toDate(order.getGhnLeadtime()),
+                toDate(order.getGhnFinishDate())
         );
     }
 
@@ -224,7 +232,13 @@ public class AdminOrderDetailController extends HttpServlet {
             String note,
             String paymentMethod,
             String status,
-            BigDecimal totalAmount
+            BigDecimal totalAmount,
+            BigDecimal shippingFee,
+            String ghnOrderCode,
+            String ghnStatus,
+            Date ghnUpdatedAt,
+            Date ghnLeadtime,
+            Date ghnFinishDate
     ) {
         public int getId() { return id; }
         public java.util.Date getOrderDate() { return orderDate; }
@@ -236,6 +250,12 @@ public class AdminOrderDetailController extends HttpServlet {
         public String getPaymentMethod() { return paymentMethod; }
         public String getStatus() { return status; }
         public BigDecimal getTotalAmount() { return totalAmount; }
+        public BigDecimal getShippingFee() { return shippingFee; }
+        public String getGhnOrderCode() { return ghnOrderCode; }
+        public String getGhnStatus() { return ghnStatus; }
+        public Date getGhnUpdatedAt() { return ghnUpdatedAt; }
+        public Date getGhnLeadtime() { return ghnLeadtime; }
+        public Date getGhnFinishDate() { return ghnFinishDate; }
     }
 
     public record OrderItemView(
@@ -250,5 +270,13 @@ public class AdminOrderDetailController extends HttpServlet {
         public Integer getQuantity() { return quantity; }
         public BigDecimal getUnitPrice() { return unitPrice; }
         public BigDecimal getSubtotal() { return subtotal; }
+    }
+
+    private Date toDate(java.time.LocalDateTime value) {
+        return value == null ? null : Date.from(value.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    private BigDecimal safeMoney(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 }

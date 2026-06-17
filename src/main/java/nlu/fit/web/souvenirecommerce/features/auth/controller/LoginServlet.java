@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 import nlu.fit.web.souvenirecommerce.features.auth.Constants;
 import nlu.fit.web.souvenirecommerce.common.utils.RecaptchaUtil;
@@ -71,7 +72,7 @@ public class LoginServlet extends HttpServlet {
         String password = req.getParameter("password");
 
         if (!RecaptchaUtil.verify(req, getServletContext())) {
-            req.setAttribute("error", "Vui lòng xác nhận bạn không phải robot.");
+            req.setAttribute("error", I18nUtil.message(req, "auth.server.login.recaptcha"));
             exposeOAuthUrls(req);
             RecaptchaUtil.expose(req, getServletContext());
             req.getRequestDispatcher("/WEB-INF/views/auth/login.jsp").forward(req, resp);
@@ -118,7 +119,7 @@ public class LoginServlet extends HttpServlet {
                     AuditLogService.describe("reason", "invalid_credentials")
             );
 
-            req.setAttribute("error", "Email, số điện thoại hoặc mật khẩu không đúng");
+            req.setAttribute("error", I18nUtil.message(req, "auth.server.login.invalid_credentials"));
             exposeOAuthUrls(req);
             RecaptchaUtil.expose(req, getServletContext());
 

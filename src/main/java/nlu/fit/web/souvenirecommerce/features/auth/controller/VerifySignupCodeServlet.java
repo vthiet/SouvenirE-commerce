@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 
 import java.io.IOException;
@@ -35,40 +36,40 @@ public class VerifySignupCodeServlet extends HttpServlet {
 
         if (email == null || email.isEmpty()) {
             log.warn("Xác thực mã đăng ký thất bại: email rỗng");
-            writeJson(resp, jsonResponse, "error", "Email không được để trống");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.verify_code.empty"));
             return;
         }
 
         if (!code.matches("^[0-9]{6}$")) {
             log.warn("Xác thực mã đăng ký thất bại: format code sai, email={}", email);
-            writeJson(resp, jsonResponse, "error", "Mã xác thực gồm 6 chữ số");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.verify_code.invalid_format"));
             return;
         }
 
         if (authService.hasEmailExist(email)) {
             log.warn("Xác thực mã đăng ký thất bại: email đã tồn tại {}", email);
-            writeJson(resp, jsonResponse, "error", "Email này đã được đăng ký");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.verify_code.exists"));
             return;
         }
 
         HttpSession session = req.getSession(false);
         if (session == null) {
             log.warn("Xác thực mã đăng ký thất bại: không có session, email={}", email);
-            writeJson(resp, jsonResponse, "error", "Vui lòng gửi mã xác thực trước");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.verify_code.send_first"));
             return;
         }
 
         String sessionEmail = (String) session.getAttribute("signupEmail");
         if (!email.equals(sessionEmail)) {
             log.warn("Xác thực mã đăng ký thất bại: email không khớp session, email={}, sessionEmail={}", email, sessionEmail);
-            writeJson(resp, jsonResponse, "error", "Vui lòng gửi mã xác thực trước");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.verify_code.send_first"));
             return;
         }
 
         boolean verified = authService.verifySignupCode(email, code);
         if (!verified) {
             log.warn("Xác thực mã đăng ký thất bại: code không đúng/hết hạn, email={}", email);
-            writeJson(resp, jsonResponse, "error", "Mã xác thực không đúng");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.verify_code.invalid"));
             return;
         }
 
@@ -82,7 +83,7 @@ public class VerifySignupCodeServlet extends HttpServlet {
                 "ACCOUNT",
                 AuditLogService.describe("result", "verified")
         );
-        writeJson(resp, jsonResponse, "success", "Email đã được xác thực");
+        writeJson(resp, jsonResponse, "success", I18nUtil.message(req, "auth.server.signup.verify_code.success"));
     }
 
     private String normalizeEmail(String email) {

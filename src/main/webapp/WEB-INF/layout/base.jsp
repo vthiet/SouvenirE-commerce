@@ -1,8 +1,12 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+
+<fmt:setLocale value="${requestScope.siteLocale}" scope="request"/>
+<fmt:setBundle basename="messages" scope="request"/>
 
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="${not empty requestScope.siteLocale ? requestScope.siteLocale.language : 'vi'}">
 
 <head>
 
@@ -15,7 +19,14 @@
           content="${pageContext.request.contextPath}">
 
     <title>
-        <c:out value="${empty pageTitle ? 'INOLA' : pageTitle}"/>
+        <c:choose>
+            <c:when test="${not empty pageTitleKey}">
+                <fmt:message key="${pageTitleKey}"/>
+            </c:when>
+            <c:otherwise>
+                <c:out value="${empty pageTitle ? 'INOLA' : pageTitle}"/>
+            </c:otherwise>
+        </c:choose>
     </title>
 
     <!-- ================= FAVICON ================= -->
@@ -36,7 +47,7 @@
 
     <!-- Header -->
     <link rel="stylesheet"
-          href="${pageContext.request.contextPath}/assets/css/layout/header.css?v=11">
+          href="${pageContext.request.contextPath}/assets/css/layout/header.css?v=12">
 
     <!-- Footer -->
     <link rel="stylesheet"
@@ -54,7 +65,7 @@
 
     <c:if test="${not empty pageCss}">
         <link rel="stylesheet"
-              href="${pageContext.request.contextPath}/assets/css/${pageCss}?v=16">
+              href="${pageContext.request.contextPath}/assets/css/${pageCss}?v=17">
     </c:if>
 
     <c:if test="${not empty contentCss}">

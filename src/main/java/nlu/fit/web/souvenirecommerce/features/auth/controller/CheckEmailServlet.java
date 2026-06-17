@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import com.google.gson.JsonObject;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
 
 import java.io.IOException;
@@ -30,36 +31,34 @@ public class CheckEmailServlet extends HttpServlet {
         JsonObject jsonResponse = new JsonObject();
 
         if (email == null || email.trim().isEmpty()) {
-            jsonResponse.addProperty("status", "error");
-            jsonResponse.addProperty("message", "Email không được để trống");
-            out.print(jsonResponse.toString());
+            writeJson(out, jsonResponse, "error", I18nUtil.message(req, "auth.server.check_email.empty"));
             return;
         }
 
-        // Validate email format
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            jsonResponse.addProperty("status", "error");
-            jsonResponse.addProperty("message", "Email không hợp lệ");
-            out.print(jsonResponse.toString());
+            writeJson(out, jsonResponse, "error", I18nUtil.message(req, "auth.server.check_email.invalid"));
             return;
         }
 
-        // Check if email exists
         boolean exists = authService.hasEmailExist(email);
 
         if (exists) {
-            jsonResponse.addProperty("status", "error");
-            jsonResponse.addProperty("message", "Email này đã được đăng ký");
+            writeJson(out, jsonResponse, "error", I18nUtil.message(req, "auth.server.check_email.exists"));
         } else {
             jsonResponse.addProperty("status", "success");
-            jsonResponse.addProperty("message", "Email này có thể sử dụng");
+            jsonResponse.addProperty("message", I18nUtil.message(req, "auth.server.check_email.available"));
             jsonResponse.addProperty("email", email);
+            out.print(jsonResponse.toString());
         }
-
-        out.print(jsonResponse.toString());
     }
 
     private String normalizeEmail(String email) {
         return email == null ? null : email.trim().toLowerCase();
+    }
+
+    private void writeJson(PrintWriter out, JsonObject jsonResponse, String status, String message) {
+        jsonResponse.addProperty("status", status);
+        jsonResponse.addProperty("message", message);
+        out.print(jsonResponse.toString());
     }
 }

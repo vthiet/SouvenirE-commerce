@@ -10,7 +10,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System & Activity Logs | INOLA Admin</title>
+    <title>Nhật ký hệ thống & hoạt động | INOLA Admin</title>
     <link rel="stylesheet" href="${ctx}/assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="${ctx}/assets/vendors/bootstrap-icons/bootstrap-icons.css">
     <link rel="stylesheet" href="${ctx}/assets/css/admin-style.css">
@@ -29,26 +29,8 @@
             <div class="container-fluid px-3 px-lg-4 py-4">
                 <div class="content-header">
                     <div>
-                        <h1>System & Activity Logs</h1>
-                        <p class="text-muted mb-0">Track request traces and user activities such as orders, avatar updates, password changes, and address edits.</p>
-                    </div>
-                </div>
-
-                <div class="card mb-3">
-                    <div class="card-body py-3">
-                        <div class="small text-muted mb-1">Log source đang được đọc</div>
-                        <div class="fw-semibold"><c:out value="${resolvedLogDir}" /></div>
-                        <div class="small text-muted mt-2">
-                            File:
-                            <c:choose>
-                                <c:when test="${empty resolvedLogFile}">
-                                    <span class="text-warning">Không xác định được file log</span>
-                                </c:when>
-                                <c:otherwise>
-                                    <c:out value="${resolvedLogFile}" />
-                                </c:otherwise>
-                            </c:choose>
-                        </div>
+                        <h1>Nhật ký hệ thống & hoạt động</h1>
+                        <p class="text-muted mb-0">Theo dõi nhật ký yêu cầu và các hoạt động của người dùng như đơn hàng, cập nhật ảnh đại diện, đổi mật khẩu và chỉnh sửa địa chỉ.</p>
                     </div>
                 </div>
 
@@ -56,9 +38,9 @@
                     <div class="card-body">
                         <form method="get" action="${ctx}/admin/logs" class="row g-3 align-items-end">
                             <div class="col-12 col-md-2">
-                                <label class="form-label" for="level">Level</label>
+                                <label class="form-label" for="level">Mức độ</label>
                                 <select class="form-select" id="level" name="level">
-                                    <option value="" ${empty selectedLevel ? 'selected' : ''}>All levels</option>
+                                    <option value="" ${empty selectedLevel ? 'selected' : ''}>Tất cả mức độ</option>
                                     <option value="INFO" ${selectedLevel == 'INFO' ? 'selected' : ''}>INFO</option>
                                     <option value="WARN" ${selectedLevel == 'WARN' ? 'selected' : ''}>WARN</option>
                                     <option value="ERROR" ${selectedLevel == 'ERROR' ? 'selected' : ''}>ERROR</option>
@@ -66,30 +48,30 @@
                                 </select>
                             </div>
                             <div class="col-12 col-md-2">
-                                <label class="form-label" for="entryType">Type</label>
+                                <label class="form-label" for="entryType">Loại</label>
                                 <select class="form-select" id="entryType" name="entryType">
-                                    <option value="" ${empty selectedEntryType ? 'selected' : ''}>All entries</option>
-                                    <option value="ACTIVITY" ${selectedEntryType == 'ACTIVITY' ? 'selected' : ''}>Activity</option>
-                                    <option value="SYSTEM" ${selectedEntryType == 'SYSTEM' ? 'selected' : ''}>System</option>
+                                    <option value="" ${empty selectedEntryType ? 'selected' : ''}>Tất cả bản ghi</option>
+                                    <option value="ACTIVITY" ${selectedEntryType == 'ACTIVITY' ? 'selected' : ''}>Hoạt động</option>
+                                    <option value="SYSTEM" ${selectedEntryType == 'SYSTEM' ? 'selected' : ''}>Hệ thống</option>
                                 </select>
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label" for="q">Search</label>
-                                <input type="search" class="form-control" id="q" name="q" value="${fn:escapeXml(query)}" placeholder="Order code, user, action, message">
+                                <label class="form-label" for="q">Tìm kiếm</label>
+                                <input type="search" class="form-control" id="q" name="q" value="${fn:escapeXml(query)}" placeholder="Mã đơn, người dùng, hành động, thông điệp">
                             </div>
                             <div class="col-12 col-md-2">
-                                <label class="form-label" for="limit">Limit</label>
+                                <label class="form-label" for="limit">Số dòng</label>
                                 <input type="number" class="form-control" id="limit" name="limit" value="${limit}" min="25" max="500">
                             </div>
                             <div class="col-12 col-md-2">
-                                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                                <button type="submit" class="btn btn-primary w-100">Lọc</button>
                             </div>
                         </form>
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center my-3">
-                    <div class="text-muted">Showing ${logCount} matching log entries</div>
+                    <div class="text-muted">Đang hiển thị ${logCount} bản ghi phù hợp</div>
                 </div>
 
                 <div class="card">
@@ -97,13 +79,13 @@
                         <table class="data-table">
                             <thead>
                             <tr>
-                                <th>Time</th>
-                                <th>Type</th>
-                                <th>Level</th>
-                                <th>Action</th>
-                                <th>Logger</th>
-                                <th>User</th>
-                                <th>Message</th>
+                                <th>Thời gian</th>
+                                <th>Loại</th>
+                                <th>Mức độ</th>
+                                <th>Hành động</th>
+                                <th>Nguồn log</th>
+                                <th>Người dùng</th>
+                                <th>Thông điệp</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -130,7 +112,7 @@
                             </c:forEach>
                             <c:if test="${empty entries}">
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-5">No log entries matched your filters.</td>
+                                    <td colspan="7" class="text-center text-muted py-5">Không có bản ghi nào khớp với bộ lọc của bạn.</td>
                                 </tr>
                             </c:if>
                             </tbody>

@@ -29,6 +29,10 @@ public final class AuthorizationPolicy {
             return resolveCrudPermission(request, "product", "read");
         }
 
+        if ("/admin/stock-imports".equals(servletPath)) {
+            return resolveCrudPermission(request, "product", "update");
+        }
+
         if ("/admin/categories".equals(servletPath)) {
             return resolveCrudPermission(request, "category", "read");
         }
@@ -39,6 +43,18 @@ public final class AuthorizationPolicy {
 
         if ("/admin/customers".equals(servletPath)) {
             return resolveCrudPermission(request, "customer", "read");
+        }
+
+        if ("/admin/reviews".equals(servletPath) || "/admin/reviews.jsp".equals(servletPath)) {
+            if ("POST".equalsIgnoreCase(request.getMethod())) {
+                String action = safeLower(request.getParameter("action"));
+                String mappedAction = switch (action) {
+                    case "delete", "remove" -> "delete";
+                    default -> "read";
+                };
+                return new RequiredPermission("review", mappedAction, true);
+            }
+            return new RequiredPermission("review", "read", true);
         }
 
         if ("/admin/banners".equals(servletPath) || "/admin/banner".equals(servletPath)) {

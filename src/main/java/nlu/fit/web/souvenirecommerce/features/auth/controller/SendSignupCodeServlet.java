@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.common.utils.EmailUtil;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.HibernateUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.RecaptchaUtil;
 import nlu.fit.web.souvenirecommerce.features.auth.service.AuthService;
@@ -49,7 +50,7 @@ public class SendSignupCodeServlet extends HttpServlet {
                     "EMAIL",
                     AuditLogService.describe("reason", "captcha_failed", "email", email)
             );
-            writeJson(resp, jsonResponse, "error", "Vui lòng xác nhận bạn không phải robot.");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.send_code.captcha"));
             return;
         }
 
@@ -63,7 +64,7 @@ public class SendSignupCodeServlet extends HttpServlet {
                     "EMAIL",
                     AuditLogService.describe("reason", "email_empty")
             );
-            writeJson(resp, jsonResponse, "error", "Email không được để trống");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.send_code.empty"));
             return;
         }
 
@@ -77,7 +78,7 @@ public class SendSignupCodeServlet extends HttpServlet {
                     "EMAIL",
                     AuditLogService.describe("reason", "email_invalid", "email", email)
             );
-            writeJson(resp, jsonResponse, "error", "Email không hợp lệ");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.send_code.invalid"));
             return;
         }
 
@@ -91,7 +92,7 @@ public class SendSignupCodeServlet extends HttpServlet {
                     "EMAIL",
                     AuditLogService.describe("reason", "email_exists", "email", email)
             );
-            writeJson(resp, jsonResponse, "error", "Email này đã được đăng ký");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.send_code.exists"));
             return;
         }
 
@@ -109,7 +110,7 @@ public class SendSignupCodeServlet extends HttpServlet {
                     "EMAIL",
                     AuditLogService.describe("reason", "send_failed", "email", email, "message", e.getMessage())
             );
-            writeJson(resp, jsonResponse, "error", "Không gửi được mã xác thực. Vui lòng kiểm tra cấu hình email");
+            writeJson(resp, jsonResponse, "error", I18nUtil.message(req, "auth.server.signup.send_code.failed"));
             return;
         }
 
@@ -126,7 +127,7 @@ public class SendSignupCodeServlet extends HttpServlet {
                 "EMAIL",
                 AuditLogService.describe("email", email, "expiresAt", String.valueOf(expiresAt))
         );
-        writeJson(resp, jsonResponse, "success", "Mã xác thực đã được gửi tới email của bạn");
+        writeJson(resp, jsonResponse, "success", I18nUtil.message(req, "auth.server.signup.send_code.success"));
     }
 
     private void writeJson(HttpServletResponse resp, JsonObject jsonResponse, String status, String message) throws IOException {

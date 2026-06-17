@@ -1,5 +1,6 @@
 package nlu.fit.web.souvenirecommerce.features.cart.controller;
 
+import com.google.gson.JsonObject;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -7,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 import nlu.fit.web.souvenirecommerce.common.utils.GsonUtil;
 import nlu.fit.web.souvenirecommerce.features.cart.model.CartEntity;
 import nlu.fit.web.souvenirecommerce.features.cart.service.CartService;
@@ -60,12 +62,10 @@ public class AddCartServlet extends HttpServlet {
             if ("XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");
-                response.getWriter().print("""
-                        {
-                          "success": false,
-                          "message": "Không thể thêm sản phẩm vào giỏ hàng"
-                        }
-                        """);
+                JsonObject json = new JsonObject();
+                json.addProperty("success", false);
+                json.addProperty("message", I18nUtil.message(request, "cart.add_failed"));
+                response.getWriter().print(json.toString());
                 return;
             }
             response.sendRedirect(request.getContextPath() + "/home");
@@ -97,7 +97,11 @@ public class AddCartServlet extends HttpServlet {
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
             PrintWriter out = response.getWriter();
-            out.print(GsonUtil.getGson().toJson(cartSummaryService.buildSummary(cart, request.getContextPath())));
+            JsonObject json = GsonUtil.getGson()
+                    .toJsonTree(cartSummaryService.buildSummary(cart, request.getContextPath()))
+                    .getAsJsonObject();
+            json.addProperty("message", I18nUtil.message(request, "cart.add_success"));
+            out.print(json.toString());
             return;
         }
 

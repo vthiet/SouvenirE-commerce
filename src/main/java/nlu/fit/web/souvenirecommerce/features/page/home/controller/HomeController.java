@@ -27,6 +27,7 @@ public class HomeController extends HttpServlet {
 
         request.setAttribute("data", dto);
         request.setAttribute("headerMode", "MENU_BAR");
+        request.setAttribute("pageTitleKey", "page.home.title");
         request.setAttribute("pageTitle", "Trang chủ");
         request.setAttribute("pageCss", "HomePageMain.css");
         request.setAttribute("pageJs", "HomePage.js");

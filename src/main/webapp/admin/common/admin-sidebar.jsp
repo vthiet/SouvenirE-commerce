@@ -7,6 +7,7 @@
     request.setAttribute("canViewOrders", PermissionHelper.hasAnyPermission(request, "order"));
     request.setAttribute("canUpdateOrder", PermissionHelper.hasPermission(request, "order", "update"));
     request.setAttribute("canViewCustomers", PermissionHelper.hasAnyPermission(request, "customer"));
+    request.setAttribute("canViewReviews", PermissionHelper.hasAnyPermission(request, "review"));
     request.setAttribute("canViewCategories", PermissionHelper.hasAnyPermission(request, "category"));
     request.setAttribute("canViewBanners", PermissionHelper.hasAnyPermission(request, "banner"));
     request.setAttribute("canViewSettings", PermissionHelper.hasAnyPermission(request, "settings"));
@@ -34,9 +35,9 @@
 <c:set var="currentAdminUser" value="${not empty sessionScope.user ? sessionScope.user : sessionScope.userInSession}" />
 <c:set var="navActivePage" value="${not empty requestScope.activePage ? requestScope.activePage : param.activePage}" />
 
-<aside class="admin-sidebar" id="adminSidebar" aria-label="Main navigation">
+<aside class="admin-sidebar" id="adminSidebar" aria-label="Điều hướng chính">
     <div class="sidebar-header">
-        <a class="brand-mark" href="${ctx}/admin/dashboard" aria-label="Souvenir Admin dashboard">
+        <a class="brand-mark" href="${ctx}/admin/dashboard" aria-label="Bảng điều khiển quản trị Souvenir">
             <span class="brand-icon"><i class="bi bi-grid-1x2-fill" aria-hidden="true"></i></span>
             <span class="brand-copy">
                 <span class="brand-title">INOLA Admin</span>
@@ -48,54 +49,66 @@
     <nav class="sidebar-nav">
         <a class="nav-link ${navActivePage == 'dashboard' ? 'active' : ''}" href="${ctx}/admin/dashboard" ${navActivePage == 'dashboard' ? 'aria-current="page"' : ''}>
             <span class="nav-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
-            <span class="nav-text">Dashboard</span>
+            <span class="nav-text">Tổng quan</span>
         </a>
         <c:if test="${canViewProducts}">
             <a class="nav-link ${navActivePage == 'products' ? 'active' : ''}" href="${ctx}/admin/products" ${navActivePage == 'products' ? 'aria-current="page"' : ''}>
                 <span class="nav-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
-                <span class="nav-text">Products</span>
+                <span class="nav-text">Sản phẩm</span>
+            </a>
+        </c:if>
+        <c:if test="${canUpdateProduct}">
+            <a class="nav-link ${navActivePage == 'stock-imports' ? 'active' : ''}" href="${ctx}/admin/stock-imports" ${navActivePage == 'stock-imports' ? 'aria-current="page"' : ''}>
+                <span class="nav-icon"><i class="bi bi-box-arrow-in-down" aria-hidden="true"></i></span>
+                <span class="nav-text">Nhập hàng</span>
             </a>
         </c:if>
         <c:if test="${canViewOrders}">
             <a class="nav-link ${navActivePage == 'orders' ? 'active' : ''}" href="${ctx}/admin/orders" ${navActivePage == 'orders' ? 'aria-current="page"' : ''}>
                 <span class="nav-icon"><i class="bi bi-bag-check" aria-hidden="true"></i></span>
-                <span class="nav-text">Orders</span>
+                <span class="nav-text">Đơn hàng</span>
             </a>
         </c:if>
         <c:if test="${canViewCustomers}">
             <a class="nav-link ${navActivePage == 'customers' ? 'active' : ''}" href="${ctx}/admin/customers" ${navActivePage == 'customers' ? 'aria-current="page"' : ''}>
                 <span class="nav-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
-                <span class="nav-text">Customers</span>
+                <span class="nav-text">Khách hàng</span>
+            </a>
+        </c:if>
+        <c:if test="${canViewReviews}">
+            <a class="nav-link ${navActivePage == 'reviews' ? 'active' : ''}" href="${ctx}/admin/reviews" ${navActivePage == 'reviews' ? 'aria-current="page"' : ''}>
+                <span class="nav-icon"><i class="bi bi-star-fill" aria-hidden="true"></i></span>
+                <span class="nav-text">Đánh giá</span>
             </a>
         </c:if>
         <c:if test="${canViewCategories}">
             <a class="nav-link ${navActivePage == 'categories' ? 'active' : ''}" href="${ctx}/admin/categories" ${navActivePage == 'categories' ? 'aria-current="page"' : ''}>
                 <span class="nav-icon"><i class="bi bi-grid-3x3-gap" aria-hidden="true"></i></span>
-                <span class="nav-text">Categories</span>
+                <span class="nav-text">Danh mục</span>
             </a>
         </c:if>
         <c:if test="${canViewBanners}">
             <a class="nav-link ${navActivePage == 'banners' ? 'active' : ''}" href="${ctx}/admin/banner" ${navActivePage == 'banners' ? 'aria-current="page"' : ''}>
                 <span class="nav-icon"><i class="bi bi-images" aria-hidden="true"></i></span>
-                <span class="nav-text">Banners</span>
+                <span class="nav-text">Banner</span>
             </a>
         </c:if>
         <c:if test="${canViewRoles}">
             <a class="nav-link ${navActivePage == 'roles' ? 'active' : ''}" href="${ctx}/admin/roles" ${navActivePage == 'roles' ? 'aria-current="page"' : ''}>
                 <span class="nav-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
-                <span class="nav-text">Roles</span>
+                <span class="nav-text">Phân quyền</span>
             </a>
         </c:if>
         <c:if test="${canViewSettings}">
             <a class="nav-link ${navActivePage == 'settings' ? 'active' : ''}" href="${ctx}/admin/settings" ${navActivePage == 'settings' ? 'aria-current="page"' : ''}>
                 <span class="nav-icon"><i class="bi bi-gear" aria-hidden="true"></i></span>
-                <span class="nav-text">Settings</span>
+                <span class="nav-text">Cài đặt</span>
             </a>
         </c:if>
         <c:if test="${canViewLogs}">
             <a class="nav-link ${navActivePage == 'logs' ? 'active' : ''}" href="${ctx}/admin/logs" ${navActivePage == 'logs' ? 'aria-current="page"' : ''}>
                 <span class="nav-icon"><i class="bi bi-journal-text" aria-hidden="true"></i></span>
-                <span class="nav-text">Logs</span>
+                <span class="nav-text">Nhật ký</span>
             </a>
         </c:if>
     </nav>

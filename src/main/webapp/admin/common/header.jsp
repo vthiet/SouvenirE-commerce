@@ -9,6 +9,6 @@
 
     <div class="user-info">
         <i class="fa-solid fa-bell"></i>
-        <img src="${ctx}/assets/images/logo.png" alt="user">
+        <img src="${ctx}/assets/images/logo.png" alt="Người dùng">
     </div>
 </header>

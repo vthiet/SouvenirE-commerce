@@ -5,6 +5,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import nlu.fit.web.souvenirecommerce.common.utils.I18nUtil;
 
 import java.io.IOException;
 import java.util.Map;
@@ -22,14 +23,14 @@ public class VnPayReturnServlet extends HttpServlet {
         if (!vnPayService.isConfigured()
                 || !VnPayUtil.verifySignature(fields, vnPayService.getHashSecret())) {
             request.setAttribute("paymentStatus", "INVALID");
-            request.setAttribute("paymentMessage", "Không thể xác thực phản hồi từ VNPay.");
+            request.setAttribute("paymentMessage", I18nUtil.message(request, "payment.server.invalid_signature"));
             forwardResult(request, response);
             return;
         }
 
         PaymentCallbackResult result = paymentService.processVnPayCallback(fields);
         request.setAttribute("paymentStatus", result.isSuccessful() ? "SUCCESS" : "FAILED");
-        request.setAttribute("paymentMessage", messageFor(result));
+        request.setAttribute("paymentMessage", messageFor(request, result));
         request.setAttribute("paymentTransaction", result.getTransaction());
         if (result.getTransaction() != null) {
             request.setAttribute("order", result.getTransaction().getOrder());
@@ -37,15 +38,15 @@ public class VnPayReturnServlet extends HttpServlet {
         forwardResult(request, response);
     }
 
-    private String messageFor(PaymentCallbackResult result) {
+    private String messageFor(HttpServletRequest request, PaymentCallbackResult result) {
         return switch (result.getOutcome()) {
             case PROCESSED -> result.isSuccessful()
-                    ? "Giao dịch đã được xác nhận thành công."
-                    : "Giao dịch chưa hoàn tất hoặc đã bị hủy.";
-            case ALREADY_PROCESSED -> "Đơn hàng này đã được thanh toán trước đó.";
-            case ORDER_NOT_FOUND -> "Không tìm thấy đơn hàng tương ứng với giao dịch.";
-            case INVALID_AMOUNT -> "Số tiền thanh toán không khớp với đơn hàng.";
-            case INVALID_REQUEST -> "Phản hồi thanh toán không hợp lệ.";
+                    ? I18nUtil.message(request, "payment.server.processed.success")
+                    : I18nUtil.message(request, "payment.server.processed.failed");
+            case ALREADY_PROCESSED -> I18nUtil.message(request, "payment.server.already_processed");
+            case ORDER_NOT_FOUND -> I18nUtil.message(request, "payment.server.order_not_found");
+            case INVALID_AMOUNT -> I18nUtil.message(request, "payment.server.invalid_amount");
+            case INVALID_REQUEST -> I18nUtil.message(request, "payment.server.invalid_request");
         };
     }
 

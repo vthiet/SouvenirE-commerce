@@ -7,11 +7,12 @@
 --%>
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
 <c:set var="currentUser" value="${not empty sessionScope.currentUser ? sessionScope.currentUser : sessionScope.userInSession}"/>
 
-<aside class="account-sidebar" aria-label="Tài khoản">
+<aside class="account-sidebar" aria-label="<fmt:message key='account.sidebar.aria'/>">
   <div class="account-user">
     <div class="account-avatarUrl">
       <c:choose>
@@ -39,39 +40,39 @@
           method="post"
           enctype="multipart/form-data">
       <label class="avatarUrl-file">
-        <span>Chọn ảnh</span>
+        <span><fmt:message key="account.sidebar.choose_image"/></span>
         <input type="file" name="avatarFile" accept="image/*" required>
       </label>
       <button class="avatarUrl-button" type="submit">
-        <span>Tải lên</span>
+        <span><fmt:message key="account.sidebar.upload"/></span>
       </button>
     </form>
   </div>
 
-  <nav class="account-nav" aria-label="Menu tài khoản">
+  <nav class="account-nav" aria-label="<fmt:message key='account.sidebar.aria'/>">
     <a href="${pageContext.request.contextPath}/user/profile"
-       class="${requestScope.pageTitle eq 'Hồ sơ' ? 'is-active' : ''}">
+       class="${requestScope.accountActive eq 'profile' or requestScope.pageTitle eq 'Hồ sơ' ? 'is-active' : ''}">
       <i class="fa-solid fa-user"></i>
-      <span>Hồ sơ</span>
+      <span><fmt:message key="account.sidebar.profile"/></span>
     </a>
     <a href="${pageContext.request.contextPath}/user/orders"
-       class="${requestScope.pageTitle eq 'Đơn hàng' or requestScope.pageTitle eq 'Chi tiết đơn hàng' ? 'is-active' : ''}">
+       class="${requestScope.accountActive eq 'orders' or requestScope.pageTitle eq 'Đơn hàng' or requestScope.pageTitle eq 'Chi tiết đơn hàng' ? 'is-active' : ''}">
       <i class="fa-solid fa-receipt"></i>
-      <span>Đơn hàng</span>
+      <span><fmt:message key="account.sidebar.orders"/></span>
     </a>
     <a href="${pageContext.request.contextPath}/user/address"
-       class="${requestScope.pageTitle eq 'Địa chỉ' ? 'is-active' : ''}">
+       class="${requestScope.accountActive eq 'address' or requestScope.pageTitle eq 'Địa chỉ' ? 'is-active' : ''}">
       <i class="fa-solid fa-location-dot"></i>
-      <span>Địa chỉ</span>
+      <span><fmt:message key="account.sidebar.address"/></span>
     </a>
     <a href="${pageContext.request.contextPath}/user/change-password"
-       class="${requestScope.pageTitle eq 'Đổi mật khẩu' ? 'is-active' : ''}">
+       class="${requestScope.accountActive eq 'change-password' or requestScope.pageTitle eq 'Đổi mật khẩu' ? 'is-active' : ''}">
       <i class="fa-solid fa-key"></i>
-      <span>Đổi mật khẩu</span>
+      <span><fmt:message key="account.sidebar.change_password"/></span>
     </a>
     <a href="${pageContext.request.contextPath}/logout">
       <i class="fa-solid fa-arrow-right-from-bracket"></i>
-      <span>Đăng xuất</span>
+      <span><fmt:message key="account.sidebar.logout"/></span>
     </a>
   </nav>
 </aside>

@@ -5,6 +5,20 @@
 <input type="hidden" id="productId" value="${data.product.id}">
 <input type="hidden" id="contextPath" value="${pageContext.request.contextPath}">
 
+<div id="productDetailI18n"
+     hidden
+     data-toast-title="<fmt:message key='cart.toast.title'/>"
+     data-toast-close="<fmt:message key='cart.toast.close'/>"
+     data-review-login-required="<fmt:message key='review.login_required'/>"
+     data-review-invalid-product="<fmt:message key='review.invalid_product'/>"
+     data-review-invalid-rating="<fmt:message key='review.invalid_rating'/>"
+     data-review-comment-too-short="<fmt:message key='review.comment_too_short'/>"
+     data-review-not-eligible="<fmt:message key='review.not_eligible'/>"
+     data-review-save-failed="<fmt:message key='review.save_failed'/>"
+     data-review-success="<fmt:message key='review.success'/>"
+     data-review-load-failed="<fmt:message key='review.load_failed'/>">
+</div>
+
 <main class="product-page">
 
     <section class="section">
@@ -38,21 +52,25 @@
 
                         <span class="product-meta-chip product-meta-chip--sold">
                             <i class="fa-solid fa-cart-shopping"></i>
-                            Đã bán ${data.product.totalSold}
+                            <fmt:message key="product.detail.sold_prefix">
+                                <fmt:param value="${data.product.totalSold}"/>
+                            </fmt:message>
                         </span>
 
                         <c:choose>
                             <c:when test="${data.product.stockQuantity > 0}">
                                 <span class="product-meta-chip product-meta-chip--stock">
                                     <i class="fa-solid fa-box"></i>
-                                    Còn ${data.product.stockQuantity} sản phẩm
+                                    <fmt:message key="product.detail.stock_prefix">
+                                        <fmt:param value="${data.product.stockQuantity}"/>
+                                    </fmt:message>
                                 </span>
                             </c:when>
 
                             <c:otherwise>
                                 <span class="product-meta-chip product-meta-chip--out">
                                     <i class="fa-solid fa-circle-exclamation"></i>
-                                    Hết hàng
+                                    <fmt:message key="product.detail.out_of_stock"/>
                                 </span>
                             </c:otherwise>
                         </c:choose>
@@ -91,21 +109,21 @@
                     <div class="product-shipping">
                         <div class="product-shipping__label">
                             <i class="fa-solid fa-truck-fast"></i>
-                            <span>Vận chuyển</span>
+                            <span><fmt:message key="product.detail.shipping.title"/></span>
                         </div>
 
                         <div class="product-shipping__content">
                             <c:choose>
                                 <c:when test="${not empty shippingAddressText}">
                                     <p>
-                                        Giao đến:
+                                        <fmt:message key="product.detail.shipping.to"/>
                                         <strong>${shippingAddressText}</strong>
                                     </p>
 
                                     <c:choose>
                                         <c:when test="${not empty shippingFeeAmount}">
                                             <p>
-                                                Phí ship dự kiến:
+                                                <fmt:message key="product.detail.shipping.estimated"/>
                                                 <strong>
                                                     <fmt:formatNumber value="${shippingFeeAmount}"/>đ
                                                 </strong>
@@ -114,20 +132,20 @@
 
                                         <c:otherwise>
                                             <p>
-                                                Phí ship tham khảo:
+                                                <fmt:message key="product.detail.shipping.reference"/>
                                                 <strong>22.000đ - 55.000đ</strong>
                                             </p>
-                                            <span>Địa chỉ hiện tại chưa đủ mã GHN để tính phí chính xác</span>
+                                            <span><fmt:message key="product.detail.shipping.address_not_enough"/></span>
                                         </c:otherwise>
                                     </c:choose>
                                 </c:when>
 
                                 <c:otherwise>
                                     <p>
-                                        Phí ship tham khảo:
+                                        <fmt:message key="product.detail.shipping.reference"/>
                                         <strong>22.000đ - 55.000đ</strong>
                                     </p>
-                                    <span>Đăng nhập hoặc chọn địa chỉ để xem phí chính xác</span>
+                                    <span><fmt:message key="product.detail.shipping.login_or_address"/></span>
                                 </c:otherwise>
                             </c:choose>
                         </div>
@@ -155,7 +173,7 @@
 
                             <button type="submit" class="add-cart">
                                 <i class="fa-solid fa-cart-shopping"></i>
-                                Thêm vào giỏ hàng
+                                <fmt:message key="product.detail.add_to_cart"/>
                             </button>
                         </div>
 
@@ -163,7 +181,7 @@
                                 name="buyNow"
                                 value="true"
                                 class="buy-now-full">
-                            MUA NGAY
+                            <fmt:message key="product.detail.buy_now"/>
                         </button>
 
                     </form>
@@ -171,12 +189,11 @@
                     <div class="store-note-block">
                         <p class="store-note-title">
                             <i class="fa-solid fa-box"></i>
-                            Lưu ý từ cửa hàng
+                            <fmt:message key="product.detail.store_note_title"/>
                         </p>
 
                         <p class="store-note-text">
-                            Với đơn hàng số lượng lớn (từ 20 sản phẩm trở lên),
-                            vui lòng liên hệ hotline hoặc Zalo INOLA để nhận báo giá ưu đãi.
+                            <fmt:message key="product.detail.store_note_text"/>
                         </p>
                     </div>
 
@@ -193,7 +210,7 @@
         <div class="main-container">
 
             <div class="info-header">
-                <h2 class="info-title">THÔNG TIN CHI TIẾT</h2>
+                <h2 class="info-title"><fmt:message key="product.detail.info_title"/></h2>
             </div>
 
             <c:if test="${not empty data.product.description}">
@@ -216,7 +233,7 @@
             </c:if>
 
             <c:if test="${empty data.specifications}">
-                <p class="empty-text">Chưa có thông tin chi tiết.</p>
+                <p class="empty-text"><fmt:message key="product.detail.no_details"/></p>
             </c:if>
 
         </div>
@@ -227,7 +244,7 @@
     <section class="section product-reviews">
         <div class="main-container">
 
-            <h2 class="reviews-main-title">Đánh giá</h2>
+            <h2 class="reviews-main-title"><fmt:message key="product.detail.reviews_title"/></h2>
 
             <div class="review-content-wrap">
 
@@ -236,7 +253,9 @@
                         <p class="average-rating">${data.avgRating}</p>
 
                         <p class="review-count">
-                            Dựa trên ${data.totalReviews} đánh giá
+                            <fmt:message key="product.detail.based_on_reviews">
+                                <fmt:param value="${data.totalReviews}"/>
+                            </fmt:message>
                         </p>
 
                         <div class="rating-breakdown">
@@ -318,14 +337,14 @@
                             class="review-action-btn"
                             data-logged-in="${isLoggedIn}"
                             data-can-review="${canReview}">
-                        Đánh giá sản phẩm
+                        <fmt:message key="product.detail.review_action"/>
                     </button>
                 </div>
 
                 <div class="review-mright">
 
                     <div class="review-filter-bar">
-                        <button type="button" class="filter-btn active" data-rating="">Tất cả</button>
+                        <button type="button" class="filter-btn active" data-rating=""><fmt:message key="product.detail.review_filter.all"/></button>
                         <button type="button" class="filter-btn" data-rating="5">5 ★</button>
                         <button type="button" class="filter-btn" data-rating="4">4 ★</button>
                         <button type="button" class="filter-btn" data-rating="3">3 ★</button>
@@ -333,15 +352,15 @@
                         <button type="button" class="filter-btn" data-rating="1">1 ★</button>
 
                         <select class="sort-select">
-                            <option value="newest">Mới nhất</option>
-                            <option value="oldest">Cũ nhất</option>
+                            <option value="newest"><fmt:message key="product.detail.review_filter.newest"/></option>
+                            <option value="oldest"><fmt:message key="product.detail.review_filter.oldest"/></option>
                         </select>
                     </div>
 
                     <div id="reviewContainer"></div>
 
                     <button id="loadMoreReview" type="button">
-                        Xem thêm
+                        <fmt:message key="product.detail.review_load_more"/>
                     </button>
 
                 </div>
@@ -356,7 +375,7 @@
 <section class="section related-products">
     <div class="main-container">
 
-        <h2 class="related-title">Sản phẩm liên quan</h2>
+        <h2 class="related-title"><fmt:message key="product.detail.related_title"/></h2>
 
         <div class="related-grid">
             <c:forEach var="p" items="${data.relatedProductCards}">
@@ -382,7 +401,7 @@
     <div class="review-box">
         <button type="button" class="review-close">&times;</button>
 
-        <h3>Đánh giá sản phẩm</h3>
+        <h3><fmt:message key="product.detail.review_modal_title"/></h3>
 
         <div class="rating-stars" data-rating="0">
             <i data-value="1">★</i>
@@ -394,10 +413,10 @@
 
         <textarea id="reviewText"
                   maxlength="700"
-                  placeholder="Viết nhận xét của bạn (tối đa 700 ký tự)"></textarea>
+                  placeholder="<fmt:message key='product.detail.review_placeholder'/>"></textarea>
 
         <button type="button" class="submit-review">
-            Gửi đánh giá
+            <fmt:message key="product.detail.submit_review"/>
         </button>
     </div>
 </div>

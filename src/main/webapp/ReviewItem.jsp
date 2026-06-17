@@ -4,7 +4,7 @@
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
 <c:if test="${empty reviews}">
-    <p class="text-muted">Chưa có đánh giá nào cho sản phẩm này.</p>
+    <p class="text-muted"><fmt:message key="review.empty"/></p>
 </c:if>
 
 <c:forEach var="r" items="${reviews}">
