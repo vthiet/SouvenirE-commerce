@@ -19,16 +19,18 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.Locale;
 
 public class GhnService implements ShippingProvider {
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
-    private final String baseUrl = property("ghn.base_url", "https://dev-online-gateway.ghn.vn/shiip/public-api");
+    private final String mode = normalizedMode(property("ghn.mode", "simulation"));
+    private final boolean simulation = "simulation".equals(mode);
+    private final String baseUrl = resolveBaseUrl();
     private final String token = property("ghn.token", "");
     private final String shopId = property("ghn.shop_id", "");
-    private final boolean simulation = !"live".equalsIgnoreCase(property("ghn.mode", "simulation"));
 
     public boolean isSimulation() {
         return simulation;
@@ -59,7 +61,7 @@ public class GhnService implements ShippingProvider {
         if (simulation) {
             return calculateSimulationFee(toDistrictId);
         }
-        requireLiveShop();
+        requireApiCredentials();
         if (toDistrictId == null || toWardCode == null || toWardCode.isBlank()) {
             throw new IOException("Địa chỉ nhận hàng chưa có mã GHN.");
         }
@@ -108,7 +110,7 @@ public class GhnService implements ShippingProvider {
                     LocalDateTime.now()
             );
         }
-        requireLiveShop();
+        requireApiCredentials();
 
         Address address = order.getAddress();
         if (address == null || address.getGhnDistrictId() == null || address.getGhnWardCode() == null
@@ -178,7 +180,7 @@ public class GhnService implements ShippingProvider {
             LocalDateTime finishDate = "delivered".equals(nextStatus) ? LocalDateTime.now() : null;
             return new ShippingOrderResult(orderCode, nextStatus, LocalDateTime.now().plusDays(3), finishDate, LocalDateTime.now());
         }
-        requireLiveShop();
+        requireApiCredentials();
 
         JsonObject body = new JsonObject();
         body.addProperty("order_code", orderCode);
@@ -220,7 +222,7 @@ public class GhnService implements ShippingProvider {
         return services.get(0).getAsJsonObject().get("service_id").getAsInt();
     }
 
-    private void requireLiveShop() throws IOException {
+    private void requireApiCredentials() throws IOException {
         if (token.isBlank()) {
             throw new IOException("Thiếu GHN token trong cấu hình.");
         }
@@ -351,6 +353,17 @@ public class GhnService implements ShippingProvider {
     private String property(String key, String fallback) {
         String value = ApplicationLoader.get(key);
         return value == null || value.isBlank() || value.startsWith("YOUR_") ? fallback : value.trim();
+    }
+
+    private String resolveBaseUrl() {
+        if ("live".equals(mode)) {
+            return property("ghn.base_url", "https://online-gateway.ghn.vn/shiip/public-api");
+        }
+        return property("ghn.sandbox_base_url", "https://dev-online-gateway.ghn.vn/shiip/public-api");
+    }
+
+    private String normalizedMode(String value) {
+        return value == null ? "simulation" : value.trim().toLowerCase(Locale.ROOT);
     }
 
 
