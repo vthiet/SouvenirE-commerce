@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 
 /**
  * Service to initialize default roles and permissions on application startup.
- * Creates 4 default roles: Super Admin, Admin, Sales, and User
+ * Creates the default roles and keeps their permissions in sync.
  */
 public class RoleInitializationService {
     private static final Logger logger = Logger.getLogger(RoleInitializationService.class.getName());
@@ -69,11 +69,11 @@ public class RoleInitializationService {
 
         // Admin - All except role management
         assignPermissionsByResourceToRole("Admin",
-                "dashboard", "product", "category", "order", "customer", "banner", "settings", "log");
+                "dashboard", "product", "category", "order", "customer", "review", "banner", "settings", "log");
 
-        // Sales - Product, Order, Customer, Dashboard (read/update only)
+        // Sales - Product, Order, Customer, Review, Dashboard (read/update only)
         assignLimitedPermissionsToRole("Sales",
-                new String[]{"dashboard", "product", "order", "customer"},
+                new String[]{"dashboard", "product", "order", "customer", "review"},
                 new String[]{"read", "update"});
 
         // User - Dashboard read only
@@ -85,6 +85,8 @@ public class RoleInitializationService {
     private static void ensureBasePermissions() throws Exception {
         ensurePermission("dashboard", "read", "View admin dashboard");
         ensurePermission("log", "read", "View admin logs");
+        ensurePermission("review", "read", "View product reviews");
+        ensurePermission("review", "delete", "Delete product reviews");
     }
 
     private static void ensurePermission(String resource, String action, String description) throws Exception {
