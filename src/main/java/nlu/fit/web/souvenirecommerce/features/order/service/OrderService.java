@@ -14,7 +14,7 @@ import nlu.fit.web.souvenirecommerce.model.entity.OrderStatus;
 import nlu.fit.web.souvenirecommerce.model.entity.Product;
 import nlu.fit.web.souvenirecommerce.model.entity.ShippingOrder;
 import nlu.fit.web.souvenirecommerce.model.enums.OrderStatusCode;
-import nlu.fit.web.souvenirecommerce.features.order.dto.CheckoutException;
+import nlu.fit.web.souvenirecommerce.features.order.exception.CheckoutException;
 import nlu.fit.web.souvenirecommerce.features.order.dto.OrderListDTO;
 import nlu.fit.web.souvenirecommerce.features.order.dto.OrderItemDTO;
 import nlu.fit.web.souvenirecommerce.features.order.dto.OrderStatusTabDTO;

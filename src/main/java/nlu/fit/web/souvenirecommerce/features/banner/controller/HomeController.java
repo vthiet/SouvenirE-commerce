@@ -1,4 +1,4 @@
-package nlu.fit.web.souvenirecommerce.features.page.home.controller;
+package nlu.fit.web.souvenirecommerce.features.banner.controller;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;

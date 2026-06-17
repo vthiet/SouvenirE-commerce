@@ -99,7 +99,7 @@
                     <span>
                             <c:choose>
                                 <c:when test="${not empty requestScope.order.activeShippingOrder.carrierUpdatedAt}">
-                                <fmt:formatDate value="${requestScope.order.activeShippingOrder.carrierUpdatedAt}" pattern="dd/MM/yyyy HH:mm"/></c:when>
+                                <fmt:formatDate value="${java.sql.Timestamp.valueOf(requestScope.order.activeShippingOrder.carrierUpdatedAt)}" pattern="dd/MM/yyyy HH:mm"/></c:when>
                                 <c:otherwise>Chưa có</c:otherwise>
                             </c:choose>
                     </span>
