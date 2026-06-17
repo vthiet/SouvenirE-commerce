@@ -386,15 +386,12 @@
                     data-theme-toggle
                     aria-label="<fmt:message key='theme.toggle'/>"
                     aria-pressed="false">
-
-                <i class="fa-solid fa-moon"
-                   data-theme-icon
-                   aria-hidden="true"></i>
-
-                <span class="theme-label"
-                      data-theme-label><fmt:message key="theme.dark"/></span>
-
+                    <i class="fa-solid fa-moon" data-theme-icon aria-hidden="true"></i>
+                    <span class="theme-label" data-theme-label>
+                        <fmt:message key="theme.dark"/>
+                    </span>
             </button>
+            </div>
 
             <a class="header-icon-link"
                href="${pageContext.request.contextPath}/user/orders">
