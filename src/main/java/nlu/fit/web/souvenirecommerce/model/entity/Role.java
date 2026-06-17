@@ -28,6 +28,7 @@ public class Role extends AbsBaseEntity {
     private String description;
 
     @Column(name = "is_system", nullable = false)
+    @Builder.Default
     private boolean isSystem = false;
 
     @ManyToMany

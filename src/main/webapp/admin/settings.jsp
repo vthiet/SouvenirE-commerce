@@ -166,6 +166,91 @@
                     </form>
                 </div>
             </div>
+
+            <div class="card settings-card-spaced">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h3 class="mb-1">Đồng bộ GHN mapping</h3>
+                        <p class="mb-0 text-muted">Cập nhật mapping GHN cho tỉnh, quận/huyện, phường/xã và backfill địa chỉ đã lưu.</p>
+                    </div>
+                    <c:choose>
+                        <c:when test="${ghnMappingSyncRunning}">
+                            <span class="badge bg-warning text-dark">Đang chạy</span>
+                        </c:when>
+                        <c:when test="${ghnMappingSyncLastSuccess}">
+                            <span class="badge bg-success">Sẵn sàng</span>
+                        </c:when>
+                        <c:otherwise>
+                            <span class="badge bg-secondary">Chưa chạy</span>
+                        </c:otherwise>
+                    </c:choose>
+                </div>
+                <div class="settings-card-body">
+                    <div class="settings-grid settings-grid-3">
+                        <div class="form-group">
+                            <label>Trạng thái</label>
+                            <div class="form-control-plaintext">
+                                <c:choose>
+                                    <c:when test="${ghnMappingSyncRunning}">Đang đồng bộ GHN mapping...</c:when>
+                                    <c:when test="${ghnMappingSyncLastSuccess}">Đã đồng bộ thành công.</c:when>
+                                    <c:otherwise>Chưa có lần đồng bộ nào.</c:otherwise>
+                                </c:choose>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Bắt đầu gần nhất</label>
+                            <div class="form-control-plaintext">${ghnMappingSyncLastStartedAt}</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Kết thúc gần nhất</label>
+                            <div class="form-control-plaintext">${ghnMappingSyncLastFinishedAt}</div>
+                        </div>
+                    </div>
+
+                    <div class="settings-grid settings-grid-3 mt-3">
+                        <div class="form-group">
+                            <label>Tỉnh đã map</label>
+                            <div class="form-control-plaintext">${ghnMappingSyncProvinceStats}</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Phường/xã đã map</label>
+                            <div class="form-control-plaintext">${ghnMappingSyncWardStats}</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Địa chỉ backfill</label>
+                            <div class="form-control-plaintext">${ghnMappingSyncAddressStats}</div>
+                        </div>
+                    </div>
+
+                    <c:if test="${not empty ghnMappingSyncLastMessage}">
+                        <div class="alert ${ghnMappingSyncRunning ? 'alert-info' : (ghnMappingSyncLastSuccess ? 'alert-success' : 'alert-warning')} mt-3 mb-0">
+                            <strong>Kết quả:</strong> ${ghnMappingSyncLastMessage}
+                            <c:if test="${not empty ghnMappingSyncLastError and not ghnMappingSyncLastSuccess}">
+                                <div class="small mt-1">${ghnMappingSyncLastError}</div>
+                            </c:if>
+                            <c:if test="${not empty ghnMappingSyncLastDuration}">
+                                <div class="small mt-1">Thời gian xử lý: ${ghnMappingSyncLastDuration}</div>
+                            </c:if>
+                            <c:if test="${not empty ghnMappingSyncSummary}">
+                                <div class="small mt-1">${ghnMappingSyncSummary}</div>
+                            </c:if>
+                        </div>
+                    </c:if>
+
+                    <c:if test="${canUpdateSettings}">
+                        <form action="${pageContext.request.contextPath}/admin/settings" method="post" class="mt-4">
+                            <input type="hidden" name="action" value="syncGhnMapping">
+                            <button type="submit" class="btn-save" <c:if test="${ghnMappingSyncRunning}">disabled="disabled"</c:if>>
+                                <i class="fas fa-sync-alt"></i>
+                                <c:choose>
+                                    <c:when test="${ghnMappingSyncRunning}">Đang đồng bộ...</c:when>
+                                    <c:otherwise>Đồng bộ GHN mapping</c:otherwise>
+                                </c:choose>
+                            </button>
+                        </form>
+                    </c:if>
+                </div>
+            </div>
         </div>
         </main>
 

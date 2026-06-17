@@ -47,7 +47,7 @@
 
         <%-- CÀI ĐẶT --%>
         <li class="${param.activePage == 'setting' ? 'active' : ''}">
-            <a href="${ctx}/admin/setting/general">
+            <a href="${ctx}/admin/settings">
                 <i class="fa-solid fa-gear"></i> Cài đặt
             </a>
         </li>

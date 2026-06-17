@@ -31,6 +31,7 @@ public class UserCredential extends AbsBaseEntity {
     private String passwordHash;
 
     @Column(name = "email_verified", nullable = false)
+    @Builder.Default
     private boolean emailVerified = false;
 
     @Column(name = "reset_code", length = 64)

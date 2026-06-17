@@ -33,6 +33,6 @@ public class HomeController extends HttpServlet {
         request.setAttribute("pageJs", "HomePage.js");
         request.setAttribute("contentPage", "/WEB-INF/views/home/home.jsp");
 
-        request.getRequestDispatcher("WEB-INF/layout/base.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/layout/base.jsp").forward(request, response);
     }
 }

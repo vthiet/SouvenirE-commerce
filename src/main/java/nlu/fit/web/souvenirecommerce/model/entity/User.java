@@ -54,6 +54,7 @@ public class User extends AbsBaseEntity {
     private String avatarPublicId;
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private boolean isActive = true;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)

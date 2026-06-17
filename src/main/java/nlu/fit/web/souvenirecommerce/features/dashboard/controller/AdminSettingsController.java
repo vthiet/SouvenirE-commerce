@@ -9,11 +9,14 @@ import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.legacy.dao.SettingsDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
+import nlu.fit.web.souvenirecommerce.features.shipping.service.GhnMappingSyncJob;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,6 +24,7 @@ import java.util.Map;
 public class AdminSettingsController extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(AdminSettingsController.class);
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private UserDAOImpl userDAOImpl;
     private SettingsDAO settingsDAO;
 
@@ -48,6 +52,7 @@ public class AdminSettingsController extends HttpServlet {
             session.removeAttribute("messageType");
         }
 
+        applyGhnMappingSyncStatus(req);
         req.getRequestDispatcher("/admin/settings.jsp").forward(req, resp);
     }
 
@@ -224,6 +229,33 @@ public class AdminSettingsController extends HttpServlet {
                     session.setAttribute("message", "Cập nhật cài đặt hệ thống thất bại!");
                     session.setAttribute("messageType", "error");
                 }
+            } else if ("syncGhnMapping".equals(action)) {
+                boolean started = GhnMappingSyncJob.start();
+                if (started) {
+                    log.info("GHN mapping sync requested by userId={}", currentUser.getId());
+                    AuditLogService.success(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "SYSTEM",
+                            "GHN_MAPPING_SYNC",
+                            "SHIPPING",
+                            AuditLogService.describe("result", "started")
+                    );
+                    session.setAttribute("message", "Đã bắt đầu đồng bộ GHN mapping trong nền.");
+                    session.setAttribute("messageType", "success");
+                } else {
+                    log.warn("GHN mapping sync blocked because a job is already running");
+                    AuditLogService.failure(
+                            AdminSettingsController.class,
+                            currentUser,
+                            "SYSTEM",
+                            "GHN_MAPPING_SYNC",
+                            "SHIPPING",
+                            AuditLogService.describe("reason", "already_running")
+                    );
+                    session.setAttribute("message", "GHN mapping đang chạy, vui lòng thử lại sau.");
+                    session.setAttribute("messageType", "warning");
+                }
             }
         } catch (Exception e) {
             log.error("Admin settings action failed: {}", action, e);
@@ -232,5 +264,60 @@ public class AdminSettingsController extends HttpServlet {
         }
 
         resp.sendRedirect(req.getContextPath() + "/admin/settings");
+    }
+
+    private void applyGhnMappingSyncStatus(HttpServletRequest req) {
+        GhnMappingSyncJob.SyncStatus status = GhnMappingSyncJob.getStatus();
+        req.setAttribute("ghnMappingSyncRunning", status.running());
+        req.setAttribute("ghnMappingSyncLastSuccess", status.lastSuccess());
+        req.setAttribute("ghnMappingSyncLastMessage", status.lastMessage());
+        req.setAttribute("ghnMappingSyncLastError", status.lastError());
+        req.setAttribute("ghnMappingSyncLastStartedAt", formatDateTime(status.lastStartedAt()));
+        req.setAttribute("ghnMappingSyncLastFinishedAt", formatDateTime(status.lastFinishedAt()));
+        req.setAttribute("ghnMappingSyncLastDuration", formatDuration(status.lastDurationMillis()));
+
+        if (status.lastReport() != null) {
+            req.setAttribute("ghnMappingSyncSummary", buildSummary(status.lastReport()));
+            req.setAttribute("ghnMappingSyncProvinceStats",
+                    status.lastReport().provincesMapped() + "/" + status.lastReport().provincesTotal());
+            req.setAttribute("ghnMappingSyncWardStats",
+                    status.lastReport().wardsMapped() + "/" + status.lastReport().wardsTotal());
+            req.setAttribute("ghnMappingSyncAddressStats",
+                    status.lastReport().addressesBackfilled() + "/" + status.lastReport().addressesTotal());
+        } else {
+            req.setAttribute("ghnMappingSyncSummary", "Chưa có lần đồng bộ nào.");
+            req.setAttribute("ghnMappingSyncProvinceStats", "-");
+            req.setAttribute("ghnMappingSyncWardStats", "-");
+            req.setAttribute("ghnMappingSyncAddressStats", "-");
+        }
+    }
+
+    private String buildSummary(GhnMappingSyncJob.SyncStatus status) {
+        if (status == null || status.lastReport() == null) {
+            return "Chưa có dữ liệu đồng bộ.";
+        }
+        return buildSummary(status.lastReport());
+    }
+
+    private String buildSummary(nlu.fit.web.souvenirecommerce.common.utils.GhnAddressSeeder.SyncReport report) {
+        return report.provincesMapped() + "/" + report.provincesTotal() + " tỉnh, "
+                + report.wardsMapped() + "/" + report.wardsTotal() + " phường/xã, "
+                + report.addressesBackfilled() + "/" + report.addressesTotal() + " địa chỉ đã cập nhật.";
+    }
+
+    private String formatDateTime(LocalDateTime value) {
+        return value == null ? "-" : DATE_TIME_FORMATTER.format(value);
+    }
+
+    private String formatDuration(long durationMillis) {
+        if (durationMillis <= 0) {
+            return "-";
+        }
+        long seconds = durationMillis / 1000;
+        long millis = durationMillis % 1000;
+        if (seconds <= 0) {
+            return durationMillis + " ms";
+        }
+        return seconds + "." + String.format("%03d", millis) + " s";
     }
 }

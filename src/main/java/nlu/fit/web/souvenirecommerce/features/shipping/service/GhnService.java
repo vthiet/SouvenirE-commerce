@@ -19,6 +19,9 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * GHN (Giao Hàng Nhanh) implementation of {@link ShippingProvider}.
@@ -31,10 +34,18 @@ public class GhnService implements ShippingProvider {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
-    private final String baseUrl = property("ghn.base_url", "https://dev-online-gateway.ghn.vn/shiip/public-api");
+    private final String ghnMode = property("ghn.mode", "sandbox").toLowerCase();
+    private final String baseUrl = switch (ghnMode) {
+        case "live" -> property("ghn.base_url", "https://online-gateway.ghn.vn/shiip/public-api");
+        case "simulation" -> property("ghn.sandbox_base_url", "https://dev-online-gateway.ghn.vn/shiip/public-api");
+        default -> property("ghn.sandbox_base_url", "https://dev-online-gateway.ghn.vn/shiip/public-api");
+    };
     private final String token = property("ghn.token", "");
     private final String shopId = property("ghn.shop_id", "");
-    private final boolean simulation = !"live".equalsIgnoreCase(property("ghn.mode", "simulation"));
+    private final boolean simulation = "simulation".equals(ghnMode) || "mock".equals(ghnMode);
+    private volatile List<GhNProvince> provinceCache;
+    private volatile Map<Integer, List<GhNDistrict>> districtCacheByProvinceId;
+    private volatile Map<Integer, List<GhNWard>> wardCacheByDistrictId;
 
     // -------------------------------------------------------------------------
     // ShippingProvider identity
@@ -147,9 +158,18 @@ public class GhnService implements ShippingProvider {
                 || address.getCarrierWardCode() == null || address.getCarrierWardCode().isBlank()) {
             throw new IOException("Địa chỉ nhận hàng chưa có mã quận/huyện hoặc phường/xã của đơn vị vận chuyển.");
         }
+        if (isBlank(resolveReceiverName(order))) {
+            throw new IOException("Thiếu tên người nhận.");
+        }
+        if (isBlank(resolveReceiverPhone(order))) {
+            throw new IOException("Thiếu số điện thoại người nhận.");
+        }
 
         int fromDistrictId = Integer.parseInt(property("ghn.from_district_id", "1442"));
-        int serviceId = getAvailableServiceId(fromDistrictId, address.getCarrierDistrictId());
+        String fromWardCode = property("ghn.from_ward_code", "20101");
+        GhNSenderLocation sender = resolveSenderLocation(fromDistrictId, fromWardCode);
+        GhNLocation destination = resolveDestinationLocation(address);
+        int serviceId = getAvailableServiceId(fromDistrictId, destination.districtId());
 
         JsonObject body = new JsonObject();
         body.addProperty("payment_type_id", 1);
@@ -158,14 +178,34 @@ public class GhnService implements ShippingProvider {
         body.addProperty("from_name", property("ghn.from_name", "INOLA"));
         body.addProperty("from_phone", property("ghn.from_phone", "0900000000"));
         body.addProperty("from_address", property("ghn.from_address", "Dia chi cua hang"));
-        body.addProperty("from_ward_name", property("ghn.from_ward_name", "Phuong Ben Nghe"));
-        body.addProperty("from_district_name", property("ghn.from_district_name", "Quan 1"));
-        body.addProperty("from_province_name", property("ghn.from_province_name", "Ho Chi Minh"));
-        body.addProperty("to_name", address.getReceiverName());
-        body.addProperty("to_phone", address.getReceiverPhone());
+        if (!isBlank(sender.provinceName())) {
+            body.addProperty("from_province_name", sender.provinceName());
+        }
+        if (!isBlank(sender.districtName())) {
+            body.addProperty("from_district_name", sender.districtName());
+        }
+        if (!isBlank(sender.wardName())) {
+            body.addProperty("from_ward_name", sender.wardName());
+        }
+        body.addProperty("from_district_id", sender.districtId());
+        body.addProperty("from_ward_code", sender.wardCode());
+        body.addProperty("to_name", resolveReceiverName(order));
+        body.addProperty("to_phone", resolveReceiverPhone(order));
         body.addProperty("to_address", address.getAddressDetail());
-        body.addProperty("to_ward_code", address.getCarrierWardCode());
-        body.addProperty("to_district_id", address.getCarrierDistrictId());
+        if (!isBlank(destination.provinceName())) {
+            body.addProperty("to_province_name", destination.provinceName());
+        }
+        if (!isBlank(destination.districtName())) {
+            body.addProperty("to_district_name", destination.districtName());
+        }
+        if (!isBlank(destination.wardName())) {
+            body.addProperty("to_ward_name", destination.wardName());
+        }
+        body.addProperty("to_ward_code", destination.wardCode());
+        body.addProperty("to_district_id", destination.districtId());
+        if (!isBlank(order.getNote())) {
+            body.addProperty("note", order.getNote());
+        }
         nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx = new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().findByOrderId(order.getId()).orElse(null);
         body.addProperty("cod_amount", ptx != null
                 && ptx.getMethod() == PaymentMethod.COD
@@ -182,10 +222,10 @@ public class GhnService implements ShippingProvider {
         JsonArray items = new JsonArray();
         for (OrderItem item : order.getItems()) {
             JsonObject jsonItem = new JsonObject();
-            jsonItem.addProperty("name", item.getProductName());
-            jsonItem.addProperty("code", String.valueOf(item.getProduct().getId()));
+            jsonItem.addProperty("name", resolveItemName(item));
+            jsonItem.addProperty("code", resolveItemCode(item));
             jsonItem.addProperty("quantity", item.getQuantity());
-            jsonItem.addProperty("price", item.getPriceAtPurchase().intValue());
+            jsonItem.addProperty("price", item.getPriceAtPurchase() != null ? item.getPriceAtPurchase().intValue() : 0);
             jsonItem.addProperty("length", 20);
             jsonItem.addProperty("width", 15);
             jsonItem.addProperty("height", 10);
@@ -255,7 +295,7 @@ public class GhnService implements ShippingProvider {
         }
         String response = get("/v2/shipping-order/available-services",
                 "shop_id=" + shopId + "&from_district=" + fromDistrictId + "&to_district=" + toDistrictId);
-        JsonArray services = JsonParser.parseString(response).getAsJsonObject().getAsJsonArray("data");
+        JsonArray services = dataArray(JsonParser.parseString(response).getAsJsonObject(), "data");
         if (services == null || services.isEmpty()) {
             throw new IOException("GHN: no available service found for the given districts");
         }
@@ -409,4 +449,380 @@ public class GhnService implements ShippingProvider {
         String value = ApplicationLoader.get(key);
         return value == null || value.isBlank() || value.startsWith("YOUR_") ? fallback : value.trim();
     }
+
+    private String resolveReceiverName(Order order) {
+        if (order == null) {
+            return null;
+        }
+        Address address = order.getAddress();
+        if (address != null && !isBlank(address.getReceiverName())) {
+            return address.getReceiverName().trim();
+        }
+        if (order.getUser() != null && !isBlank(order.getUser().getFullName())) {
+            return order.getUser().getFullName().trim();
+        }
+        return null;
+    }
+
+    private String resolveReceiverPhone(Order order) {
+        if (order == null) {
+            return null;
+        }
+        Address address = order.getAddress();
+        if (address != null && !isBlank(address.getReceiverPhone())) {
+            return address.getReceiverPhone().trim();
+        }
+        if (order.getUser() != null && !isBlank(order.getUser().getPhone())) {
+            return order.getUser().getPhone().trim();
+        }
+        return null;
+    }
+
+    private String resolveItemName(OrderItem item) {
+        if (item == null) {
+            return "San pham";
+        }
+        if (!isBlank(item.getProductName())) {
+            return item.getProductName().trim();
+        }
+        if (item.getProduct() != null && !isBlank(item.getProduct().getName())) {
+            return item.getProduct().getName().trim();
+        }
+        return "San pham";
+    }
+
+    private String resolveItemCode(OrderItem item) {
+        if (item == null) {
+            return "0";
+        }
+        if (item.getProduct() != null && item.getProduct().getId() != null) {
+            return String.valueOf(item.getProduct().getId());
+        }
+        if (!isBlank(item.getProductName())) {
+            return item.getProductName().trim();
+        }
+        return "0";
+    }
+
+    private JsonArray dataArray(JsonObject object, String key) {
+        if (object == null || key == null || !object.has(key) || object.get(key) == null || object.get(key).isJsonNull()) {
+            return new JsonArray();
+        }
+        if (!object.get(key).isJsonArray()) {
+            return new JsonArray();
+        }
+        return object.getAsJsonArray(key);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private GhNLocation resolveDestinationLocation(Address address) throws IOException, InterruptedException {
+        GhNProvince province = resolveProvince(address);
+        if (province == null) {
+            throw new IOException("Không thể xác định mã tỉnh/thành phố GHN cho địa chỉ giao hàng.");
+        }
+
+        GhNDistrict district = resolveDistrict(address, province);
+        if (district == null) {
+            throw new IOException("Không thể xác định mã quận/huyện GHN cho địa chỉ giao hàng.");
+        }
+
+        GhNWard ward = resolveWard(address, district);
+        if (ward == null) {
+            throw new IOException("Không thể xác định mã phường/xã GHN cho địa chỉ giao hàng.");
+        }
+
+        return new GhNLocation(province.name(), district.name(), district.id(), ward.code(), ward.name());
+    }
+
+    private GhNSenderLocation resolveSenderLocation(int fromDistrictId, String fromWardCode) throws IOException, InterruptedException {
+        GhNDistrict district = null;
+        GhNProvince province = null;
+        for (GhNProvince candidateProvince : loadProvinces()) {
+            GhNDistrict candidateDistrict = findDistrictById(candidateProvince.id(), fromDistrictId);
+            if (candidateDistrict != null) {
+                district = candidateDistrict;
+                province = candidateProvince;
+                break;
+            }
+        }
+        if (district == null) {
+            throw new IOException("Không thể xác định mã quận/huyện GHN của kho gửi hàng.");
+        }
+
+        GhNWard ward = findWardByCode(fromDistrictId, fromWardCode);
+        if (ward == null) {
+            throw new IOException("Không thể xác định mã phường/xã GHN của kho gửi hàng.");
+        }
+
+        if (province == null) {
+            province = findProvinceById(district.provinceId());
+        }
+        if (province == null) {
+            throw new IOException("Không thể xác định mã tỉnh/thành phố GHN của kho gửi hàng.");
+        }
+
+        return new GhNSenderLocation(province.name(), district.name(), ward.name(), district.id(), ward.code());
+    }
+
+    private GhNProvince resolveProvince(Address address) throws IOException, InterruptedException {
+        String localProvinceName = firstNonBlank(address.getProvince(), address.getCity());
+        GhNProvince matched = findProvinceByName(localProvinceName);
+        if (matched != null) {
+            return matched;
+        }
+        Integer carrierProvinceId = address.getCarrierProvinceId();
+        if (carrierProvinceId != null) {
+            return findProvinceById(carrierProvinceId);
+        }
+        return null;
+    }
+
+    private GhNDistrict resolveDistrict(Address address, GhNProvince province) throws IOException, InterruptedException {
+        String localDistrictName = address.getDistrict();
+        GhNDistrict matched = findDistrictByName(province.id(), localDistrictName);
+        if (matched != null) {
+            return matched;
+        }
+        Integer carrierDistrictId = address.getCarrierDistrictId();
+        if (carrierDistrictId != null) {
+            return findDistrictById(province.id(), carrierDistrictId);
+        }
+        return null;
+    }
+
+    private GhNWard resolveWard(Address address, GhNDistrict district) throws IOException, InterruptedException {
+        String localWardName = address.getWard();
+        GhNWard matched = findWardByName(district.id(), localWardName);
+        if (matched != null) {
+            return matched;
+        }
+        String carrierWardCode = address.getCarrierWardCode();
+        if (!isBlank(carrierWardCode)) {
+            return findWardByCode(district.id(), carrierWardCode);
+        }
+        return null;
+    }
+
+    private String normalizeLocationName(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim()
+                .toLowerCase()
+                .replace("phường ", "")
+                .replace("xã ", "")
+                .replace("quận ", "")
+                .replace("thành phố ", "")
+                .replace("tp. ", "")
+                .replace("tp ", "")
+                .replace("tỉnh ", "")
+                .replace(".", "")
+                .replace(",", "")
+                .replaceAll("\\s+", " ");
+    }
+
+    private GhNProvince findProvinceByName(String provinceName) throws IOException, InterruptedException {
+        if (isBlank(provinceName)) {
+            return null;
+        }
+        String normalized = normalizeLocationName(provinceName);
+        for (GhNProvince province : loadProvinces()) {
+            if (normalized.equals(normalizeLocationName(province.name()))) {
+                return province;
+            }
+        }
+        return null;
+    }
+
+    private GhNProvince findProvinceById(Integer provinceId) throws IOException, InterruptedException {
+        if (provinceId == null) {
+            return null;
+        }
+        for (GhNProvince province : loadProvinces()) {
+            if (provinceId.equals(province.id())) {
+                return province;
+            }
+        }
+        return null;
+    }
+
+    private GhNDistrict findDistrictByName(Integer provinceId, String districtName) throws IOException, InterruptedException {
+        if (provinceId == null || isBlank(districtName)) {
+            return null;
+        }
+        String normalized = normalizeLocationName(districtName);
+        for (GhNDistrict district : loadDistricts(provinceId)) {
+            if (normalized.equals(normalizeLocationName(district.name()))) {
+                return district;
+            }
+        }
+        return null;
+    }
+
+    private GhNDistrict findDistrictById(Integer provinceId, Integer districtId) throws IOException, InterruptedException {
+        if (provinceId == null || districtId == null) {
+            return null;
+        }
+        for (GhNDistrict district : loadDistricts(provinceId)) {
+            if (districtId.equals(district.id())) {
+                return district;
+            }
+        }
+        return null;
+    }
+
+    private GhNWard findWardByName(Integer districtId, String wardName) throws IOException, InterruptedException {
+        if (districtId == null || isBlank(wardName)) {
+            return null;
+        }
+        String normalized = normalizeLocationName(wardName);
+        for (GhNWard ward : loadWards(districtId)) {
+            if (normalized.equals(normalizeLocationName(ward.name()))) {
+                return ward;
+            }
+        }
+        return null;
+    }
+
+    private GhNWard findWardByCode(Integer districtId, String wardCode) throws IOException, InterruptedException {
+        if (districtId == null || isBlank(wardCode)) {
+            return null;
+        }
+        for (GhNWard ward : loadWards(districtId)) {
+            if (wardCode.equals(ward.code())) {
+                return ward;
+            }
+        }
+        return null;
+    }
+
+    private List<GhNProvince> loadProvinces() throws IOException, InterruptedException {
+        if (provinceCache != null) {
+            return provinceCache;
+        }
+        synchronized (this) {
+            if (provinceCache == null) {
+                List<GhNProvince> loaded = new java.util.ArrayList<>();
+                JsonObject response = JsonParser.parseString(get("/master-data/province", null)).getAsJsonObject();
+                JsonArray provinces = dataArray(response, "data");
+                if (provinces != null) {
+                    for (int i = 0; i < provinces.size(); i++) {
+                        JsonObject province = provinces.get(i).getAsJsonObject();
+                        Integer id = province.get("ProvinceID").getAsInt();
+                        String name = stringValue(province, "ProvinceName");
+                        if (id != null && !isBlank(name)) {
+                            loaded.add(new GhNProvince(id, name));
+                        }
+                    }
+                }
+                provinceCache = List.copyOf(loaded);
+            }
+        }
+        return provinceCache;
+    }
+
+    private List<GhNDistrict> loadDistricts(Integer provinceId) throws IOException, InterruptedException {
+        if (provinceId == null) {
+            return List.of();
+        }
+        if (districtCacheByProvinceId == null) {
+            synchronized (this) {
+                if (districtCacheByProvinceId == null) {
+                    districtCacheByProvinceId = new ConcurrentHashMap<>();
+                }
+            }
+        }
+        List<GhNDistrict> cached = districtCacheByProvinceId.get(provinceId);
+        if (cached != null) {
+            return cached;
+        }
+
+        synchronized (districtCacheByProvinceId) {
+            cached = districtCacheByProvinceId.get(provinceId);
+            if (cached == null) {
+                List<GhNDistrict> loaded = new java.util.ArrayList<>();
+                JsonObject response = JsonParser.parseString(get("/master-data/district", "province_id=" + provinceId))
+                        .getAsJsonObject();
+                JsonArray districts = dataArray(response, "data");
+                if (districts != null) {
+                    for (int i = 0; i < districts.size(); i++) {
+                        JsonObject district = districts.get(i).getAsJsonObject();
+                        Integer id = district.get("DistrictID").getAsInt();
+                        Integer returnedProvinceId = district.get("ProvinceID") != null ? district.get("ProvinceID").getAsInt() : provinceId;
+                        String name = stringValue(district, "DistrictName");
+                        if (id != null && !isBlank(name)) {
+                            loaded.add(new GhNDistrict(id, returnedProvinceId, name));
+                        }
+                    }
+                }
+                cached = List.copyOf(loaded);
+                districtCacheByProvinceId.put(provinceId, cached);
+            }
+        }
+        return cached;
+    }
+
+    private List<GhNWard> loadWards(Integer districtId) throws IOException, InterruptedException {
+        if (districtId == null) {
+            return List.of();
+        }
+        if (wardCacheByDistrictId == null) {
+            synchronized (this) {
+                if (wardCacheByDistrictId == null) {
+                    wardCacheByDistrictId = new ConcurrentHashMap<>();
+                }
+            }
+        }
+        List<GhNWard> cached = wardCacheByDistrictId.get(districtId);
+        if (cached != null) {
+            return cached;
+        }
+
+        synchronized (wardCacheByDistrictId) {
+            cached = wardCacheByDistrictId.get(districtId);
+            if (cached == null) {
+                List<GhNWard> loaded = new java.util.ArrayList<>();
+                JsonObject response = JsonParser.parseString(get("/master-data/ward", "district_id=" + districtId))
+                        .getAsJsonObject();
+                JsonArray wards = dataArray(response, "data");
+                if (wards != null) {
+                    for (int i = 0; i < wards.size(); i++) {
+                        JsonObject ward = wards.get(i).getAsJsonObject();
+                        String code = stringValue(ward, "WardCode");
+                        Integer returnedDistrictId = ward.get("DistrictID") != null ? ward.get("DistrictID").getAsInt() : districtId;
+                        String name = stringValue(ward, "WardName");
+                        if (!isBlank(code) && !isBlank(name)) {
+                            loaded.add(new GhNWard(code, returnedDistrictId, name));
+                        }
+                    }
+                }
+                cached = List.copyOf(loaded);
+                wardCacheByDistrictId.put(districtId, cached);
+            }
+        }
+        return cached;
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (!isBlank(first)) {
+            return first.trim();
+        }
+        if (!isBlank(second)) {
+            return second.trim();
+        }
+        return null;
+    }
+
+    private record GhNProvince(Integer id, String name) {}
+
+    private record GhNDistrict(Integer id, Integer provinceId, String name) {}
+
+    private record GhNWard(String code, Integer districtId, String name) {}
+
+    private record GhNSenderLocation(String provinceName, String districtName, String wardName, Integer districtId, String wardCode) {}
+
+    private record GhNLocation(String provinceName, String districtName, Integer districtId, String wardCode, String wardName) {}
 }
