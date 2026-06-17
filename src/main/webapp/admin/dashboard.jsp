@@ -9,7 +9,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | INOLA Admin</title>
+    <title>Bảng điều khiển | INOLA Admin</title>
     <link rel="stylesheet" href="${ctx}/assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="${ctx}/assets/vendors/bootstrap-icons/bootstrap-icons.css">
     <link rel="stylesheet" href="${ctx}/assets/css/admin-style.css">

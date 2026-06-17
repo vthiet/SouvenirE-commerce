@@ -6,10 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import nlu.fit.web.souvenirecommerce.common.utils.GsonUtil;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
-import nlu.fit.web.souvenirecommerce.features.dashboard.dto.MostProfitableOrderDTO;
-import nlu.fit.web.souvenirecommerce.features.dashboard.dto.RevenueTrendPointDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
@@ -17,10 +14,7 @@ import nlu.fit.web.souvenirecommerce.legacy.model.Order;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @WebServlet("/admin/orders")
 public class AdminOrderController extends HttpServlet {
@@ -81,23 +75,6 @@ public class AdminOrderController extends HttpServlet {
         int shippingCount = orderDAO.getOrderCountByStatus("Đang giao");
         int completedCount = orderDAO.getOrderCountByStatus("Hoàn thành");
 
-        List<RevenueTrendPointDTO> weeklyRevenueTrend = orderDAO.getWeeklyRevenueTrend(8);
-        List<RevenueTrendPointDTO> monthlyRevenueTrend = orderDAO.getMonthlyRevenueTrend(6);
-        BigDecimal weeklyRevenueTotal = sumRevenue(weeklyRevenueTrend);
-        BigDecimal monthlyRevenueTotal = sumRevenue(monthlyRevenueTrend);
-        int weeklyOrderCount = sumOrderCount(weeklyRevenueTrend);
-        int monthlyOrderCount = sumOrderCount(monthlyRevenueTrend);
-        MostProfitableOrderDTO mostProfitableOrder = orderDAO.getMostProfitableOrder();
-
-        Map<String, Object> analyticsPayload = new LinkedHashMap<>();
-        analyticsPayload.put("weekly", weeklyRevenueTrend);
-        analyticsPayload.put("monthly", monthlyRevenueTrend);
-        analyticsPayload.put("weeklyTotal", weeklyRevenueTotal);
-        analyticsPayload.put("monthlyTotal", monthlyRevenueTotal);
-        analyticsPayload.put("weeklyOrderCount", weeklyOrderCount);
-        analyticsPayload.put("monthlyOrderCount", monthlyOrderCount);
-        analyticsPayload.put("profitRule", "Lợi ước tính = tổng tiền đơn hoàn thành - phí vận chuyển");
-
         // Set attributes
         request.setAttribute("orders", orders);
         request.setAttribute("currentPage", page);
@@ -108,15 +85,6 @@ public class AdminOrderController extends HttpServlet {
         request.setAttribute("processingCount", processingCount);
         request.setAttribute("shippingCount", shippingCount);
         request.setAttribute("completedCount", completedCount);
-        request.setAttribute("weeklyRevenueTrend", weeklyRevenueTrend);
-        request.setAttribute("monthlyRevenueTrend", monthlyRevenueTrend);
-        request.setAttribute("weeklyRevenueTotal", weeklyRevenueTotal);
-        request.setAttribute("monthlyRevenueTotal", monthlyRevenueTotal);
-        request.setAttribute("weeklyOrderCount", weeklyOrderCount);
-        request.setAttribute("monthlyOrderCount", monthlyOrderCount);
-        request.setAttribute("mostProfitableOrder", mostProfitableOrder);
-        request.setAttribute("profitRule", "Lợi ước tính = tổng tiền đơn hoàn thành - phí vận chuyển");
-        request.setAttribute("orderAnalyticsJson", GsonUtil.getGson().toJson(analyticsPayload));
 
         // Forward to JSP
         request.getRequestDispatcher("/admin/orders.jsp").forward(request, response);
@@ -225,33 +193,5 @@ public class AdminOrderController extends HttpServlet {
             currentUser = (User) session.getAttribute("user");
         }
         return currentUser;
-    }
-
-    private BigDecimal sumRevenue(List<RevenueTrendPointDTO> trendPoints) {
-        BigDecimal total = BigDecimal.ZERO;
-        if (trendPoints == null) {
-            return total;
-        }
-
-        for (RevenueTrendPointDTO point : trendPoints) {
-            if (point != null && point.getRevenue() != null) {
-                total = total.add(point.getRevenue());
-            }
-        }
-        return total;
-    }
-
-    private int sumOrderCount(List<RevenueTrendPointDTO> trendPoints) {
-        int total = 0;
-        if (trendPoints == null) {
-            return total;
-        }
-
-        for (RevenueTrendPointDTO point : trendPoints) {
-            if (point != null) {
-                total += point.getOrderCount();
-            }
-        }
-        return total;
     }
 }

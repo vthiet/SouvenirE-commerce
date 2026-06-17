@@ -50,7 +50,6 @@ public class HibernateUtil {
         configuration.addAnnotatedClass(Banner.class);
         configuration.addAnnotatedClass(ProductSpecification.class);
         configuration.addAnnotatedClass(Review.class);
-        configuration.addAnnotatedClass(StockImportRecord.class);
         configuration.addAnnotatedClass(CartEntity.class);
         configuration.addAnnotatedClass(CartItemEntity.class);
     }
