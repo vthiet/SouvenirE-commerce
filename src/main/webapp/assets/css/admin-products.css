@@ -128,9 +128,7 @@
 .product-modal-header {
   padding: 1.15rem 1.4rem;
   border-bottom: 1px solid var(--admin-page-border);
-  background:
-    linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(15, 118, 110, 0.05)),
-    var(--admin-page-surface);
+  background: rgba(15, 118, 110, 0.05);
 }
 
 .product-modal-heading {
@@ -218,7 +216,7 @@
 .product-preview-image-wrap {
   aspect-ratio: 16 / 9;
   max-height: 160px;
-  background: linear-gradient(135deg, #eaf2ff, #eef8f6);
+  background: #eaf2ff;
   overflow: hidden;
 }
 
