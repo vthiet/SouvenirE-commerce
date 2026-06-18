@@ -1,9 +1,15 @@
 package nlu.fit.web.souvenirecommerce.model.enums;
 
 public enum PaymentStatus {
-    NOT_REQUIRED,
+    CREATED,
     PENDING,
-    PAID,
+    PROCESSING,
+    SUCCESS,
+    SETTLED,
+    REFUNDED,
     FAILED,
-    CANCELLED
+    EXPIRED,
+    CANCELLED,
+    NOT_REQUIRED,
+    PAID
 }

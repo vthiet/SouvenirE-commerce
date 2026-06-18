@@ -9,9 +9,8 @@ import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.order.dto.OrderListDTO;
 import nlu.fit.web.souvenirecommerce.features.order.dto.OrderStatusTabDTO;
-import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
-import nlu.fit.web.souvenirecommerce.legacy.model.Order;
-import nlu.fit.web.souvenirecommerce.legacy.model.OrderItem;
+import nlu.fit.web.souvenirecommerce.model.entity.Order;
+import nlu.fit.web.souvenirecommerce.model.entity.OrderItem;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import nlu.fit.web.souvenirecommerce.features.order.service.OrderService;
 import nlu.fit.web.souvenirecommerce.model.entity.OrderHistory;
@@ -22,7 +21,6 @@ import java.util.List;
 @WebServlet("/user/orders")
 public class UserOrderController extends HttpServlet {
 
-    private final OrderDAO orderDAO = new OrderDAO();
     private final OrderService orderService = new OrderService();
 
     @Override
@@ -90,8 +88,8 @@ public class UserOrderController extends HttpServlet {
 
             try {
                 // Verify order ownership
-                Order order = orderDAO.getOrderById((int) orderId);
-                if (order != null && order.getUserId() == user.getId().intValue()) {
+                Order order = orderService.getOrderById(orderId);
+                if (order != null && order.getUser() != null && order.getUser().getId().equals(user.getId())) {
                     String reason = request.getParameter("reason");
                     if (reason == null || reason.isBlank()) {
                         reason = "Khách hàng tự hủy đơn hàng";
@@ -144,8 +142,8 @@ public class UserOrderController extends HttpServlet {
              selectedStatus = "all";
          }
          String keyword = normalizeParam(request.getParameter("q"));
-         List<OrderListDTO> orderList = orderDAO.getUserOrderList(user.getId().intValue(), selectedStatus, keyword);
-         List<OrderStatusTabDTO> statusTabs = orderDAO.getUserOrderStatusTabs(user.getId().intValue());
+         List<OrderListDTO> orderList = orderService.getUserOrderList(user.getId(), selectedStatus, keyword);
+         List<OrderStatusTabDTO> statusTabs = orderService.getUserOrderStatusTabs(user.getId());
 
          request.setAttribute("orderList", orderList);
          request.setAttribute("statusTabs", statusTabs);
@@ -182,14 +180,20 @@ public class UserOrderController extends HttpServlet {
              return;
          }
 
-         Order order = orderDAO.getOrderById(orderId);
+          Order order;
+          try {
+              order = orderService.getOrderById((long) orderId);
+          } catch (Exception e) {
+              response.sendRedirect(request.getContextPath() + "/user/orders");
+              return;
+          }
 
-         if (order == null || user.getId() == null || order.getUserId() != user.getId().intValue()) {
-             response.sendRedirect(request.getContextPath() + "/user/orders");
-             return;
-         }
+          if (order == null || user.getId() == null || order.getUser() == null || !order.getUser().getId().equals(user.getId())) {
+              response.sendRedirect(request.getContextPath() + "/user/orders");
+              return;
+          }
 
-         List<OrderItem> orderItems = orderDAO.getOrderItems(orderId);
+          List<OrderItem> orderItems = order.getItems();
          List<OrderHistory> historyList = orderService.getOrderHistory((long) orderId);
 
          request.setAttribute("order", order);

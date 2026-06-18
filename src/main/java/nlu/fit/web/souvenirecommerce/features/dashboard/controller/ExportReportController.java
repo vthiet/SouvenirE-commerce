@@ -7,10 +7,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
-import nlu.fit.web.souvenirecommerce.legacy.dao.OrderDAO;
+import nlu.fit.web.souvenirecommerce.features.order.repository.OrderRepository;
 import nlu.fit.web.souvenirecommerce.legacy.dao.ProductDAO;
 import nlu.fit.web.souvenirecommerce.legacy.dao.impl.UserDAOImpl;
-import nlu.fit.web.souvenirecommerce.legacy.model.Order;
+import nlu.fit.web.souvenirecommerce.model.entity.Order;
 import nlu.fit.web.souvenirecommerce.model.entity.Product;
 import nlu.fit.web.souvenirecommerce.model.entity.User;
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @WebServlet("/admin/export-report")
 public class ExportReportController extends HttpServlet {
     private static final Logger log = LoggerFactory.getLogger(ExportReportController.class);
-    private final OrderDAO orderDAO = new OrderDAO();
+    private final OrderRepository orderRepository = new OrderRepository();
     private final ProductDAO productDAO = new ProductDAO();
     private final UserDAOImpl userDAOImpl = new UserDAOImpl();
 
@@ -98,8 +98,8 @@ public class ExportReportController extends HttpServlet {
         writer.println();
 
         // Statistics
-        double totalRevenue = orderDAO.getTotalRevenue();
-        int totalOrders = orderDAO.getTotalOrders();
+        double totalRevenue = orderRepository.getTotalRevenue();
+        int totalOrders = orderRepository.getTotalOrders();
         int totalProducts = productDAO.getTotalProducts();
         int totalCustomers = userDAOImpl.getTotalCustomers();
 
@@ -200,7 +200,7 @@ public class ExportReportController extends HttpServlet {
         writer.println();
         writer.println("ID,Khách hàng,Email,Ngày đặt,Tổng tiền,Trạng thái");
 
-        List<Order> orders = orderDAO.getAllOrders();
+        List<Order> orders = orderRepository.findAll();
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
         for (Order o : orders) {
@@ -208,8 +208,8 @@ public class ExportReportController extends HttpServlet {
                     o.getId(),
                     o.getCustomerName() != null ? o.getCustomerName().replace("\"", "\"\"") : "",
                     o.getCustomerEmail() != null ? o.getCustomerEmail().replace("\"", "\"\"") : "",
-                    o.getOrderDate() != null ? sdf.format(o.getOrderDate()) : "",
-                    String.format("%.0f", o.getTotalAmount()),
+                    o.getCreatedAt() != null ? sdf.format(o.getCreatedAt()) : "",
+                    String.format("%.0f", o.getTotalAmount() != null ? o.getTotalAmount().doubleValue() : 0.0),
                     o.getStatus() != null ? o.getStatus() : "Chờ xác nhận"
             ));
         }

@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import nlu.fit.web.souvenirecommerce.core.logging.AuditLogService;
 import nlu.fit.web.souvenirecommerce.features.order.service.OrderService;
-import nlu.fit.web.souvenirecommerce.model.entity.Address;
 import nlu.fit.web.souvenirecommerce.model.entity.Order;
 import nlu.fit.web.souvenirecommerce.model.entity.OrderItem;
 import nlu.fit.web.souvenirecommerce.model.entity.OrderHistory;
@@ -39,7 +38,8 @@ public class AdminOrderDetailController extends HttpServlet {
         try {
             orderId = Long.parseLong(request.getParameter("id"));
         } catch (NumberFormatException ex) {
-            log.warn("Invalid order id supplied for dedicated admin order detail route: {}", request.getParameter("id"));
+            log.warn("Invalid order id supplied for dedicated admin order detail route: {}",
+                    request.getParameter("id"));
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid order id");
             return;
         }
@@ -53,22 +53,21 @@ public class AdminOrderDetailController extends HttpServlet {
             return;
         }
 
-        // Action check for GET (sync GHN)
+        // Action check for GET (sync carrier status)
         String getAction = request.getParameter("action");
-        if ("syncGhn".equals(getAction)) {
+        if ("syncCarrier".equals(getAction)) {
             HttpSession session = request.getSession(false);
             User adminUser = (session != null) ? (User) session.getAttribute("userInSession") : null;
             String performedBy = (adminUser != null) ? adminUser.getEmail() : "Admin";
             try {
-                orderService.syncGhnStatus(orderId, performedBy);
+                orderService.syncCarrierStatus(orderId, performedBy);
                 AuditLogService.success(
                         AdminOrderDetailController.class,
                         adminUser,
                         "ORDER",
-                        "ORDER_GHN_SYNCED",
+                        "ORDER_CARRIER_SYNCED",
                         "ORDER",
-                        AuditLogService.describe("orderId", orderId, "performedBy", performedBy)
-                );
+                        AuditLogService.describe("orderId", orderId, "performedBy", performedBy));
                 response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&success=true");
                 return;
             } catch (Exception e) {
@@ -76,12 +75,13 @@ public class AdminOrderDetailController extends HttpServlet {
                         AdminOrderDetailController.class,
                         adminUser,
                         "ORDER",
-                        "ORDER_GHN_SYNCED",
+                        "ORDER_CARRIER_SYNCED",
                         "ORDER",
-                        AuditLogService.describe("orderId", orderId, "performedBy", performedBy, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
-                );
+                        AuditLogService.describe("orderId", orderId, "performedBy", performedBy, "reason",
+                                e.getClass().getSimpleName(), "message", e.getMessage()));
                 String errorMessage = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-                response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
+                response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error="
+                        + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
                 return;
             }
         }
@@ -146,8 +146,7 @@ public class AdminOrderDetailController extends HttpServlet {
                         "ORDER",
                         "ORDER_STATUS_CHANGED",
                         "ORDER",
-                        AuditLogService.describe("orderId", orderId, "action", action, "reason", "unsupported_action")
-                );
+                        AuditLogService.describe("orderId", orderId, "action", action, "reason", "unsupported_action"));
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Unsupported action");
                 return;
             }
@@ -157,8 +156,7 @@ public class AdminOrderDetailController extends HttpServlet {
                     "ORDER",
                     auditAction,
                     "ORDER",
-                    AuditLogService.describe("orderId", orderId, "action", action, "performedBy", performedBy)
-            );
+                    AuditLogService.describe("orderId", orderId, "action", action, "performedBy", performedBy));
             response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&success=true");
         } catch (Exception e) {
             AuditLogService.failure(
@@ -167,18 +165,20 @@ public class AdminOrderDetailController extends HttpServlet {
                     "ORDER",
                     "ORDER_STATUS_CHANGED",
                     "ORDER",
-                    AuditLogService.describe("orderId", orderId, "action", action, "performedBy", performedBy, "reason", e.getClass().getSimpleName(), "message", e.getMessage())
-            );
+                    AuditLogService.describe("orderId", orderId, "action", action, "performedBy", performedBy, "reason",
+                            e.getClass().getSimpleName(), "message", e.getMessage()));
             String errorMessage = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-            response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
+            response.sendRedirect(request.getContextPath() + "/admin/order-detail?id=" + orderId + "&error="
+                    + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
         }
     }
 
     private OrderDetailView buildOrderView(Order order) {
         String shippingAddr = "";
         if (order.getAddress() != null) {
-            Address addr = order.getAddress();
-            shippingAddr = addr.getAddressDetail() + ", " + addr.getWard() + ", " + addr.getDistrict() + ", " + addr.getProvince();
+            nlu.fit.web.souvenirecommerce.model.entity.Address addr = order.getAddress();
+            shippingAddr = addr.getAddressDetail() + ", " + addr.getWard() + ", " + addr.getDistrict() + ", "
+                    + addr.getProvince();
         }
 
         String customerPhone = order.getUser() != null ? order.getUser().getPhone() : "";
@@ -186,24 +186,36 @@ public class AdminOrderDetailController extends HttpServlet {
             customerPhone = order.getAddress().getReceiverPhone();
         }
 
+        // Shipment info from the dedicated shipping_orders table
+        nlu.fit.web.souvenirecommerce.model.entity.ShippingOrder shipment = order.getActiveShippingOrder();
+        String carrierCode = shipment != null ? shipment.getCarrierCode() : null;
+        String trackingCode = shipment != null ? shipment.getTrackingCode() : null;
+        String carrierStatus = shipment != null ? shipment.getStatus() : null;
+        Date carrierUpdatedAt = shipment != null ? toDate(shipment.getCarrierUpdatedAt()) : null;
+        Date leadtime = shipment != null ? toDate(shipment.getLeadtime()) : null;
+        Date finishDate = shipment != null ? toDate(shipment.getFinishDate()) : null;
+
+        nlu.fit.web.souvenirecommerce.model.entity.PaymentTransaction ptx = new nlu.fit.web.souvenirecommerce.features.payment.repository.PaymentTransactionRepository().findByOrderId(order.getId()).orElse(null);
+
         return new OrderDetailView(
                 order.getId().intValue(),
-                java.sql.Timestamp.valueOf(order.getOrderDate()),
-                order.getAddress() != null ? order.getAddress().getReceiverName() : (order.getUser() != null ? order.getUser().getFullName() : "Khách hàng"),
+                new java.sql.Timestamp(order.getOrderDate().getTime()),
+                order.getAddress() != null ? order.getAddress().getReceiverName()
+                        : (order.getUser() != null ? order.getUser().getFullName() : "Khách hàng"),
                 order.getUser() != null ? order.getUser().getEmail() : "",
                 customerPhone,
                 shippingAddr,
                 order.getNote(),
-                order.getPaymentTransaction() != null ? order.getPaymentTransaction().getMethod().name() : "COD",
+                ptx != null ? ptx.getMethod().name() : "COD",
                 order.getStatusDescription(),
                 order.getTotalAmount(),
                 safeMoney(order.getShippingFee()),
-                order.getGhnOrderCode(),
-                order.getGhnStatus(),
-                toDate(order.getGhnUpdatedAt()),
-                toDate(order.getGhnLeadtime()),
-                toDate(order.getGhnFinishDate())
-        );
+                carrierCode,
+                trackingCode,
+                carrierStatus,
+                carrierUpdatedAt,
+                leadtime,
+                finishDate);
     }
 
     private List<OrderItemView> buildOrderItemViews(List<OrderItem> orderItems) {
@@ -215,8 +227,7 @@ public class AdminOrderDetailController extends HttpServlet {
                         item.getProductImage(),
                         item.getQuantity(),
                         item.getPriceAtPurchase(),
-                        item.getSubTotal()
-                ));
+                        item.getSubTotal()));
             }
         }
         return views;
@@ -234,28 +245,79 @@ public class AdminOrderDetailController extends HttpServlet {
             String status,
             BigDecimal totalAmount,
             BigDecimal shippingFee,
-            String ghnOrderCode,
-            String ghnStatus,
-            Date ghnUpdatedAt,
-            Date ghnLeadtime,
-            Date ghnFinishDate
-    ) {
-        public int getId() { return id; }
-        public java.util.Date getOrderDate() { return orderDate; }
-        public String getCustomerName() { return customerName; }
-        public String getCustomerEmail() { return customerEmail; }
-        public String getCustomerPhone() { return customerPhone; }
-        public String getShippingAddress() { return shippingAddress; }
-        public String getNote() { return note; }
-        public String getPaymentMethod() { return paymentMethod; }
-        public String getStatus() { return status; }
-        public BigDecimal getTotalAmount() { return totalAmount; }
-        public BigDecimal getShippingFee() { return shippingFee; }
-        public String getGhnOrderCode() { return ghnOrderCode; }
-        public String getGhnStatus() { return ghnStatus; }
-        public Date getGhnUpdatedAt() { return ghnUpdatedAt; }
-        public Date getGhnLeadtime() { return ghnLeadtime; }
-        public Date getGhnFinishDate() { return ghnFinishDate; }
+            String carrierCode,
+            String trackingCode,
+            String carrierStatus,
+            Date carrierUpdatedAt,
+            Date leadtime,
+            Date finishDate) {
+        public int getId() {
+            return id;
+        }
+
+        public java.util.Date getOrderDate() {
+            return orderDate;
+        }
+
+        public String getCustomerName() {
+            return customerName;
+        }
+
+        public String getCustomerEmail() {
+            return customerEmail;
+        }
+
+        public String getCustomerPhone() {
+            return customerPhone;
+        }
+
+        public String getShippingAddress() {
+            return shippingAddress;
+        }
+
+        public String getNote() {
+            return note;
+        }
+
+        public String getPaymentMethod() {
+            return paymentMethod;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public BigDecimal getTotalAmount() {
+            return totalAmount;
+        }
+
+        public BigDecimal getShippingFee() {
+            return shippingFee;
+        }
+
+        public String getCarrierCode() {
+            return carrierCode;
+        }
+
+        public String getTrackingCode() {
+            return trackingCode;
+        }
+
+        public String getCarrierStatus() {
+            return carrierStatus;
+        }
+
+        public Date getCarrierUpdatedAt() {
+            return carrierUpdatedAt;
+        }
+
+        public Date getLeadtime() {
+            return leadtime;
+        }
+
+        public Date getFinishDate() {
+            return finishDate;
+        }
     }
 
     public record OrderItemView(
@@ -263,13 +325,26 @@ public class AdminOrderDetailController extends HttpServlet {
             String productImageUrl,
             Integer quantity,
             BigDecimal unitPrice,
-            BigDecimal subtotal
-    ) {
-        public String getProductName() { return productName; }
-        public String getProductImageUrl() { return productImageUrl; }
-        public Integer getQuantity() { return quantity; }
-        public BigDecimal getUnitPrice() { return unitPrice; }
-        public BigDecimal getSubtotal() { return subtotal; }
+            BigDecimal subtotal) {
+        public String getProductName() {
+            return productName;
+        }
+
+        public String getProductImageUrl() {
+            return productImageUrl;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
+
+        public BigDecimal getUnitPrice() {
+            return unitPrice;
+        }
+
+        public BigDecimal getSubtotal() {
+            return subtotal;
+        }
     }
 
     private Date toDate(java.time.LocalDateTime value) {

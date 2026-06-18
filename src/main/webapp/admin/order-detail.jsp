@@ -134,8 +134,8 @@
                                         <button type="button" class="btn btn-danger order-action-btn" onclick="showCancelModal(${orderView.id})">
                                             <i class="fas fa-times"></i> Hủy đơn (Giao thất bại)
                                         </button>
-                                        <a href="${ctx}/admin/order-detail?id=${orderView.id}&action=syncGhn" class="btn btn-info order-action-btn text-white">
-                                            <i class="fas fa-sync"></i> Đồng bộ GHN
+                                        <a href="${ctx}/admin/order-detail?id=${orderView.id}&action=syncCarrier" class="btn btn-info order-action-btn text-white">
+                                            <i class="fas fa-sync"></i> Đồng bộ vận chuyển
                                         </a>
                                     </c:when>
                                     <c:when test="${orderView.status == 'Chờ thanh toán'}">
@@ -334,7 +334,7 @@
                             <div class="card-header order-section-header">
                                 <div>
                                     <h3>Giao hàng</h3>
-                                    <p class="orders-card-subtitle">Địa chỉ nhận hàng, phí ship và trạng thái GHN.</p>
+                                    <p class="orders-card-subtitle">Địa chỉ nhận hàng, phí ship và trạng thái vận chuyển.</p>
                                 </div>
                             </div>
                             <div class="order-info-list">
@@ -361,26 +361,35 @@
                                     <strong><fmt:formatNumber value="${orderView.shippingFee}" pattern="#,###"/>₫</strong>
                                 </div>
                                 <div class="order-info-row">
-                                    <span>Mã vận đơn GHN</span>
+                                    <span>Đơn vị vận chuyển</span>
                                     <strong>
                                         <c:choose>
-                                            <c:when test="${not empty orderView.ghnOrderCode}">${orderView.ghnOrderCode}</c:when>
+                                            <c:when test="${not empty orderView.carrierCode}">${orderView.carrierCode}</c:when>
+                                            <c:otherwise>Chưa xác định</c:otherwise>
+                                        </c:choose>
+                                    </strong>
+                                </div>
+                                <div class="order-info-row">
+                                    <span>Mã vận đơn</span>
+                                    <strong>
+                                        <c:choose>
+                                            <c:when test="${not empty orderView.trackingCode}">${orderView.trackingCode}</c:when>
                                             <c:otherwise>Chưa tạo</c:otherwise>
                                         </c:choose>
                                     </strong>
                                 </div>
                                 <div class="order-info-row">
-                                    <span>Trạng thái GHN</span>
+                                    <span>Trạng thái vận chuyển</span>
                                     <strong>
                                         <c:choose>
-                                            <c:when test="${orderView.ghnStatus eq 'ready_to_pick'}">Đang chờ lấy hàng</c:when>
-                                            <c:when test="${orderView.ghnStatus eq 'picked'}">Đã lấy hàng</c:when>
-                                            <c:when test="${orderView.ghnStatus eq 'transporting'}">Đang vận chuyển</c:when>
-                                            <c:when test="${orderView.ghnStatus eq 'delivering'}">Đang giao</c:when>
-                                            <c:when test="${orderView.ghnStatus eq 'delivered'}">Đã giao</c:when>
-                                            <c:when test="${orderView.ghnStatus eq 'returned'}">Đã hoàn hàng</c:when>
-                                            <c:when test="${orderView.ghnStatus eq 'create_failed'}">Tạo đơn GHN thất bại</c:when>
-                                            <c:when test="${not empty orderView.ghnStatus}">${orderView.ghnStatus}</c:when>
+                                            <c:when test="${orderView.carrierStatus eq 'ready_to_pick'}">Đang chờ lấy hàng</c:when>
+                                            <c:when test="${orderView.carrierStatus eq 'picked'}">Đã lấy hàng</c:when>
+                                            <c:when test="${orderView.carrierStatus eq 'transporting'}">Đang vận chuyển</c:when>
+                                            <c:when test="${orderView.carrierStatus eq 'delivering'}">Đang giao</c:when>
+                                            <c:when test="${orderView.carrierStatus eq 'delivered'}">Đã giao</c:when>
+                                            <c:when test="${orderView.carrierStatus eq 'returned'}">Đã hoàn hàng</c:when>
+                                            <c:when test="${orderView.carrierStatus eq 'create_failed'}">Tạo đơn thất bại</c:when>
+                                            <c:when test="${not empty orderView.carrierStatus}">${orderView.carrierStatus}</c:when>
                                             <c:otherwise>Chưa đồng bộ</c:otherwise>
                                         </c:choose>
                                     </strong>
@@ -389,8 +398,8 @@
                                     <span>Cập nhật gần nhất</span>
                                     <strong>
                                         <c:choose>
-                                            <c:when test="${not empty orderView.ghnUpdatedAt}">
-                                                <fmt:formatDate value="${orderView.ghnUpdatedAt}" pattern="dd/MM/yyyy HH:mm"/>
+                                            <c:when test="${not empty orderView.carrierUpdatedAt}">
+                                                <fmt:formatDate value="${orderView.carrierUpdatedAt}" pattern="dd/MM/yyyy HH:mm"/>
                                             </c:when>
                                             <c:otherwise>Chưa có dữ liệu</c:otherwise>
                                         </c:choose>
@@ -400,8 +409,8 @@
                                     <span>Dự kiến giao</span>
                                     <strong>
                                         <c:choose>
-                                            <c:when test="${not empty orderView.ghnLeadtime}">
-                                                <fmt:formatDate value="${orderView.ghnLeadtime}" pattern="dd/MM/yyyy HH:mm"/>
+                                            <c:when test="${not empty orderView.leadtime}">
+                                                <fmt:formatDate value="${orderView.leadtime}" pattern="dd/MM/yyyy HH:mm"/>
                                             </c:when>
                                             <c:otherwise>Chưa xác định</c:otherwise>
                                         </c:choose>
@@ -411,8 +420,8 @@
                                     <span>Hoàn tất giao</span>
                                     <strong>
                                         <c:choose>
-                                            <c:when test="${not empty orderView.ghnFinishDate}">
-                                                <fmt:formatDate value="${orderView.ghnFinishDate}" pattern="dd/MM/yyyy HH:mm"/>
+                                            <c:when test="${not empty orderView.finishDate}">
+                                                <fmt:formatDate value="${orderView.finishDate}" pattern="dd/MM/yyyy HH:mm"/>
                                             </c:when>
                                             <c:otherwise>Chưa hoàn tất</c:otherwise>
                                         </c:choose>

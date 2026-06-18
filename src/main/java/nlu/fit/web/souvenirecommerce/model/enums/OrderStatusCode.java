@@ -20,4 +20,14 @@ public enum OrderStatusCode {
     OrderStatusCode(String description) {
         this.description = description;
     }
+
+    public static OrderStatusCode fromDescription(String description) {
+        if (description == null) return null;
+        for (OrderStatusCode code : OrderStatusCode.values()) {
+            if (code.getDescription().equalsIgnoreCase(description.trim())) {
+                return code;
+            }
+        }
+        return null;
+    }
 }

@@ -1,5 +1,8 @@
 package nlu.fit.web.souvenirecommerce.features.order.dto;
 
+import lombok.Getter;
+
+@Getter
 public class OrderStatusTabDTO {
     private final String code;
     private final String label;
@@ -11,15 +14,4 @@ public class OrderStatusTabDTO {
         this.count = count;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public int getCount() {
-        return count;
-    }
 }
